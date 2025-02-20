@@ -1,0 +1,110 @@
+.main-container{
+  width: 585px;
+  height: fit-content;
+  margin-left: 75px;
+}
+
+h3{
+  background-color: blueviolet;
+}
+
+.add-panel{
+  width: 585px;
+  height: 60px;
+  border: 1px solid;
+  background-color: aquamarine;
+}
+
+.searchinput{
+  margin-top: 15px;
+  border: 1px solid;
+  border-radius: 5px;
+  height: 25px;
+  width: 210px;
+  background-color: aliceblue;
+}
+
+.addpaneldiv{
+  margin-left: 5px;
+  display: inline-block;
+}
+
+.addpanelinput{
+  border: 1px solid;
+  border-radius: 5px;
+  height: 25px;
+  width: 140px;
+  background-color: gray;
+}
+
+.addBtn{
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 15px;
+  margin-left: 5px;
+  width: 60px;
+  background-color: limegreen;
+}
+
+.cancelBtn{
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 15px;
+  margin-left: 5px;
+  width: 60px;
+  background-color: limegreen; 
+}
+
+.table{
+  margin-top: 12px;
+  width: 585px;
+  height: fit-content;
+  border: 1px solid;
+  border-collapse: collapse;
+  margin-left: 75px;
+  text-align: center;
+}
+
+th{
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 15px;
+  line-height: 18px;
+  background-color: indigo;
+  
+}
+
+tr:nth-child(even){
+  background-color: plum;
+}
+
+td{
+  border: 1px solid;
+  font-size: 15px;
+  line-height: 18px;
+  
+}
+
+.editBtn{
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 12px; 
+  width: 50px;
+  background-color: limegreen;
+}
+
+.deleteBtn{
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 12px;
+  width: 50px;
+  background-color: orange;
+}
+
+.error{
+  color: red;
+}
