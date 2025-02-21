@@ -1,1 +1,1 @@
-# Grapevine Study Group Finder
+# Grapevine
