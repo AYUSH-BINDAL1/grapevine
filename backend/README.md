@@ -23,4 +23,4 @@ curl -X POST 'http://localhost:8080/users' \
 #### Get User
 ```json
 curl --location 'http://localhost:8080/users/test@example.com'
-```
+`
