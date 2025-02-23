@@ -1,29 +1,44 @@
 package com.grapevine.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import org.antlr.v4.runtime.misc.NotNull;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
 public class User {
 
     @Id
-    //@GeneratedValue
-
-    @NotNull
+    @Column(name = "user_email", nullable = false)
     private String userEmail;
 
-    @NotNull
+    @Column(name = "password", nullable = false)
     private String password;
 
-    // Getters and Setters
-    public String getUserEmail() {
-        return userEmail;
-    }
-    public String getUserPassword() {
-        return password;
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Column(name = "birthday", nullable = false)
+    private LocalDate birthday;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Role role;
+
+    public enum Role {
+        STUDENT,
+        INSTRUCTOR
     }
 }
