@@ -26,7 +26,7 @@ function App() {
     <>
       {taskbar()}
     </>
-  )
+  );
 }
 
-export default App
+export default App;
