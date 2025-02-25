@@ -40,3 +40,57 @@
   width: 30px;
 }
 
+.main-container2{
+  width: 1000px;
+  height: fit-content;
+  justify-content: center;
+  margin-left: 480px;
+}
+
+h3{
+  width: 300px;
+  height: 30px;
+}
+
+.add-panel2{
+  width: 300px;
+  height: 375px;
+  border: 1px solid;
+  justify-content: center;
+  background-color: antiquewhite;
+}
+
+.searchinput2{
+  margin-top: 15px;
+  border: 1px solid;
+  border-radius: 5px;
+  height: 25px;
+  width: 210px;
+  background-color: aliceblue;
+}
+
+.addpaneldiv2{
+  margin-left: 22px;
+  margin-top: 10px;
+  display: inline-block;
+}
+
+.addpanelinput2{
+  border: 1px solid;
+  border-radius: 5px;
+  height: 25px;
+  width: 250px;
+  justify-content: center;
+  background-color: rgb(199, 197, 197);
+}
+
+.addBtn2{
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 15px;
+  margin-left: 33px;
+  margin-top: 15px;
+  width: 100px;
+  background-color: rgb(198, 188, 142);
+}
