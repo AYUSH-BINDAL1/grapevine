@@ -57,10 +57,10 @@ function App() {
     setErrMsg("");
   }
 
-const clearAll=()=>{
-  setEmployeeData({name:"",manager:"",salary:""});
-  getAllemployees();
-}
+  const clearAll=()=>{
+    setEmployeeData({name:"",manager:"",salary:""});
+    getAllemployees();
+  }
 
   const handleSubmit=async(e)=>{
     e.preventDefault();
@@ -92,35 +92,55 @@ const clearAll=()=>{
 
   return (
     <>
-      
       <div className='main-container'>
-        <h3>Register an Account</h3>
+        <h3>Full Stack Application using React, 
+        Spring Boot, & PostgreSQL</h3>
+        {errMsg && <span className='error'>{errMsg}</span>}
         <div className='add-panel'>
-          <div className = 'addpaneldiv'>
-            <label htmlFor="First Name">First Name</label><br></br>
-            <input className="addpanelinput" type="text" name="name" id="name" />
+          <div className='addpaneldiv'>
+            <label htmlFor="name">Name</label> <br />
+            <input className='addpanelinput' value={employeeData.name} onChange={handleChange} type="text" name='name' id='name'/>
           </div>
-          <div className = 'addpaneldiv'>
-            <label htmlFor="Last Name">Last Name</label><br></br>
-            <input className="addpanelinput" type="text" name="name" id="name" />
+          <div className='addpaneldiv'>
+            <label htmlFor="manager">Manager</label> <br />
+            <input className='addpanelinput' value={employeeData.manager} onChange={handleChange} type="text" name='manager' id='manager'/>
           </div>
-          <div className = 'addpaneldiv'>
-            <label htmlFor="University Email">Purdue Email</label><br></br>
-            <input className="addpanelinput" type="text" name="name" id="name" />
+          <div className='addpaneldiv'>
+            <label htmlFor="salary">Salary</label> <br />
+            <input className='addpanelinput' value={employeeData.salary} onChange={handleChange} type="text" name='salary' id='salary'/>
           </div>
-          <div className = 'addpaneldiv'>
-            <label htmlFor="Password">Password</label><br></br>
-            <input className="addpanelinput" type="text" name="name" id="name" />
-          </div>
-          <div className = 'addpaneldiv'>
-            <label htmlFor="Confirm Password">Confirm Password</label><br></br>
-            <input className="addpanelinput" type="text" name="name" id="name" />
-          </div>
-          <button className='addBtn'>Register</button>
-          <button className='addBtn'>Sign in</button>
+          <button className='addBtn' onClick={handleSubmit}>{employeeData.employeeId?"Update":"Add"}</button>
+          <button className='cancelBtn' disabled={!showCancel} onClick={handleCancel}>Cancel</button>
         </div>
+        <input className='searchinput' value={globalFilter || ""} onChange={(e)=>setGlobalFilter(e.target.value)} type="search" name="inputsearch" id="inputsearch" placeholder="Search Employees Here"/>
       </div>
-
+      <table className='table' {...getTableProps()}>
+        <thead>
+          {headerGroups.map((hg)=>(
+            <tr {...hg.getHeaderGroupProps()} key={hg.id}>
+              {hg.headers.map((column)=>(
+                <th {...column.getHeaderProps(column.getSortByToggleProps())} key={column.id}> {column.render('Header')}
+                <span>
+                  {column.isSorted?(column.isSortedDesc?'⬇️':'⬆️'):""}
+                </span>
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody {...getTableBodyProps()}>
+          {rows.map((row)=>{
+            prepareRow(row)
+            return(
+              <tr {...row.getRowProps()} key={row.id}>
+                {row.cells.map((cell)=>{
+                  return <td {...cell.getCellProps()} key={cell.id}>{cell.render('Cell')}</td>
+                })}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </>
   )
 }
