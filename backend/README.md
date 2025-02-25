@@ -10,15 +10,11 @@
 ### Sample Requests
 #### Create User
 ```json
-curl -X POST 'http://localhost:8080/users' \
--H 'Content-Type: application/json' \
--d '{
-"userEmail": "test@example.com",
-"password": "password123",
-"name": "Test User",
-"birthday": "2000-01-01",
-"role": "STUDENT"
-}
+
+curl --location 'http://localhost:8080/users' \
+--header 'Content-Type: application/json' \
+--data-raw '{ "userEmail": "test@example.com", "password": "password123", "name": "Test User", "birthday": "2000-01-01", "role": "STUDENT" }'
+
 ```
 #### Get User
 ```json
