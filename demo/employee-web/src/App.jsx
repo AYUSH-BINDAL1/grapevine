@@ -57,10 +57,17 @@ function App() {
     setErrMsg("");
   };
 
+<<<<<<< HEAD:employee-web/src/App.jsx
   const clearAll = () => {
     setEmployeeData({ name: "", manager: "", salary: "" });
     getAllemployees();
   };
+=======
+  const clearAll=()=>{
+    setEmployeeData({name:"",manager:"",salary:""});
+    getAllemployees();
+  }
+>>>>>>> 0cac489055129ab98ad21a8bdd3efe1456261be3:demo/employee-web/src/App.jsx
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -133,9 +140,12 @@ function App() {
   return (
     <>
       <div className='main-container'>
-        <h3>Register an Account</h3>
+        <h3>Full Stack Application using React, 
+        Spring Boot, & PostgreSQL</h3>
+        {errMsg && <span className='error'>{errMsg}</span>}
         <div className='add-panel'>
           <div className='addpaneldiv'>
+<<<<<<< HEAD:employee-web/src/App.jsx
             <label htmlFor="First Name">First Name</label><br />
             <input
               className="addpanelinput"
@@ -192,8 +202,54 @@ function App() {
           </div>
           <button className='addBtn' onClick={handleRegister}>Register</button>
           <button className='addBtn'>Sign in</button>
+=======
+            <label htmlFor="name">Name</label> <br />
+            <input className='addpanelinput' value={employeeData.name} onChange={handleChange} type="text" name='name' id='name'/>
+          </div>
+          <div className='addpaneldiv'>
+            <label htmlFor="manager">Manager</label> <br />
+            <input className='addpanelinput' value={employeeData.manager} onChange={handleChange} type="text" name='manager' id='manager'/>
+          </div>
+          <div className='addpaneldiv'>
+            <label htmlFor="salary">Salary</label> <br />
+            <input className='addpanelinput' value={employeeData.salary} onChange={handleChange} type="text" name='salary' id='salary'/>
+          </div>
+          <button className='addBtn' onClick={handleSubmit}>{employeeData.employeeId?"Update":"Add"}</button>
+          <button className='cancelBtn' disabled={!showCancel} onClick={handleCancel}>Cancel</button>
+>>>>>>> 0cac489055129ab98ad21a8bdd3efe1456261be3:demo/employee-web/src/App.jsx
         </div>
+        <input className='searchinput' value={globalFilter || ""} onChange={(e)=>setGlobalFilter(e.target.value)} type="search" name="inputsearch" id="inputsearch" placeholder="Search Employees Here"/>
       </div>
+<<<<<<< HEAD:employee-web/src/App.jsx
+=======
+      <table className='table' {...getTableProps()}>
+        <thead>
+          {headerGroups.map((hg)=>(
+            <tr {...hg.getHeaderGroupProps()} key={hg.id}>
+              {hg.headers.map((column)=>(
+                <th {...column.getHeaderProps(column.getSortByToggleProps())} key={column.id}> {column.render('Header')}
+                <span>
+                  {column.isSorted?(column.isSortedDesc?'⬇️':'⬆️'):""}
+                </span>
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody {...getTableBodyProps()}>
+          {rows.map((row)=>{
+            prepareRow(row)
+            return(
+              <tr {...row.getRowProps()} key={row.id}>
+                {row.cells.map((cell)=>{
+                  return <td {...cell.getCellProps()} key={cell.id}>{cell.render('Cell')}</td>
+                })}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+>>>>>>> 0cac489055129ab98ad21a8bdd3efe1456261be3:demo/employee-web/src/App.jsx
     </>
   );
 }
