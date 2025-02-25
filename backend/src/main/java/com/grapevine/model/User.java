@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -34,11 +36,51 @@ public class User {
     private LocalDate birthday;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
+    @Column(name = "role", nullable = true)
     private Role role;
 
     public enum Role {
         STUDENT,
-        INSTRUCTOR
+        UTA,
+        GTA,
+        PROFESSOR
     }
+
+    @Column(name = "biography")
+    private String biography;
+
+    @Column(name = "year")
+    private Integer year;
+
+    @ElementCollection
+    @Column(name = "majors")
+    private List<String> majors;
+
+    @ElementCollection
+    @Column(name = "minors")
+    private List<String> minors;
+
+    @ElementCollection
+    @Column(name = "courses")
+    private List<String> courses;
+
+    @ManyToMany
+    @JoinTable(name = "user_friends", joinColumns = @JoinColumn(name = "user_email"), inverseJoinColumns =
+    @JoinColumn(name = "friend_email"))
+    private List<User> friends;
+
+    @ManyToMany
+    @JoinTable(name = "user_instructors", joinColumns = @JoinColumn(name = "user_email"), inverseJoinColumns =
+    @JoinColumn(name = "instructor_email"))
+    private List<User> instructors;
+
+    @ElementCollection
+    @Column(name = "times")
+    private List<ZonedDateTime> availableTimes;
+
+    @Column(name = "profile_picture")
+    private String profilePicturePath;
+
+    //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
+
 }
