@@ -7,7 +7,7 @@
 | POST   | `/users`                   | User object  | -             | -           | Creates a new user              | Created user object      |
 | GET    | `/users/{userEmail}`       | -            | userEmail     | -           | Retrieves user by email         | User object              |
 | POST   | `/users/register`          | User object  | -             | -           | Initiates user registration     | Confirmation token       |
-| GET    | `/users/verify`            | User object  | -             | token       | Verifies email with token       | Created user object      |
+| POST   | `/users/verify`            | User object  | -             | token       | Verifies email with token       | Created user object      |
 
 ## User Registration
 
