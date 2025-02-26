@@ -1,4 +1,5 @@
 # to test on a local mail server
+# https://medium.com/@kanezi.com/comprehensive-guide-to-email-in-spring-110d59f7c7c9
 # 1. make sure you have the docker daemon installed (or just open docker desktop)
 # 2. run all docker containers
     # docker compose up -d  
