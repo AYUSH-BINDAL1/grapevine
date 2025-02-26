@@ -13,12 +13,17 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public void createUser(@RequestBody User user) {
+        userService.createUser(user);
     }
 
     @GetMapping("/{userEmail}")
     public User getUser(@PathVariable String userEmail) {
         return userService.getUserByEmail(userEmail);
+    }
+
+    @PostMapping("/confirm")
+    public void confirmEmail(@RequestParam String userEmail, @RequestParam String confirmationCode) {
+        userService.confirmEmail(userEmail, confirmationCode);
     }
 }

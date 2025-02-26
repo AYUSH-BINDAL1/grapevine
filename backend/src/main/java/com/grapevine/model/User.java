@@ -81,6 +81,9 @@ public class User {
     @Column(name = "profile_picture")
     private String profilePicturePath;
 
+    @Column(name = "email_confirmed")
+    private boolean emailConfirmed = false;
+
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 
 }
