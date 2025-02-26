@@ -12,18 +12,18 @@ import com.grapevine.service.UserService;
 public class UserController {
     private final UserService userService;
 
-    @PostMapping
-    public void createUser(@RequestBody User user) {
-        userService.createUser(user);
+    @PostMapping("/register")
+    public String registerUser(@RequestBody User user) {
+        return userService.initiateUserRegistration(user);
+    }
+
+    @PostMapping("/verify")
+    public User verifyUser(@RequestParam String token, @RequestBody User user) {
+        return userService.verifyAndCreateUser(token, user);
     }
 
     @GetMapping("/{userEmail}")
     public User getUser(@PathVariable String userEmail) {
         return userService.getUserByEmail(userEmail);
-    }
-
-    @PostMapping("/confirm")
-    public void confirmEmail(@RequestParam String userEmail, @RequestParam String confirmationCode) {
-        userService.confirmEmail(userEmail, confirmationCode);
     }
 }

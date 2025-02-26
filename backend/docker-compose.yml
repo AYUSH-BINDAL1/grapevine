@@ -1,0 +1,15 @@
+# to test on a local mail server
+# 1. make sure you have the docker daemon installed (or just open docker desktop)
+# 2. run all docker containers
+    # docker compose up -d  
+# 3. to check to make sure your mailpit container (the local mail server) is running:
+    # docker ps 
+# 4. to destroy and clean all containers:
+    # docker compose down -v
+services:
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - 8025:8025
+      - 1025:1025
