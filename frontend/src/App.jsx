@@ -1,12 +1,8 @@
-import { useState } from 'react'
-import tempProfile from './assets/temp-profile.webp'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Registration from './components/Registration';
+import './App.css';
 
-function handleClick() {
-  alert('Button clicked!')
-}
-
-function taskbar() {
+function Taskbar() {
   return (
     <div className='taskbar'>
       <nav className='taskbar-elem'>
@@ -17,15 +13,25 @@ function taskbar() {
         <img onClick={handleClick} className='profile' src={tempProfile} alt="" />
       </nav>
     </div>
-  )
+  );
+}
+
+function Home() {
+  return (
+    <>
+      <Taskbar />
+    </>
+  );
 }
 
 function App() {
-
   return (
-    <>
-      {taskbar()}
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Registration />} />
+        <Route path="/home" element={<Home />} />
+      </Routes>
+    </Router>
   );
 }
 
