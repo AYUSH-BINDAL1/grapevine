@@ -31,9 +31,11 @@ curl --location 'http://localhost:8080/users/register' \
 ```
 
 ##### Expected output in Postman (note that this token will vary)
-**H0DV74**
+**`H0DV74`**
 
 #### 2. The user will receive the token via their email, and the client should send the following request to confirm the user's email:
+> **Note**: In this example, the verification token is **`H0DV74`**
+
 ```json
 curl --location 'http://localhost:8080/users/verify?token=H0DV74' \
 --header 'Content-Type: application/json' \
