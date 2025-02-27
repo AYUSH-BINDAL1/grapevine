@@ -13,13 +13,14 @@
 }
 
 .taskbar-elem {
-  margin-left: 66%;
+  margin-left: 10px;
 }
 
 .profile {
   display: inline-block;
-  width: 25px;
-  margin-left: 30px
+  width: 35px;
+  margin-left: 10px;
+  border-radius: 50%;
 }
 
 .elem {
@@ -37,7 +38,6 @@
 
 .profile:hover {
   cursor: pointer;
-  width: 30px;
 }
 
 .main-container2{
