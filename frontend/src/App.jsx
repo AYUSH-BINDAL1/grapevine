@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Registration from './components/Registration';
+import Login from './components/Login';
+import Confirmation from './components/Confirmation';
 import profileImage from './assets/temp-profile.webp';
 import './App.css';
 
@@ -33,7 +35,9 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Registration />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/Registration" element={<Registration />} />
+        <Route path="/Confirmation" element={<Confirmation />} />
         <Route path="/home" element={<Home />} />
       </Routes>
     </Router>
