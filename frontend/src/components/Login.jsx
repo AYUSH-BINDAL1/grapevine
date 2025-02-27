@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-function Registration() {
+function Login() {
   const [formData, setFormData] = useState({
     userEmail: '',
-    password: '',
-    name: '',
-    birthday: ''
+    password: ''
   });
   const navigate = useNavigate();
 
@@ -21,26 +19,25 @@ function Registration() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8080/users/register', formData, {
+      const response = await axios.post('http://localhost:8080/login', formData, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
 
       if (response.status === 200) {
-        localStorage.setItem('userInfo', JSON.stringify(formData));
-        navigate('/Confirmation');
+        navigate('/home');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Registration failed. Please try again.');
+      alert('Login failed. Please try again.');
     }
   };
 
   return (
     <div className="registration-container">
       <form onSubmit={handleSubmit} className="registration-form">
-        <h2>Create Account</h2>
+        <h2>Login</h2>
         <div className="form-group">
           <input
             type="email"
@@ -61,34 +58,15 @@ function Registration() {
             required
           />
         </div>
-        <div className="form-group">
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Full Name"
-            required
-          />
-        </div>
-        <div className="form-group">
-          <input
-            type="date"
-            name="birthday"
-            value={formData.birthday}
-            onChange={handleChange}
-            required
-          />
-        </div>
         <button type="submit" className="register-button">
-          Register
-        </button>
-        <button type="button" className="sign-in-button" onClick={() => navigate('/')}>
           Login
+        </button>
+        <button type="button" className="sign-in-button" onClick={() => navigate('/Registration')}>
+          Register
         </button>
       </form>
     </div>
   );
 }
 
-export default Registration;
+export default Login;
