@@ -1,6 +1,9 @@
+# Quick Links
+[Grapevine Trello Board](https://trello.com/invite/b/67c09fe22a9fcbcd79f4ac85/ATTI5ec93fa29290a911eaf90b591e3ed0ec09999CE5/grapevine)
+
 # Git Workflow Guide
 
-This document outlines the standard workflow for making changes, updating your branch with the latest changes from `main`, and creating pull requests.
+This document outlines the standard workflow for making changes, updating your branch with the latest changes from `dev`, and creating pull requests.
 
 ## Step-by-Step Workflow
 
@@ -15,6 +18,7 @@ git branch
 You should see something like:
 ```
   main
+  dev
 * your-branch
 ```
 
@@ -29,22 +33,22 @@ git add .
 git commit -m "Your descriptive commit message"
 ```
 
-### 3. Update Your Branch with Latest Changes from Main
+### 3. Update Your Branch with Latest Changes from dev
 
-To prevent merge conflicts in your PR, first update your branch with the latest changes from `main`:
+To prevent merge conflicts in your PR, first update your branch with the latest changes from `dev`:
 
 ```bash
-# Switch to main
-git checkout main
+# Switch to dev
+git checkout dev
 
 # Get the latest changes
-git fetch origin main && git pull
+git fetch origin dev && git pull
 
 # Switch back to your branch
 git checkout your-branch
 
-# Merge main into your branch
-git merge main
+# Merge dev into your branch
+git merge dev
 ```
 
 ### 4. Resolve Any Merge Conflicts
@@ -56,8 +60,8 @@ Conflicts appear like this:
 <<<<<<< HEAD
 Your changes
 =======
-Changes from main
->>>>>>> main
+Changes from dev
+>>>>>>> dev
 ```
 
 Edit the files to keep the code you want, then save.
@@ -77,28 +81,28 @@ git push -u origin your-branch
 
 ### 6. Create a Pull Request
 
-Go to GitHub and create a pull request from your branch to `main`.
+Go to GitHub and create a pull request from your branch to `dev`.
 
 ## Example Workflow
 
 ```bash
 # Check current branch (should show you're on your branch)
 git branch
-  main
+  dev
 * ayush
 
 # Stage and commit your changes
 git add .
 git commit -m "Add new feature"
 
-# Update with the latest from main
-git checkout main
-git fetch origin main
+# Update with the latest from dev
+git checkout dev
+git fetch origin dev
 git pull
 
 # Return to your branch and merge
 git checkout ayush
-git merge main
+git merge dev
 
 # Resolve any merge conflicts in your editor
 
