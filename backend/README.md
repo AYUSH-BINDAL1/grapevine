@@ -2,14 +2,17 @@
 
 ## Users
 
-| Method | Endpoint                   | Request Body | Path Variable | Query Param | Description                     | Response                 |
-|--------|----------------------------|--------------|---------------|-------------|---------------------------------|--------------------------|
-| POST   | `/users`                   | User object  | -             | -           | Creates a new user              | Created user object      |
-| GET    | `/users/{userEmail}`       | -            | userEmail     | -           | Retrieves user by email         | User object              |
-| POST   | `/users/register`          | User object  | -             | -           | Initiates user registration     | Confirmation token       |
-| POST   | `/users/verify`            | User object  | -             | token       | Verifies email with token       | Created user object      |
+| Method | Endpoint                   | Request Body | Path Variable | Query Param | Description                     | Response                           |
+|--------|----------------------------|--------------|---------------|-------------|---------------------------------|------------------------------------|
+| POST   | `/users`                   | User object  | -             | -           | Creates a new user              | Created user object                |
+| GET    | `/users/{userEmail}`       | -            | userEmail     | -           | Retrieves user by email         | User object                        |
+| POST   | `/users/register`          | User object  | -             | -           | Initiates user registration     | Confirmation token                 |
+| POST   | `/users/verify`            | User object  | -             | token       | Verifies email with token       | Created user object                |
+| POST   | `/users/login`             | Login object | -             | -           | Authenticates a user            | Session ID and user object         |
+| GET    | `/users/me`                | -            | -             | -           | Gets current user profile       | User object                        |
+| DELETE | `/users/logout`            | -            | -             | -           | Terminates current session      | Confirmation message               |
 
-## User Registration
+## Sample Requests: User Registration
 
 User registration begins when the client sends a registration request
 1. A unique 6-character confirmation token is generated and emailed to the provided email for the user
@@ -92,66 +95,117 @@ curl --location 'http://localhost:8080/users/test@example.com'
 }
 ```
 
-### Sample Requests
+# Sample Requests: User Login (Registration -> Login)
 
-#### Create User
+### 1. Register a New User
 
-```json
-curl --location 'http://localhost:8080/users' \
---header 'Content-Type: application/json' \
---data-raw '{
-  "userEmail": "test@example.com",
-  "password": "password123",
-  "name": "Test User",
-  "birthday": "2000-01-01",
-  "role": "STUDENT"
-}'
+Start by creating a new user account:
+
+```bash
+curl -X POST http://localhost:8080/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userEmail": "test@example.com",
+    "password": "password123",
+    "name": "Test User",
+    "birthday": "1990-01-15",
+    "role": "STUDENT"
+  }'
 ```
 
-##### Expected Response:
+**Expected Response:**
+A verification token (e.g., `"ABC123"`) will be returned.
 
+> **Note:** In a production environment, this token would be sent to the user's email address.
+
+### 2. Verify the User Account
+
+Complete the registration by verifying the account with the token:
+
+```bash
+curl -X POST "http://localhost:8080/users/verify?token=ABC123" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userEmail": "test@example.com",
+    "password": "password123",
+    "name": "Test User",
+    "birthday": "1990-01-15",
+    "role": "STUDENT"
+  }'
+```
+
+**Expected Response:**
+A confirmation that the account has been verified.
+
+### 3. Log In to the Account
+
+Once verified, log in to obtain a session:
+
+```bash
+curl -X POST http://localhost:8080/users/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+```
+
+**Expected Response:**
 ```json
 {
-  "userEmail": "test@example.com",
-  "password": "password123",
-  "name": "Test User",
-  "birthday": "2000-01-01",
-  "role": "STUDENT",
-  "biography": null,
-  "year": null,
-  "majors": [],
-  "minors": [],
-  "courses": [],
-  "friends": [],
-  "instructors": [],
-  "availableTimes": [],
-  "profilePicturePath": null
+  "sessionId": "a5c8f0e2-6b1d-4e31-9c7f-85c5640f0f89",
+  "user": {
+    "userEmail": "test@example.com",
+    "name": "Test User",
+    "...": "..."
+  }
 }
 ```
 
-#### Get User
+### 4. Access Protected Resources
 
-```json
-curl --location 'http://localhost:8080/users/test@example.com'
+Use the session ID to access protected endpoints:
+
+```bash
+curl -X GET http://localhost:8080/users/me \
+  -H "Session-Id: a5c8f0e2-6b1d-4e31-9c7f-85c5640f0f89"
 ```
 
-##### Expected Response:
+**Expected Response:**
+Your user profile information.
 
-```json
-{
-  "userEmail": "test@example.com",
-  "password": "password123",
-  "name": "Test User",
-  "birthday": "2000-01-01",
-  "role": "STUDENT",
-  "biography": null,
-  "year": null,
-  "majors": [],
-  "minors": [],
-  "courses": [],
-  "friends": [],
-  "instructors": [],
-  "availableTimes": [],
-  "profilePicturePath": null
-}
+### 5. Access Another User's Profile
+
+With a valid session, you can also retrieve other user profiles:
+
+```bash
+curl -X GET http://localhost:8080/users/test@example.com \
+  -H "Session-Id: a5c8f0e2-6b1d-4e31-9c7f-85c5640f0f89"
 ```
+
+**Expected Response:**
+The requested user's public profile information.
+
+### 6. Log Out
+
+End your session with a logout request:
+
+```bash
+curl -X DELETE http://localhost:8080/users/logout \
+  -H "Session-Id: a5c8f0e2-6b1d-4e31-9c7f-85c5640f0f89"
+```
+
+**Expected Response:**
+Confirmation that the session has been terminated.
+
+### 7. Verify Session Invalidation
+
+Confirm that the session is no longer valid:
+
+```bash
+curl -X GET http://localhost:8080/users/me \
+  -H "Session-Id: a5c8f0e2-6b1d-4e31-9c7f-85c5640f0f89"
+```
+
+**Expected Response:**
+An error message indicating the session is invalid or expired.

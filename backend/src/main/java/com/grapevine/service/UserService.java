@@ -7,7 +7,12 @@ import com.grapevine.model.User;
 import com.grapevine.model.VerificationToken;
 import com.grapevine.repository.UserRepository;
 import com.grapevine.repository.VerificationTokenRepository;
+import com.grapevine.exception.*;
 import java.util.Random;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +20,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final VerificationTokenRepository tokenRepository;
     private final EmailService emailService;
+
+    // session storage: sessionId -> SessionInfo
+    private final Map<String, SessionInfo> activeSessions = new HashMap<>();
 
     public String initiateUserRegistration(User user) {
         String verificationToken = generateVerificationToken();
@@ -27,7 +35,7 @@ public class UserService {
     public User verifyAndCreateUser(String token, User user) {
         VerificationToken verificationToken = tokenRepository.findByToken(token);
         if (verificationToken == null || !verificationToken.getUserEmail().equals(user.getUserEmail())) {
-            throw new RuntimeException("Invalid verification token");
+            throw new InvalidVerificationTokenException("Invalid verification token");
         }
         tokenRepository.delete(verificationToken);
         return userRepository.save(user);
@@ -46,5 +54,58 @@ public class UserService {
     public User getUserByEmail(String userEmail) {
         return userRepository.findById(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + userEmail));
+    }
+
+    public String login(String email, String password) {
+        User user = userRepository.findById(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+
+        if (!user.getPassword().equals(password)) {
+            throw new InvalidCredentialsException("Invalid credentials");
+        }
+
+        // create new session
+        String sessionId = UUID.randomUUID().toString();
+        SessionInfo sessionInfo = new SessionInfo(email, LocalDateTime.now().plusHours(1));
+        activeSessions.put(sessionId, sessionInfo);
+
+        return sessionId;
+    }
+
+    public void logout(String sessionId) {
+        if (sessionId != null && activeSessions.containsKey(sessionId)) {
+            activeSessions.remove(sessionId);
+        }
+    }
+
+    public User validateSession(String sessionId) {
+        if (sessionId == null || !activeSessions.containsKey(sessionId)) {
+            throw new InvalidSessionException("Invalid or missing session");
+        }
+
+        SessionInfo sessionInfo = activeSessions.get(sessionId);
+
+        // check if session expired
+        if (LocalDateTime.now().isAfter(sessionInfo.expiryTime)) {
+            activeSessions.remove(sessionId);
+            throw new InvalidSessionException("Session expired");
+        }
+
+        // refresh session
+        sessionInfo.expiryTime = LocalDateTime.now().plusHours(1);
+
+        // return the user
+        return getUserByEmail(sessionInfo.userEmail);
+    }
+
+    // inner class for session information
+    private static class SessionInfo {
+        String userEmail;
+        LocalDateTime expiryTime;
+
+        public SessionInfo(String userEmail, LocalDateTime expiryTime) {
+            this.userEmail = userEmail;
+            this.expiryTime = expiryTime;
+        }
     }
 }
