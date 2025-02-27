@@ -4,7 +4,7 @@ import axios from 'axios';
 
 function Login() {
   const [formData, setFormData] = useState({
-    userEmail: '',
+    email: '',
     password: ''
   });
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8080/login', formData, {
+      const response = await axios.post('http://localhost:8080/users/login', formData, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -41,8 +41,8 @@ function Login() {
         <div className="form-group">
           <input
             type="email"
-            name="userEmail"
-            value={formData.userEmail}
+            name="email"
+            value={formData.email}
             onChange={handleChange}
             placeholder="Email"
             required
