@@ -1,7 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Registration from './components/Registration';
-import Events from  './components/Events.jsx'
 import profileImage from './assets/temp-profile.webp';
+import Events from './components/Events';
 import './App.css';
 
 function Taskbar() {
