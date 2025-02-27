@@ -92,6 +92,8 @@ curl --location 'http://localhost:8080/users/test@example.com'
 }
 ```
 
+
+
 ### Sample Requests
 
 #### Create User
