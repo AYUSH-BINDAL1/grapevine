@@ -1,3 +1,6 @@
+# Quick Links
+[Grapevine Trello Board](https://trello.com/invite/b/67c09fe22a9fcbcd79f4ac85/ATTI5ec93fa29290a911eaf90b591e3ed0ec09999CE5/grapevine)
+
 # Git Workflow Guide
 
 This document outlines the standard workflow for making changes, updating your branch with the latest changes from `dev`, and creating pull requests.
