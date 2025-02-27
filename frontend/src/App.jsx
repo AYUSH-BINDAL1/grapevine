@@ -1,5 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Registration from './components/Registration';
+import Events from  './components/Events.jsx'
 import profileImage from './assets/temp-profile.webp';
 import './App.css';
 
@@ -35,6 +36,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Registration />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/events" element={<Events />} />
       </Routes>
     </Router>
   );
