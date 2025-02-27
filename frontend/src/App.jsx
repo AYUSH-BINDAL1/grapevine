@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Registration from './components/Registration';
+import Login from './components/Login';
+import Confirmation from './components/Confirmation';
 import profileImage from './assets/temp-profile.webp';
 import './App.css';
-import Profile from './components/Profile';
 
 function Taskbar() {
   const handleClick = (e) => {
@@ -34,12 +35,13 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path='/' element={<Home />} />
-        <Route path='/register' element={<Registration />} />
-        <Route path='/profile' element={<Profile/>}/>
-        <Route path='*' element={<Navigate to='/' />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/Registration" element={<Registration />} />
+        <Route path="/Confirmation" element={<Confirmation />} />
+        <Route path="/home" element={<Home />} />
       </Routes>
     </Router>
   );
 }
+
 export default App;
