@@ -7,6 +7,7 @@ import com.grapevine.model.User;
 import com.grapevine.model.VerificationToken;
 import com.grapevine.repository.UserRepository;
 import com.grapevine.repository.VerificationTokenRepository;
+import com.grapevine.exception.*;
 import java.util.Random;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class UserService {
     public User verifyAndCreateUser(String token, User user) {
         VerificationToken verificationToken = tokenRepository.findByToken(token);
         if (verificationToken == null || !verificationToken.getUserEmail().equals(user.getUserEmail())) {
-            throw new RuntimeException("Invalid verification token");
+            throw new InvalidVerificationTokenException("Invalid verification token");
         }
         tokenRepository.delete(verificationToken);
         return userRepository.save(user);
@@ -60,7 +61,7 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
 
         if (!user.getPassword().equals(password)) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid credentials");
         }
 
         // create new session
@@ -79,7 +80,7 @@ public class UserService {
 
     public User validateSession(String sessionId) {
         if (sessionId == null || !activeSessions.containsKey(sessionId)) {
-            throw new RuntimeException("Invalid or expired session");
+            throw new InvalidSessionException("Invalid or missing session");
         }
 
         SessionInfo sessionInfo = activeSessions.get(sessionId);
@@ -87,7 +88,7 @@ public class UserService {
         // check if session expired
         if (LocalDateTime.now().isAfter(sessionInfo.expiryTime)) {
             activeSessions.remove(sessionId);
-            throw new RuntimeException("Session expired");
+            throw new InvalidSessionException("Session expired");
         }
 
         // refresh session

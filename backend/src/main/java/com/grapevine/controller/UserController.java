@@ -6,7 +6,6 @@ import com.grapevine.model.User;
 import com.grapevine.model.login.LoginRequest;
 import com.grapevine.model.login.LoginResponse;
 import com.grapevine.service.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 @RestController
@@ -28,13 +27,9 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
-        try {
-            String sessionId = userService.login(loginRequest.getEmail(), loginRequest.getPassword());
-            User user = userService.getUserByEmail(loginRequest.getEmail());
-            return ResponseEntity.ok(new LoginResponse(sessionId, user));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-        }
+        String sessionId = userService.login(loginRequest.getEmail(), loginRequest.getPassword());
+        User user = userService.getUserByEmail(loginRequest.getEmail());
+        return ResponseEntity.ok(new LoginResponse(sessionId, user));
     }
 
     @DeleteMapping("/logout")
