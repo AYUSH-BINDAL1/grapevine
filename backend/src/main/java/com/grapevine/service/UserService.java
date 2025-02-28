@@ -8,6 +8,9 @@ import com.grapevine.model.VerificationToken;
 import com.grapevine.repository.UserRepository;
 import com.grapevine.repository.VerificationTokenRepository;
 import com.grapevine.exception.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 import java.util.Random;
 import java.util.HashMap;
 import java.util.Map;
@@ -108,4 +111,32 @@ public class UserService {
             this.expiryTime = expiryTime;
         }
     }
+
+    //Add parameter MultiPartFile profilePicture when doing profile picture
+    public User updateUser(String userEmail, User updatedUser) {
+        User existingUser = getUserByEmail(userEmail);
+
+        // Update the fields that can be modified
+        if (updatedUser.getName() != null)
+            existingUser.setName(updatedUser.getName());
+        if (updatedUser.getBiography() != null)
+            existingUser.setBiography(updatedUser.getBiography());
+        if (updatedUser.getYear() != null)
+            existingUser.setYear(updatedUser.getYear());
+        if (updatedUser.getMajors() != null)
+            existingUser.setMajors(updatedUser.getMajors());
+        if (updatedUser.getMinors() != null)
+            existingUser.setMinors(updatedUser.getMinors());
+        if (updatedUser.getCourses() != null)
+            existingUser.setCourses(updatedUser.getCourses());
+        if (updatedUser.getAvailableTimes() != null)
+            existingUser.setAvailableTimes(updatedUser.getAvailableTimes());
+
+        // Password should be handled separately with proper validation and encryption
+        // Role changes might require special authorization
+
+        return userRepository.save(existingUser);
+    }
+
+
 }

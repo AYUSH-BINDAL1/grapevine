@@ -78,9 +78,5 @@ public class User {
     @Column(name = "times")
     private List<ZonedDateTime> availableTimes;
 
-    @Column(name = "profile_picture")
-    private String profilePicturePath;
-
-    //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 
 }
