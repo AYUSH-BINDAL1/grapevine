@@ -17,8 +17,8 @@ h1 {
     overflow-x: auto;
     gap: 16px;
     padding-bottom: 10px;
+    scroll-snap-type: x mandatory;
 }
-
 
 .event-card {
     flex: 0 0 auto;
@@ -28,6 +28,7 @@ h1 {
     border-radius: 8px;
     overflow: hidden;
     background: #fff;
+    scroll-snap-align: start; /* Smooth scrolling */
 }
 
 .event-card img {
@@ -39,4 +40,20 @@ h1 {
 .event-card h3 {
     margin: 10px 0;
     font-size: 16px;
+}
+
+
+.create-event-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.create-event-button:hover {
+    background-color: #2980b9;
 }
