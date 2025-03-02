@@ -108,8 +108,7 @@ curl -X POST http://localhost:8080/users/register \
     "userEmail": "test@example.com",
     "password": "password123",
     "name": "Test User",
-    "birthday": "1990-01-15",
-    "role": "STUDENT"
+    "birthday": "1990-01-15"
   }'
 ```
 
@@ -129,8 +128,7 @@ curl -X POST "http://localhost:8080/users/verify?token=ABC123" \
     "userEmail": "test@example.com",
     "password": "password123",
     "name": "Test User",
-    "birthday": "1990-01-15",
-    "role": "STUDENT"
+    "birthday": "1990-01-15"
   }'
 ```
 
