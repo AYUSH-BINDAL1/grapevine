@@ -1,3 +1,4 @@
+
 package com.grapevine.model;
 
 import jakarta.persistence.*;

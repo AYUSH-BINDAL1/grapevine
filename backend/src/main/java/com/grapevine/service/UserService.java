@@ -2,6 +2,8 @@ package com.grapevine.service;
 
 import com.grapevine.exception.UserNotFoundException;
 import com.grapevine.model.Group;
+import com.grapevine.model.ShortGroup;
+import com.grapevine.repository.GroupRepository;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import com.grapevine.model.User;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final VerificationTokenRepository tokenRepository;
+    private final GroupRepository groupRepository;
     private final EmailService emailService;
 
     // session storage: sessionId -> SessionInfo
@@ -115,6 +118,7 @@ public class UserService {
         User existingUser = getUserByEmail(userEmail);
 
         //Update the fields that can be modified
+        //TODO: Probably need to add more
         if (updatedUser.getName() != null) {
             existingUser.setName(updatedUser.getName());
         }
@@ -133,41 +137,109 @@ public class UserService {
         if (updatedUser.getCourses() != null) {
             existingUser.setCourses(updatedUser.getCourses());
         }
-        if (updatedUser.getAvailableTimes() != null) {
-            existingUser.setAvailableTimes(updatedUser.getAvailableTimes());
-        }
-        if(updatedUser.getAllGroups() != null) {
-            existingUser.setAllGroups(updatedUser.getAllGroups());
-        }
         //Password should be handled separately with proper validation and encryption
         //Role changes might require special authorization
         return userRepository.save(existingUser);
     }
 
+    //TODO: Fix this shit
     public List<Group> getAllGroups(String userEmail) {
         User currentUser = getUserByEmail(userEmail);
-        //No filtering
-        return currentUser.getAllGroups();
+        List<Group> allGroups = new ArrayList<>();
+
+        // Get the groups the user hosts
+        if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
+            for (Long groupId : currentUser.getHostedGroups()) {
+                groupRepository.findById(groupId).ifPresent(allGroups::add);
+            }
+        }
+
+        // Get the groups the user participates in
+        if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
+            for (Long groupId : currentUser.getJoinedGroups()) {
+                groupRepository.findById(groupId).ifPresent(allGroups::add);
+            }
+        }
+
+        return allGroups;
+    }
+
+    public List<ShortGroup> getAllShortGroups(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<ShortGroup> allShortGroups = new ArrayList<>();
+
+        // Get ShortGroup objects for the groups the user hosts
+        if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
+            for (Long groupId : currentUser.getHostedGroups()) {
+                groupRepository.findById(groupId)
+                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+            }
+        }
+
+        // Get ShortGroup objects for the groups the user participates in
+        if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
+            for (Long groupId : currentUser.getJoinedGroups()) {
+                groupRepository.findById(groupId)
+                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+            }
+        }
+
+        return allShortGroups;
     }
 
     public List<Group> getHostedGroups(String userEmail) {
         User currentUser = getUserByEmail(userEmail);
+        List<Group> hostedGroups = new ArrayList<>();
 
-        //Filter groups where the user is a host
-        return currentUser.getAllGroups().stream()
-                .filter(group -> group.getHosts().stream()
-                        .anyMatch(host -> host.getUserEmail().equals(userEmail)))
-                .collect(Collectors.toList());
+        // Get the groups the user hosts using the hostedGroups IDs
+        if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
+            for (Long groupId : currentUser.getHostedGroups()) {
+                groupRepository.findById(groupId).ifPresent(hostedGroups::add);
+            }
+        }
+
+        return hostedGroups;
     }
+    public List<ShortGroup> getHostedShortGroups(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<ShortGroup> hostedShortGroups = new ArrayList<>();
+
+        if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
+            for (Long groupId : currentUser.getHostedGroups()) {
+                groupRepository.findById(groupId)
+                        .ifPresent(group -> hostedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+            }
+        }
+
+        return hostedShortGroups;
+    }
+
 
     public List<Group> getJoinedGroups(String userEmail) {
         User currentUser = getUserByEmail(userEmail);
+        List<Group> joinedGroups = new ArrayList<>();
 
-        //Filter groups where the user is a participant but NOT a host
-        return currentUser.getAllGroups().stream()
-                .filter(group -> !group.getHosts().stream()
-                        .anyMatch(host -> host.getUserEmail().equals(userEmail)))
-                .collect(Collectors.toList());
+        // Get the groups the user participates in using the joinedGroups IDs
+        if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
+            for (Long groupId : currentUser.getJoinedGroups()) {
+                groupRepository.findById(groupId).ifPresent(joinedGroups::add);
+            }
+        }
+
+        return joinedGroups;
+    }
+    public List<ShortGroup> getJoinedShortGroups(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<ShortGroup> joinedShortGroups = new ArrayList<>();
+
+        if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
+            for (Long groupId : currentUser.getJoinedGroups()) {
+                groupRepository.findById(groupId)
+                        .ifPresent(group -> joinedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+            }
+        }
+
+        return joinedShortGroups;
     }
 
 }

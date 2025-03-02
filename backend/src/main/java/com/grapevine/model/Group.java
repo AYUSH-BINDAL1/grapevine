@@ -1,5 +1,9 @@
 package com.grapevine.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -36,24 +40,17 @@ public class Group {
     @Column(name = "max_users", nullable = false)
     private Integer maxUsers;
 
-    @ManyToMany
-    @JoinTable(
-            name = "group_hosts",
-            joinColumns = @JoinColumn(name = "group_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_email")
-    )
-    private List<User> hosts;
+    @ElementCollection
+    @Column(name = "host_emails")
+    private List<String> hosts;
 
-    @ManyToMany
-    @JoinTable(
-            name = "group_participants",
-            joinColumns = @JoinColumn(name = "group_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_email")
-    )
-    private List<User> participants;
+    @ElementCollection
+    @Column(name = "participant_emails")
+    private List<String> participants;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "rating_id")
+    @JsonIgnoreProperties("group")
     private Rating rating;
 
     @CreationTimestamp

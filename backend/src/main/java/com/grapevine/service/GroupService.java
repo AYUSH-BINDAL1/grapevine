@@ -3,9 +3,11 @@ package com.grapevine.service;
 import com.grapevine.exception.GroupNotFoundException;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.model.Group;
-import com.grapevine.model.Rating;
+//import com.grapevine.model.Rating;
+import com.grapevine.model.ShortGroup;
 import com.grapevine.model.User;
 import com.grapevine.repository.GroupRepository;
+import com.grapevine.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +19,24 @@ import java.util.List;
 public class GroupService {
     private final GroupRepository groupRepository;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     public List<Group> getAllGroups() {
         return groupRepository.findAll();
     }
 
-    public Group createGroup(Group group, User currentUser) {
+    public List<ShortGroup> getAllShortGroups() {
+        List<Group> groups = groupRepository.findAll();
+        List<ShortGroup> shortGroups = new ArrayList<>();
 
+        for (Group group : groups) {
+            shortGroups.add(new ShortGroup(group.getGroupId(), group.getName()));
+        }
+
+        return shortGroups;
+    }
+
+    public Group createGroup(Group group, User currentUser) {
         // Initialize lists if null
         if (group.getHosts() == null) {
             group.setHosts(new ArrayList<>());
@@ -32,17 +45,26 @@ public class GroupService {
             group.setParticipants(new ArrayList<>());
         }
 
-        // Add current user as host and participant
-        group.getHosts().add(currentUser);
-        group.getParticipants().add(currentUser);
-
-        currentUser.getAllGroups().add(group);
+        // Add current user as host only
+        group.getHosts().add(currentUser.getUserEmail());
 
         // Initialize rating
-        Rating rating = new Rating();
-        group.setRating(rating);
+        //Rating rating = new Rating();
+        //group.setRating(rating);
 
-        return groupRepository.save(group);
+        // Save the group first to get the ID
+        Group savedGroup = groupRepository.save(group);
+
+        // Update user's hostedGroups list (assuming User has a hostedGroups field)
+        if (currentUser.getHostedGroups() == null) {
+            currentUser.setHostedGroups(new ArrayList<>());
+        }
+        currentUser.getHostedGroups().add(savedGroup.getGroupId());
+
+        // Save the updated user
+        userRepository.save(currentUser);
+
+        return savedGroup;
     }
 
     public Group getGroupById(Long groupId) {
@@ -54,6 +76,7 @@ public class GroupService {
 
 
     //TODO: Needs to be fixed
+    /*
     public List<Group> searchGroups(String keyword) {
         return groupRepository.searchByKeyword(keyword);
     }
@@ -156,4 +179,6 @@ public class GroupService {
         User user = userService.getUserByEmail(userEmail);
         return groupRepository.findByHostsContains(user);
     }
+
+     */
 }

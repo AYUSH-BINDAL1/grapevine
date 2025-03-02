@@ -1,6 +1,7 @@
 package com.grapevine.controller;
 
 import com.grapevine.model.Group;
+import com.grapevine.model.ShortGroup;
 import com.grapevine.model.User;
 import com.grapevine.service.GroupService;
 import com.grapevine.service.UserService;
@@ -26,6 +27,12 @@ public class GroupController {
         return groupService.getAllGroups();
     }
 
+    @GetMapping("/all-short")
+    public List<ShortGroup> getAllShortGroups(@RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        //Returns all the groups in our database
+        return groupService.getAllShortGroups();
+    }
+
     @PostMapping("/create")
     public Group createGroup(
             @RequestHeader(name = "Session-Id", required = true) String sessionId,
@@ -49,6 +56,7 @@ public class GroupController {
 
 
     //TODO: Needs to be fixed
+    /*
     @GetMapping("/search")
     public ResponseEntity<List<Group>> searchGroups(
             @RequestParam String keyword,
@@ -102,6 +110,7 @@ public class GroupController {
         Group group = groupService.addRating(groupId, score, review, sessionId);
         return ResponseEntity.ok(group);
     }
+     */
 
 
 }
