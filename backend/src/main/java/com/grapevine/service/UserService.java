@@ -68,6 +68,7 @@ public class UserService {
         if (updatedUser.getCourses() != null) existingUser.setCourses(updatedUser.getCourses());
         if (updatedUser.getAvailableTimes() != null) existingUser.setAvailableTimes(updatedUser.getAvailableTimes());
         if (updatedUser.getProfilePicturePath() != null) existingUser.setProfilePicturePath(updatedUser.getProfilePicturePath());
+        if (updatedUser.getWeeklyAvailability() != null) existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
 
         // Password should be handled separately with proper validation and encryption
         // Role changes might require special authorization
