@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Registration from './components/Registration';
 import Login from './components/Login';
 import Confirmation from './components/Confirmation';
+import Profile from './components/Profile';
 import profileImage from './assets/temp-profile.webp';
 import './App.css';
 
@@ -39,6 +40,7 @@ function App() {
         <Route path="/Registration" element={<Registration />} />
         <Route path="/Confirmation" element={<Confirmation />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/Profile" element={<Profile />}/>
       </Routes>
     </Router>
   );
