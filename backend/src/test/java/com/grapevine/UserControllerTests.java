@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -151,5 +152,53 @@ public class UserControllerTests {
 
         assertThrows(InvalidSessionException.class,
                 () -> userController.getCurrentUser(testSessionId));
+    }
+
+    @Test
+    void testUpdateUser_Success() {
+        User updatedUser = new User();
+        updatedUser.setName("Updated Name");
+        updatedUser.setBiography("New bio");
+
+        // Mock session validation to return the same user (user updating their own profile)
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.updateUser(eq("test@example.com"), any(User.class))).thenReturn(updatedUser);
+
+        User result = userController.updateUser("test@example.com", updatedUser, testSessionId);
+
+        assertNotNull(result);
+        assertEquals("Updated Name", result.getName());
+        assertEquals("New bio", result.getBiography());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).updateUser(eq("test@example.com"), any(User.class));
+    }
+
+    @Test
+    void testUpdateUser_ForbiddenOtherUser() {
+        User updatedUser = new User();
+        updatedUser.setName("Updated Name");
+
+        User differentUser = new User();
+        differentUser.setUserEmail("different@example.com");
+
+        // Mock session validation to return a different user than the one being updated
+        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
+
+        assertThrows(ResponseStatusException.class,
+                () -> userController.updateUser("test@example.com", updatedUser, testSessionId));
+
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).updateUser(anyString(), any(User.class));
+    }
+
+    @Test
+    void testUpdateUser_InvalidSession() {
+        User updatedUser = new User();
+
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        assertThrows(InvalidSessionException.class,
+                () -> userController.updateUser("test@example.com", updatedUser, testSessionId));
     }
 }
