@@ -2,6 +2,20 @@ import React from "react";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 
+<datalist id="valid-times">
+    <option value='12'></option>
+    <option value='1'></option>
+    <option value='2'></option>
+    <option value='3'></option>
+    <option value='4'></option>
+    <option value='5'></option>
+    <option value='6'></option>
+    <option value='7'></option>
+    <option value='8'></option>
+    <option value='9'></option>
+    <option value='10'></option>
+    <option value='11'></option>
+</datalist>
 
 function Profile() {
 return (
@@ -26,11 +40,11 @@ return (
             <div className="time-input">
                     <label>
                         Start Time:
-                        <input type="time" step={3600}/>
+                        <input type="time" list="valid-times" step={3600}/>
                     </label>
                     <label>
                         End Time:
-                        <input type="time" step={3600}/>
+                        <input type="time" list="valid-times" step={3600}/>
                     </label>
                     <select>
                         <option value="">Select Day</option>
