@@ -1,6 +1,7 @@
 package com.grapevine.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,15 +24,19 @@ import java.util.List;
 public class User {
 
     @Id
+    @NotNull
     @Column(name = "user_email", nullable = false)
     private String userEmail;
 
+    @NotNull
     @Column(name = "password", nullable = false)
     private String password;
 
+    @NotNull
     @Column(name = "name", nullable = false)
     private String name;
 
+    @NotNull
     @Column(name = "birthday", nullable = false)
     private LocalDate birthday;
 
@@ -80,6 +85,20 @@ public class User {
 
     @Column(name = "profile_picture")
     private String profilePicturePath;
+
+    @Column(name = "weekly_availability", length = 168)
+    private String weeklyAvailability;
+
+    // Initialize with all slots unavailable
+    {
+        StringBuilder sb = new StringBuilder();
+        for (int day = 0; day < 7; day++) {
+            for (int hour = 0; hour < 24; hour++) {
+                sb.append('0');
+            }
+        }
+        weeklyAvailability = sb.toString();
+    }
 
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 

@@ -1,5 +1,6 @@
 package com.grapevine.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import com.grapevine.model.User;
@@ -7,6 +8,7 @@ import com.grapevine.model.login.LoginRequest;
 import com.grapevine.model.login.LoginResponse;
 import com.grapevine.service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/users")
@@ -53,5 +55,21 @@ public class UserController {
     @GetMapping("/me")
     public User getCurrentUser(@RequestHeader(name = "Session-Id", required = false) String sessionId) {
         return userService.validateSession(sessionId);
+    }
+
+    @PutMapping("/{userEmail}")
+    public User updateUser(
+            @PathVariable String userEmail,
+            @RequestBody User updatedUser,
+            @RequestHeader(name = "Session-Id", required = false) String sessionId) {
+        // Validate session before allowing update
+        User currentUser = userService.validateSession(sessionId);
+
+        // Only allow users to update their own profile or implement admin check here
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own profile");
+        }
+
+        return userService.updateUser(userEmail, updatedUser);
     }
 }
