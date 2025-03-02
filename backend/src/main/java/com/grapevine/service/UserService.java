@@ -1,6 +1,7 @@
 package com.grapevine.service;
 
 import com.grapevine.exception.UserNotFoundException;
+import com.grapevine.model.Group;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import com.grapevine.model.User;
@@ -11,11 +12,9 @@ import com.grapevine.exception.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Random;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -112,31 +111,63 @@ public class UserService {
         }
     }
 
-    //Add parameter MultiPartFile profilePicture when doing profile picture
     public User updateUser(String userEmail, User updatedUser) {
         User existingUser = getUserByEmail(userEmail);
 
-        // Update the fields that can be modified
-        if (updatedUser.getName() != null)
+        //Update the fields that can be modified
+        if (updatedUser.getName() != null) {
             existingUser.setName(updatedUser.getName());
-        if (updatedUser.getBiography() != null)
+        }
+        if (updatedUser.getBiography() != null) {
             existingUser.setBiography(updatedUser.getBiography());
-        if (updatedUser.getYear() != null)
+        }
+        if (updatedUser.getYear() != null) {
             existingUser.setYear(updatedUser.getYear());
-        if (updatedUser.getMajors() != null)
+        }
+        if (updatedUser.getMajors() != null) {
             existingUser.setMajors(updatedUser.getMajors());
-        if (updatedUser.getMinors() != null)
+        }
+        if (updatedUser.getMinors() != null) {
             existingUser.setMinors(updatedUser.getMinors());
-        if (updatedUser.getCourses() != null)
+        }
+        if (updatedUser.getCourses() != null) {
             existingUser.setCourses(updatedUser.getCourses());
-        if (updatedUser.getAvailableTimes() != null)
+        }
+        if (updatedUser.getAvailableTimes() != null) {
             existingUser.setAvailableTimes(updatedUser.getAvailableTimes());
-
-        // Password should be handled separately with proper validation and encryption
-        // Role changes might require special authorization
-
+        }
+        if(updatedUser.getAllGroups() != null) {
+            existingUser.setAllGroups(updatedUser.getAllGroups());
+        }
+        //Password should be handled separately with proper validation and encryption
+        //Role changes might require special authorization
         return userRepository.save(existingUser);
     }
 
+    public List<Group> getAllGroups(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        //No filtering
+        return currentUser.getAllGroups();
+    }
+
+    public List<Group> getHostedGroups(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+
+        //Filter groups where the user is a host
+        return currentUser.getAllGroups().stream()
+                .filter(group -> group.getHosts().stream()
+                        .anyMatch(host -> host.getUserEmail().equals(userEmail)))
+                .collect(Collectors.toList());
+    }
+
+    public List<Group> getJoinedGroups(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+
+        //Filter groups where the user is a participant but NOT a host
+        return currentUser.getAllGroups().stream()
+                .filter(group -> !group.getHosts().stream()
+                        .anyMatch(host -> host.getUserEmail().equals(userEmail)))
+                .collect(Collectors.toList());
+    }
 
 }

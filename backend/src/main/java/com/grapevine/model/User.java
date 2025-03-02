@@ -83,5 +83,8 @@ public class User {
     @Column(name = "times")
     private List<ZonedDateTime> availableTimes;
 
+    @ManyToMany(mappedBy = "participants")
+    private List<Group> allGroups;
 
+    //Additional Attributes: Account Creation Date, Last Online Date, Groups List
 }
