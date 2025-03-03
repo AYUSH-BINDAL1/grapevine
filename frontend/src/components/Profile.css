@@ -195,3 +195,56 @@
 .add-time:hover {
     background-color: #7aa875;
 }
+
+.availability-preview {
+    margin-top: 20px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.availability-preview h4 {
+    color: #333;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.availability-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.day-row {
+    display: flex;
+    align-items: center;
+}
+
+.day-name {
+    width: 100px;
+    font-weight: bold;
+    color: #555;
+}
+
+.hour-blocks {
+    display: flex;
+    flex-grow: 1;
+}
+
+.hour-block {
+    height: 20px;
+    flex-grow: 1;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    transition: background-color 0.2s;
+}
+
+.hour-block.available {
+    background-color: #8ebd89;
+}
+
+.hour-block:hover {
+    opacity: 0.8;
+    cursor: pointer;
+}
