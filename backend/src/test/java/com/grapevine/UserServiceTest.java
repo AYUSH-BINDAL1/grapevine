@@ -256,7 +256,7 @@ class UserServiceTest {
         // Assert
         assertEquals("Updated Name", result.getName());
         assertEquals("New bio", result.getBiography());
-        assertEquals("Sophomore", result.getYear());
+        assertEquals(2027, result.getYear());
         assertEquals(Arrays.asList("Computer Science"), result.getMajors());
         assertEquals(Arrays.asList("Mathematics"), result.getMinors());
         assertEquals(Arrays.asList("CS101", "MATH201"), result.getCourses());
