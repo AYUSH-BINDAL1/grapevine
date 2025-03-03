@@ -61,26 +61,6 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + userEmail));
     }
 
-    public User updateUser(String userEmail, User updatedUser) {
-        User existingUser = getUserByEmail(userEmail);
-
-        // Update the fields that can be modified
-        if (updatedUser.getName() != null) existingUser.setName(updatedUser.getName());
-        if (updatedUser.getBiography() != null) existingUser.setBiography(updatedUser.getBiography());
-        if (updatedUser.getYear() != null) existingUser.setYear(updatedUser.getYear());
-        if (updatedUser.getMajors() != null) existingUser.setMajors(updatedUser.getMajors());
-        if (updatedUser.getMinors() != null) existingUser.setMinors(updatedUser.getMinors());
-        if (updatedUser.getCourses() != null) existingUser.setCourses(updatedUser.getCourses());
-        if (updatedUser.getAvailableTimes() != null) existingUser.setAvailableTimes(updatedUser.getAvailableTimes());
-        if (updatedUser.getProfilePicturePath() != null) existingUser.setProfilePicturePath(updatedUser.getProfilePicturePath());
-        if (updatedUser.getWeeklyAvailability() != null) existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
-
-        // Password should be handled separately with proper validation and encryption
-        // Role changes might require special authorization
-
-        return userRepository.save(existingUser);
-    }
-
     public String login(String email, String password) {
         User user = userRepository.findById(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
