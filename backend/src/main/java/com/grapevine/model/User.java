@@ -73,9 +73,21 @@ public class User {
     //@Column(name = "friend_emails")
     //private List<String> friends;
 
-    //@ElementCollection
-    //@Column(name = "instructor_emails")
-    //private List<String> instructors;
+    @Column(name = "weekly_availability", length = 168)
+    private String weeklyAvailability;
+
+    // Initialize with all slots unavailable
+    {
+        StringBuilder sb = new StringBuilder();
+        for (int day = 0; day < 7; day++) {
+            for (int hour = 0; hour < 24; hour++) {
+                sb.append('0');
+            }
+        }
+        weeklyAvailability = sb.toString();
+    }
+
+    //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 
     //Additional Attributes: Account Creation Date, Last Online Date, Profile Picture
 }
