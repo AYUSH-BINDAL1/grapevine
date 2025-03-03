@@ -43,7 +43,7 @@ public class UserControllerTests {
         testUser.setPassword("password123");
         testUser.setName("Test User");
         testUser.setBirthday(LocalDate.of(2000, 1, 1));
-        testUser.setRole(User.Role.STUDENT);
+        //testUser.setRole(User.Role.STUDENT);
         testUser.setMajors(Arrays.asList("Computer Science"));
     }
 
