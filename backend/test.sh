@@ -98,8 +98,8 @@ register_and_verify_user() {
 }
 
 # Register two users
-register_and_verify_user "testuser1@example.com" "pw1" "Test User 1"
-register_and_verify_user "testuser2@example.com" "pw2" "Test User 2"
+register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
+register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
 
 echo -e "\nLogin to test the users:"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"testuser1@example.com\", \"password\": \"pw1\"}'"
