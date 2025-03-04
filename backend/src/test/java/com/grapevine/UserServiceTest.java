@@ -4,10 +4,8 @@ import com.grapevine.exception.InvalidCredentialsException;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.exception.InvalidVerificationTokenException;
 import com.grapevine.exception.UserNotFoundException;
-import com.grapevine.model.Group;
-import com.grapevine.model.ShortGroup;
-import com.grapevine.model.User;
-import com.grapevine.model.VerificationToken;
+import com.grapevine.model.*;
+import com.grapevine.repository.EventRepository;
 import com.grapevine.repository.GroupRepository;
 import com.grapevine.repository.UserRepository;
 import com.grapevine.repository.VerificationTokenRepository;
@@ -40,6 +38,9 @@ class UserServiceTest {
     private GroupRepository groupRepository;
 
     @Mock
+    private EventRepository eventRepository;
+
+    @Mock
     private EmailService emailService;
 
     @InjectMocks
@@ -59,6 +60,8 @@ class UserServiceTest {
         testUser.setName("Test User");
         testUser.setHostedGroups(new ArrayList<>());
         testUser.setJoinedGroups(new ArrayList<>());
+        testUser.setHostedEvents(new ArrayList<>());  // Add this line
+        testUser.setJoinedEvents(new ArrayList<>());  // Add this line
 
         testToken = new VerificationToken("ABC123", "test@example.com");
 
@@ -403,5 +406,147 @@ class UserServiceTest {
         assertEquals(1, result.size());
         assertEquals(2L, result.get(0).getGroupId());
         assertEquals("Joined Group", result.get(0).getName());
+    }
+
+    @Test
+    void getAllEvents_shouldReturnAllEvents() {
+        // Arrange
+        testUser.setHostedEvents(Arrays.asList(1L));
+        testUser.setJoinedEvents(Arrays.asList(2L));
+
+        Event event1 = new Event();
+        event1.setEventId(1L);
+        event1.setName("Hosted Event");
+
+        Event event2 = new Event();
+        event2.setEventId(2L);
+        event2.setName("Joined Event");
+
+        when(userRepository.findById("test@example.com")).thenReturn(Optional.of(testUser));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(event1));
+        when(eventRepository.findById(2L)).thenReturn(Optional.of(event2));
+
+        // Act
+        List<Event> result = userService.getAllEvents("test@example.com");
+
+        // Assert
+        assertEquals(2, result.size());
+        assertTrue(result.contains(event1));
+        assertTrue(result.contains(event2));
+    }
+
+    @Test
+    void getAllShortEvents_shouldReturnAllShortEvents() {
+        // Arrange
+        testUser.setHostedEvents(Arrays.asList(1L));
+        testUser.setJoinedEvents(Arrays.asList(2L));
+
+        Event event1 = new Event();
+        event1.setEventId(1L);
+        event1.setName("Hosted Event");
+
+        Event event2 = new Event();
+        event2.setEventId(2L);
+        event2.setName("Joined Event");
+
+        when(userRepository.findById("test@example.com")).thenReturn(Optional.of(testUser));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(event1));
+        when(eventRepository.findById(2L)).thenReturn(Optional.of(event2));
+
+        // Act
+        List<ShortEvent> result = userService.getAllShortEvents("test@example.com");
+
+        // Assert
+        assertEquals(2, result.size());
+        assertEquals(1L, result.get(0).getEventId());
+        assertEquals("Hosted Event", result.get(0).getName());
+        assertEquals(2L, result.get(1).getEventId());
+        assertEquals("Joined Event", result.get(1).getName());
+    }
+
+    @Test
+    void getHostedEvents_shouldReturnOnlyHostedEvents() {
+        // Arrange
+        testUser.setHostedEvents(Arrays.asList(1L));
+        testUser.setJoinedEvents(Arrays.asList(2L));
+
+        Event event1 = new Event();
+        event1.setEventId(1L);
+        event1.setName("Hosted Event");
+
+        when(userRepository.findById("test@example.com")).thenReturn(Optional.of(testUser));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(event1));
+
+        // Act
+        List<Event> result = userService.getHostedEvents("test@example.com");
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(event1, result.get(0));
+    }
+
+    @Test
+    void getHostedShortEvents_shouldReturnOnlyHostedShortEvents() {
+        // Arrange
+        testUser.setHostedEvents(Arrays.asList(1L));
+        testUser.setJoinedEvents(Arrays.asList(2L));
+
+        Event event1 = new Event();
+        event1.setEventId(1L);
+        event1.setName("Hosted Event");
+
+        when(userRepository.findById("test@example.com")).thenReturn(Optional.of(testUser));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(event1));
+
+        // Act
+        List<ShortEvent> result = userService.getHostedShortEvents("test@example.com");
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getEventId());
+        assertEquals("Hosted Event", result.get(0).getName());
+    }
+
+    @Test
+    void getJoinedEvents_shouldReturnOnlyJoinedEvents() {
+        // Arrange
+        testUser.setHostedEvents(Arrays.asList(1L));
+        testUser.setJoinedEvents(Arrays.asList(2L));
+
+        Event event2 = new Event();
+        event2.setEventId(2L);
+        event2.setName("Joined Event");
+
+        when(userRepository.findById("test@example.com")).thenReturn(Optional.of(testUser));
+        when(eventRepository.findById(2L)).thenReturn(Optional.of(event2));
+
+        // Act
+        List<Event> result = userService.getJoinedEvents("test@example.com");
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(event2, result.get(0));
+    }
+
+    @Test
+    void getJoinedShortEvents_shouldReturnOnlyJoinedShortEvents() {
+        // Arrange
+        testUser.setHostedEvents(Arrays.asList(1L));
+        testUser.setJoinedEvents(Arrays.asList(2L));
+
+        Event event2 = new Event();
+        event2.setEventId(2L);
+        event2.setName("Joined Event");
+
+        when(userRepository.findById("test@example.com")).thenReturn(Optional.of(testUser));
+        when(eventRepository.findById(2L)).thenReturn(Optional.of(event2));
+
+        // Act
+        List<ShortEvent> result = userService.getJoinedShortEvents("test@example.com");
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(2L, result.get(0).getEventId());
+        assertEquals("Joined Event", result.get(0).getName());
     }
 }

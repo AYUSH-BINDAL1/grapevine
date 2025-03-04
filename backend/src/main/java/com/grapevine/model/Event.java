@@ -1,9 +1,5 @@
 package com.grapevine.model;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -17,17 +13,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "groups")
+@Table(name = "events")
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
-public class Group {
+public class Event {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "group_id")
-    private Long groupId;
+    @Column(name = "event_id")
+    private Long eventId;
 
     @NotNull
     @Column(name = "name", nullable = false)
@@ -40,6 +36,20 @@ public class Group {
     @Column(name = "max_users", nullable = false)
     private Integer maxUsers;
 
+    @Column(name = "is_public")
+    private Boolean isPublic;
+
+    @ManyToOne
+    @JoinColumn(name = "location_id")
+    private Location location;
+
+    @Column(name = "event_time")
+    private LocalDateTime eventTime;
+
+    @NotNull
+    @Column(name = "group_id", nullable = false)
+    private Long groupId;
+
     @ElementCollection
     @Column(name = "host_emails")
     private List<String> hosts;
@@ -48,11 +58,6 @@ public class Group {
     @Column(name = "participant_emails")
     private List<String> participants;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "rating_id")
-    @JsonIgnoreProperties("group")
-    private Rating rating;
-
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -60,8 +65,4 @@ public class Group {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @ElementCollection
-    @Column(name = "event_ids")
-    private List<Long> events;
 }

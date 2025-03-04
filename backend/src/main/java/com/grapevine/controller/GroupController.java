@@ -1,8 +1,11 @@
 package com.grapevine.controller;
 
 import com.grapevine.model.Group;
+import com.grapevine.model.Event;
+import com.grapevine.model.ShortEvent;
 import com.grapevine.model.ShortGroup;
 import com.grapevine.model.User;
+import com.grapevine.service.EventService;
 import com.grapevine.service.GroupService;
 import com.grapevine.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ import java.util.List;
 public class GroupController {
     private final GroupService groupService;
     private final UserService userService;
+    private final EventService eventService;
 
 
     @GetMapping("/all")
@@ -52,7 +56,36 @@ public class GroupController {
         return groupService.getGroupById(groupId);
     }
 
+    @PostMapping("/{groupId}/events/create")
+    public Event createEvent(
+            @PathVariable Long groupId,
+            @RequestBody Event event,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        // Create event and associate with group
+        return eventService.createEvent(event, groupId, currentUser);
+    }
 
+    @GetMapping("/{groupId}/events")
+    public List<Event> getGroupEvents(
+            @PathVariable Long groupId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        userService.validateSession(sessionId);
+        // Get all events for this group
+        return eventService.getEventsByGroupId(groupId);
+    }
+
+    @GetMapping("/{groupId}/events-short")
+    public List<ShortEvent> getGroupShortEvents(
+            @PathVariable Long groupId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        userService.validateSession(sessionId);
+        // Get all events for this group in short form
+        return eventService.getShortEventsByGroupId(groupId);
+    }
 
 
     //TODO: Needs to be fixed

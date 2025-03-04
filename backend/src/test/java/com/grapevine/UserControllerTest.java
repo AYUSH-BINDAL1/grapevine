@@ -4,9 +4,7 @@ import com.grapevine.controller.UserController;
 import com.grapevine.exception.InvalidCredentialsException;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.exception.UserNotFoundException;
-import com.grapevine.model.Group;
-import com.grapevine.model.ShortGroup;
-import com.grapevine.model.User;
+import com.grapevine.model.*;
 import com.grapevine.model.login.LoginRequest;
 import com.grapevine.model.login.LoginResponse;
 import com.grapevine.service.UserService;
@@ -405,4 +403,239 @@ public class UserControllerTest {
         assertThrows(org.springframework.web.server.ResponseStatusException.class,
                 () -> userController.getJoinedShortGroups("test@example.com", testSessionId));
     }
+    
+    @Test
+    void testGetAllEvents_Success() {
+        Event event1 = new Event();
+        event1.setEventId(1L);
+        event1.setName("Event 1");
+
+        Event event2 = new Event();
+        event2.setEventId(2L);
+        event2.setName("Event 2");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getAllEvents("test@example.com")).thenReturn(Arrays.asList(event1, event2));
+
+        List<Event> result = userController.getAllEvents("test@example.com", testSessionId);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(1L, result.get(0).getEventId());
+        assertEquals(2L, result.get(1).getEventId());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getAllEvents("test@example.com");
+    }
+
+    @Test
+    void testGetAllEvents_InvalidSession() {
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        assertThrows(InvalidSessionException.class,
+                () -> userController.getAllEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetAllEvents_ForbiddenAction() {
+        User differentUser = new User();
+        differentUser.setUserEmail("different@example.com");
+
+        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
+
+        assertThrows(ResponseStatusException.class,
+                () -> userController.getAllEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetAllShortEvents_Success() {
+        ShortEvent event1 = new ShortEvent(1L, "Event 1");
+        ShortEvent event2 = new ShortEvent(2L, "Event 2");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getAllShortEvents("test@example.com")).thenReturn(Arrays.asList(event1, event2));
+
+        List<ShortEvent> result = userController.getAllShortEvents("test@example.com", testSessionId);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(1L, result.get(0).getEventId());
+        assertEquals("Event 1", result.get(0).getName());
+        assertEquals(2L, result.get(1).getEventId());
+        assertEquals("Event 2", result.get(1).getName());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getAllShortEvents("test@example.com");
+    }
+
+    @Test
+    void testGetAllShortEvents_InvalidSession() {
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        assertThrows(InvalidSessionException.class,
+                () -> userController.getAllShortEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetAllShortEvents_ForbiddenAction() {
+        User differentUser = new User();
+        differentUser.setUserEmail("different@example.com");
+
+        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
+
+        assertThrows(ResponseStatusException.class,
+                () -> userController.getAllShortEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetHostedEvents_Success() {
+        Event event = new Event();
+        event.setEventId(1L);
+        event.setName("Hosted Event");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getHostedEvents("test@example.com")).thenReturn(List.of(event));
+
+        List<Event> result = userController.getHostedEvents("test@example.com", testSessionId);
+
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getEventId());
+        assertEquals("Hosted Event", result.get(0).getName());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getHostedEvents("test@example.com");
+    }
+
+    @Test
+    void testGetHostedEvents_InvalidSession() {
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        assertThrows(InvalidSessionException.class,
+                () -> userController.getHostedEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetHostedEvents_ForbiddenAction() {
+        User differentUser = new User();
+        differentUser.setUserEmail("different@example.com");
+
+        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
+
+        assertThrows(ResponseStatusException.class,
+                () -> userController.getHostedEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetHostedShortEvents_Success() {
+        ShortEvent event = new ShortEvent(1L, "Hosted Event");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getHostedShortEvents("test@example.com")).thenReturn(List.of(event));
+
+        List<ShortEvent> result = userController.getHostedShortEvents("test@example.com", testSessionId);
+
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getEventId());
+        assertEquals("Hosted Event", result.get(0).getName());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getHostedShortEvents("test@example.com");
+    }
+
+    @Test
+    void testGetHostedShortEvents_InvalidSession() {
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        assertThrows(InvalidSessionException.class,
+                () -> userController.getHostedShortEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetHostedShortEvents_ForbiddenAction() {
+        User differentUser = new User();
+        differentUser.setUserEmail("different@example.com");
+
+        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
+
+        assertThrows(ResponseStatusException.class,
+                () -> userController.getHostedShortEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetJoinedEvents_Success() {
+        Event event = new Event();
+        event.setEventId(2L);
+        event.setName("Joined Event");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getJoinedEvents("test@example.com")).thenReturn(List.of(event));
+
+        List<Event> result = userController.getJoinedEvents("test@example.com", testSessionId);
+
+        assertEquals(1, result.size());
+        assertEquals(2L, result.get(0).getEventId());
+        assertEquals("Joined Event", result.get(0).getName());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getJoinedEvents("test@example.com");
+    }
+
+    @Test
+    void testGetJoinedEvents_InvalidSession() {
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        assertThrows(InvalidSessionException.class,
+                () -> userController.getJoinedEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetJoinedEvents_ForbiddenAction() {
+        User differentUser = new User();
+        differentUser.setUserEmail("different@example.com");
+
+        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
+
+        assertThrows(ResponseStatusException.class,
+                () -> userController.getJoinedEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetJoinedShortEvents_Success() {
+        ShortEvent event = new ShortEvent(2L, "Joined Event");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getJoinedShortEvents("test@example.com")).thenReturn(List.of(event));
+
+        List<ShortEvent> result = userController.getJoinedShortEvents("test@example.com", testSessionId);
+
+        assertEquals(1, result.size());
+        assertEquals(2L, result.get(0).getEventId());
+        assertEquals("Joined Event", result.get(0).getName());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getJoinedShortEvents("test@example.com");
+    }
+
+    @Test
+    void testGetJoinedShortEvents_InvalidSession() {
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        assertThrows(InvalidSessionException.class,
+                () -> userController.getJoinedShortEvents("test@example.com", testSessionId));
+    }
+
+    @Test
+    void testGetJoinedShortEvents_ForbiddenAction() {
+        User differentUser = new User();
+        differentUser.setUserEmail("different@example.com");
+
+        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
+
+        assertThrows(ResponseStatusException.class,
+                () -> userController.getJoinedShortEvents("test@example.com", testSessionId));
+    }
+
+
+
 }
+

@@ -1,16 +1,13 @@
 package com.grapevine.controller;
 
-import com.grapevine.model.Group;
-import com.grapevine.model.ShortGroup;
+import com.grapevine.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
-import com.grapevine.model.User;
 import com.grapevine.model.login.LoginRequest;
 import com.grapevine.model.login.LoginResponse;
 import com.grapevine.service.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -155,6 +152,90 @@ public class UserController {
         }
         //Return all groups the user is a participant of in short form
         return userService.getJoinedShortGroups(userEmail);
+    }
+
+    @GetMapping("/{userEmail}/all-events")
+    public List<Event> getAllEvents(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        //Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view events you are a part of");
+        }
+        //Return all events the user is a part of (Hosted and Joined)
+        return userService.getAllEvents(userEmail);
+    }
+
+    @GetMapping("/{userEmail}/all-events-short")
+    public List<ShortEvent> getAllShortEvents(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        //Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view events you are a part of");
+        }
+        //Return all events the user is a part of in short form
+        return userService.getAllShortEvents(userEmail);
+    }
+
+    @GetMapping("/{userEmail}/hosted-events")
+    public List<Event> getHostedEvents(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        //Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view events you host");
+        }
+        //Return all events the user is hosting
+        return userService.getHostedEvents(userEmail);
+    }
+
+    @GetMapping("/{userEmail}/hosted-events-short")
+    public List<ShortEvent> getHostedShortEvents(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        //Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view events you host");
+        }
+        //Return all events the user is hosting in short form
+        return userService.getHostedShortEvents(userEmail);
+    }
+
+    @GetMapping("/{userEmail}/joined-events")
+    public List<Event> getJoinedEvents(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        //Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view events you participate in");
+        }
+        //Return all events the user is participating in
+        return userService.getJoinedEvents(userEmail);
+    }
+
+    @GetMapping("/{userEmail}/joined-events-short")
+    public List<ShortEvent> getJoinedShortEvents(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        //Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view events you participate in");
+        }
+        //Return all events the user is participating in, in short form
+        return userService.getJoinedShortEvents(userEmail);
     }
 
     // sample of how other endpoints would use the session
