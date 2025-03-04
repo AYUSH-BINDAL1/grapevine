@@ -1,4 +1,18 @@
-# API Endpoints
+# Local Testing Guide
+The script sets up a complete development environment for the grapevine application, initializing Docker containers and populating a clean database with test users. To use the script, follow these two simple steps:
+
+1. cd to the `grapevine/backend` directory and make the script executable: `chmod +x test.sh`
+2. Run the script: `./test.sh`
+
+The database is automatically cleaned when started and is populated with the following entities:
+
+| Email | Password | Name | Birthday | Verified |
+|-------|----------|------|----------|----------|
+| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes |
+| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
+
+
+# API Endpoints Reference
 
 ## Users
 
