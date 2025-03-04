@@ -81,7 +81,7 @@ function Profile() {
       alert("Please select a day, start time, and end time");
       return;
     }
-
+  
     // Convert day to starting index (24 hours per day)
     const dayIndices = {
       "monday": 0,
@@ -103,7 +103,7 @@ function Profile() {
       alert("End time must be after start time");
       return;
     }
-
+  
     // Create a new availability string
     let newAvailabilityString = availabilityString.split('');
     
@@ -112,10 +112,10 @@ function Profile() {
       newAvailabilityString[dayIndex + hour] = '1';
     }
     
-    setAvailabilityString(newAvailabilityString.join(''));
-
+    const updatedAvailabilityString = newAvailabilityString.join('');
+  
     if (!userData) return;
-
+  
     try {
       const sessionId = localStorage.getItem('sessionId');
       
@@ -123,10 +123,10 @@ function Profile() {
         alert("You must be logged in to save availability");
         return;
       }
-
+  
       const response = await axios.put(
         `http://localhost:8080/users/${userData.userEmail}`,
-        { weeklyAvailability: availabilityString },
+        { weeklyAvailability: updatedAvailabilityString },
         {
           headers: {
             'Content-Type': 'application/json',
@@ -134,10 +134,12 @@ function Profile() {
           }
         }
       );
-
+  
       if (response.status === 200) {
+        setAvailabilityString(updatedAvailabilityString);
+        
         // Update the stored user data
-        const updatedUserData = { ...userData, weeklyAvailability: availabilityString };
+        const updatedUserData = { ...userData, weeklyAvailability: updatedAvailabilityString };
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
         
