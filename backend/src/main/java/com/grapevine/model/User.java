@@ -1,5 +1,8 @@
 package com.grapevine.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -40,17 +43,6 @@ public class User {
     @Column(name = "birthday", nullable = false)
     private LocalDate birthday;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Role role;
-
-    public enum Role {
-        STUDENT,
-        UTA,
-        GTA,
-        PROFESSOR
-    }
-
     @Column(name = "biography")
     private String biography;
 
@@ -69,23 +61,42 @@ public class User {
     @Column(name = "courses")
     private List<String> courses;
 
-    @ManyToMany
-    @JoinTable(name = "user_friends", joinColumns = @JoinColumn(name = "user_email"), inverseJoinColumns =
-    @JoinColumn(name = "friend_email"))
-    private List<User> friends;
-
-    @ManyToMany
-    @JoinTable(name = "user_instructors", joinColumns = @JoinColumn(name = "user_email"), inverseJoinColumns =
-    @JoinColumn(name = "instructor_email"))
-    private List<User> instructors;
+    @ElementCollection
+    @Column(name = "hosted_group_ids")
+    private List<Long> hostedGroups;
 
     @ElementCollection
-    @Column(name = "times")
-    private List<ZonedDateTime> availableTimes;
+    @Column(name = "joined_group_ids")
+    private List<Long> joinedGroups;
 
-    @Column(name = "profile_picture")
-    private String profilePicturePath;
+    // Add these fields to the User class
+    @ElementCollection
+    @Column(name = "hosted_event_ids")
+    private List<Long> hostedEvents;
+
+    @ElementCollection
+    @Column(name = "joined_event_ids")
+    private List<Long> joinedEvents;
+
+    //@ElementCollection
+    //@Column(name = "friend_emails")
+    //private List<String> friends;
+
+    @Column(name = "weekly_availability", length = 168)
+    private String weeklyAvailability;
+
+    // Initialize with all slots unavailable
+    {
+        StringBuilder sb = new StringBuilder();
+        for (int day = 0; day < 7; day++) {
+            for (int hour = 0; hour < 24; hour++) {
+                sb.append('0');
+            }
+        }
+        weeklyAvailability = sb.toString();
+    }
 
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 
+    //Additional Attributes: Account Creation Date, Last Online Date, Profile Picture
 }
