@@ -67,11 +67,21 @@ public class User {
 
     @ElementCollection
     @Column(name = "joined_group_ids")
-    private List <Long> joinedGroups;
+    private List<Long> joinedGroups;
+
+    // Add these fields to the User class
+    @ElementCollection
+    @Column(name = "hosted_event_ids")
+    private List<Long> hostedEvents;
+
+    @ElementCollection
+    @Column(name = "joined_event_ids")
+    private List<Long> joinedEvents;
 
     //@ElementCollection
     //@Column(name = "friend_emails")
     //private List<String> friends;
+
     @Column(name = "weekly_availability", length = 168)
     private String weeklyAvailability;
 
@@ -87,10 +97,6 @@ public class User {
     }
 
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
-
-    //@ElementCollection
-    //@Column(name = "instructor_emails")
-    //private List<String> instructors;
 
     //Additional Attributes: Account Creation Date, Last Online Date, Profile Picture
 }
