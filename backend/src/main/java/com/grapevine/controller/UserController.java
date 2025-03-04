@@ -238,6 +238,21 @@ public class UserController {
         return userService.getJoinedShortEvents(userEmail);
     }
 
+    @GetMapping("/{userEmail}/preferred-locations")
+    public List<Location> getPreferredLocations(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own preferred locations");
+        }
+
+        // Return all preferred locations for the user
+        return userService.getPreferredLocations(userEmail);
+    }
+
     // sample of how other endpoints would use the session
     // i.e. any request made to an endpoint that requires a user be logged in
     // must have a session id in the **header** (NOT the body)
