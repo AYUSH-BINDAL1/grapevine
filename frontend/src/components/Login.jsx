@@ -26,6 +26,12 @@ function Login() {
       });
 
       if (response.status === 200) {
+        // store session ID and user data in localStorage
+        const { sessionId, user } = response.data;
+        localStorage.setItem('sessionId', sessionId);
+        localStorage.setItem('userData', JSON.stringify(user));
+        
+        // navigate to home page
         navigate('/home');
       }
     } catch (error) {
