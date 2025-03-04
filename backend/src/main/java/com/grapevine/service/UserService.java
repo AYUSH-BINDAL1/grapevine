@@ -2,12 +2,9 @@ package com.grapevine.service;
 
 import com.grapevine.exception.UserNotFoundException;
 import com.grapevine.model.*;
-import com.grapevine.repository.EventRepository;
-import com.grapevine.repository.GroupRepository;
+import com.grapevine.repository.*;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
-import com.grapevine.repository.UserRepository;
-import com.grapevine.repository.VerificationTokenRepository;
 import com.grapevine.exception.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,6 +21,7 @@ public class UserService {
     private final EmailService emailService;
     private final GroupRepository groupRepository;
     private final EventRepository eventRepository;
+    private final LocationRepository locationRepository;
 
     // session storage: sessionId -> SessionInfo
     private final Map<String, SessionInfo> activeSessions = new HashMap<>();
@@ -138,6 +136,9 @@ public class UserService {
         }
         if (updatedUser.getWeeklyAvailability() != null) {
             existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
+        }
+        if (updatedUser.getPreferredLocations() != null) {
+            existingUser.setPreferredLocations(updatedUser.getPreferredLocations());
         }
         //Password should be handled separately with proper validation and encryption
         //Role changes might require special authorization
@@ -343,6 +344,17 @@ public class UserService {
         }
 
         return joinedShortEvents;
+    }
+
+    public List<Location> getPreferredLocations(User currentUser) {
+        List<Location> preferredLocations = new ArrayList<>();
+
+        if (currentUser.getPreferredLocations() != null && !currentUser.getPreferredLocations().isEmpty()) {
+            for (Long locationId : currentUser.getPreferredLocations()) {
+                locationRepository.findById(locationId).ifPresent(preferredLocations::add);
+            }
+        }
+        return preferredLocations;
     }
 
 }
