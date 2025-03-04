@@ -1,5 +1,6 @@
 import './Events.css'
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 function Events() {
     const events = [
