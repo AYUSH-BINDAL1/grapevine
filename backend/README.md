@@ -1,16 +1,63 @@
-# API Endpoints
+# Local Testing Guide
+## The test.sh script provides complete setup for the grapevine server, initializing Docker containers and populating a clean database with test users. To use the script:
+
+### 1. Navigate to the `grapevine/backend` directory and make the script executable: `chmod +x test.sh`
+### 2. Run the script: `./test.sh`
+
+## The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
+
+| Email | Password | Name | Birthday | Verified |
+|-------|----------|------|----------|----------|
+| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes |
+| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
+
+
+# API Endpoints Table
 
 ## Users
 
-| Method | Endpoint                   | Request Body | Path Variable | Query Param | Description                     | Response                           |
-|--------|----------------------------|--------------|---------------|-------------|---------------------------------|------------------------------------|
-| POST   | `/users`                   | User object  | -             | -           | Creates a new user              | Created user object                |
-| GET    | `/users/{userEmail}`       | -            | userEmail     | -           | Retrieves user by email         | User object                        |
-| POST   | `/users/register`          | User object  | -             | -           | Initiates user registration     | Confirmation token                 |
-| POST   | `/users/verify`            | User object  | -             | token       | Verifies email with token       | Created user object                |
-| POST   | `/users/login`             | Login object | -             | -           | Authenticates a user            | Session ID and user object         |
-| GET    | `/users/me`                | -            | -             | -           | Gets current user profile       | User object                        |
-| DELETE | `/users/logout`            | -            | -             | -           | Terminates current session      | Confirmation message               |
+| Method | Endpoint                                 | Request Body | Path Variable | Query Param | Description                       | Response                   |
+|--------|------------------------------------------|--------------|---------------|-------------|-----------------------------------|----------------------------|
+| POST   | `/users`                                 | User object  | -             | -           | Creates a new user                | Created user object        |
+| GET    | `/users/{userEmail}`                     | -            | userEmail     | -           | Retrieves user by email           | User object                |
+| POST   | `/users/register`                        | User object  | -             | -           | Initiates user registration       | Confirmation token         |
+| POST   | `/users/verify`                          | User object  | -             | token       | Verifies email with token         | Created user object        |
+| POST   | `/users/login`                           | Login object | -             | -           | Authenticates a user              | Session ID and user object |
+| GET    | `/users/me`                              | -            | -             | -           | Gets current user profile         | User object                |
+| DELETE | `/users/logout`                          | -            | -             | -           | Terminates current session        | Confirmation message       |
+| PUT    | `/users/{userEmail}`                     | User object  | userEmail     | Session-Id  | Updates user profile              | Updated user object        |
+| GET    | `/users/{userEmail}/all-groups`          | -            | userEmail     | Session-Id  | Gets all groups (hosted & joined) | List of Group objects      |
+| GET    | `/users/{userEmail}/all-groups-short`    | -            | userEmail     | Session-Id  | Gets all groups in short form     | List of ShortGroup objects |
+| GET    | `/users/{userEmail}/hosted-groups`       | -            | userEmail     | Session-Id  | Gets groups user hosts            | List of Group objects      |
+| GET    | `/users/{userEmail}/hosted-groups-short` | -            | userEmail     | Session-Id  | Gets hosted groups in short form  | List of ShortGroup objects |
+| GET    | `/users/{userEmail}/joined-groups`       | -            | userEmail     | Session-Id  | Gets groups user participates in  | List of Group objects      |
+| GET    | `/users/{userEmail}/joined-groups-short` | -            | userEmail     | Session-Id  | Gets joined groups in short form  | List of ShortGroup objects |
+| GET    | `/users/{userEmail}/all-events`          | -            | userEmail     | Session-Id  | Gets all events (hosted & joined) | List of Event objects      |
+| GET    | `/users/{userEmail}/all-events-short`    | -            | userEmail     | Session-Id  | Gets all events in short form     | List of ShortEvent objects |
+| GET    | `/users/{userEmail}/hosted-events`       | -            | userEmail     | Session-Id  | Gets events user hosts            | List of Event objects      |
+| GET    | `/users/{userEmail}/hosted-events-short` | -            | userEmail     | Session-Id  | Gets hosted events in short form  | List of ShortEvent objects |
+| GET    | `/users/{userEmail}/joined-events`       | -            | userEmail     | Session-Id  | Gets events user participates in  | List of Event objects      |
+| GET    | `/users/{userEmail}/joined-events-short` | -            | userEmail     | Session-Id  | Gets joined events in short form  | List of ShortEvent objects |
+## Groups
+
+| Method | Endpoint                          | Request Body | Path Variable | Headers    | Description                     | Response                   |
+|--------|-----------------------------------|--------------|---------------|------------|---------------------------------|----------------------------|
+| GET    | `/groups/all`                     | -            | -             | Session-Id | Gets all groups in database     | List of Group objects      |
+| GET    | `/groups/all-short`               | -            | -             | Session-Id | Gets all groups in short form   | List of ShortGroup objects |
+| POST   | `/groups/create`                  | Group object | -             | Session-Id | Creates a new group             | Created Group object       |
+| GET    | `/groups/{groupId}`               | -            | groupId       | Session-Id | Gets a specific group by ID     | Group object               |
+| POST   | `/groups/{groupId}/events/create` | Event object | groupId       | Session-Id | Creates an event for a group    | Created Event object       |
+| GET    | `/groups/{groupId}/events`        | -            | groupId       | Session-Id | Gets all events for a group     | List of Event objects      |
+| GET    | `/groups/{groupId}/events-short`  | -            | groupId       | Session-Id | Gets group events in short form | List of ShortEvent objects |
+
+## Events
+
+| Method | Endpoint                | Request Body | Path Variable | Headers    | Description                    | Response                   |
+|--------|-------------------------|--------------|---------------|------------|--------------------------------|----------------------------|
+| GET    | `/events/all`           | -            | -             | Session-Id | Gets all events in database    | List of Event objects      |
+| GET    | `/events/all-short`     | -            | -             | Session-Id | Gets all events in short form  | List of ShortEvent objects |
+| GET    | `/events/{eventId}`     | -            | eventId       | Session-Id | Gets a specific event by ID    | Event object               |
+*Note:
 
 ## Sample Requests: User Registration
 
@@ -95,7 +142,7 @@ curl --location 'http://localhost:8080/users/test@example.com'
 }
 ```
 
-# Sample Requests: User Login (Registration -> Login)
+## Sample Requests: User Login (Registration -> Login)
 
 ### 1. Register a New User
 
@@ -108,8 +155,7 @@ curl -X POST http://localhost:8080/users/register \
     "userEmail": "test@example.com",
     "password": "password123",
     "name": "Test User",
-    "birthday": "1990-01-15",
-    "role": "STUDENT"
+    "birthday": "1990-01-15"
   }'
 ```
 
@@ -129,8 +175,7 @@ curl -X POST "http://localhost:8080/users/verify?token=ABC123" \
     "userEmail": "test@example.com",
     "password": "password123",
     "name": "Test User",
-    "birthday": "1990-01-15",
-    "role": "STUDENT"
+    "birthday": "1990-01-15"
   }'
 ```
 
