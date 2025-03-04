@@ -4,7 +4,7 @@ The script sets up a complete development environment for the grapevine applicat
 1. cd to the `grapevine/backend` directory and make the script executable: `chmod +x test.sh`
 2. Run the script: `./test.sh`
 
-The database is automatically cleaned when started and is populated with the following entities:
+The database is automatically cleaned when started and is populated with the following entities. You can login into one of the user accounts to do your testing without having to go through the entire registration process.
 
 | Email | Password | Name | Birthday | Verified |
 |-------|----------|------|----------|----------|
