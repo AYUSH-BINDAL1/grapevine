@@ -109,7 +109,7 @@ curl --location 'http://localhost:8080/users/test@example.com'
 }
 ```
 
-# Sample Requests: User Login (Registration -> Login)
+## Sample Requests: User Login (Registration -> Login)
 
 ### 1. Register a New User
 
