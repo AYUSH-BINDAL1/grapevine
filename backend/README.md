@@ -1,4 +1,18 @@
-# API Endpoints
+# Local Testing Guide
+## The test.sh script provides complete setup for the grapevine server, initializing Docker containers and populating a clean database with test users. To use the script:
+
+### 1. Navigate to the `grapevine/backend` directory and make the script executable: `chmod +x test.sh`
+### 2. Run the script: `./test.sh`
+
+## The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
+
+| Email | Password | Name | Birthday | Verified |
+|-------|----------|------|----------|----------|
+| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes |
+| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
+
+
+# API Endpoints Table
 
 ## Users
 
@@ -128,7 +142,7 @@ curl --location 'http://localhost:8080/users/test@example.com'
 }
 ```
 
-# Sample Requests: User Login (Registration -> Login)
+## Sample Requests: User Login (Registration -> Login)
 
 ### 1. Register a New User
 
