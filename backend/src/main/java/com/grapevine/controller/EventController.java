@@ -1,5 +1,6 @@
 package com.grapevine.controller;
 
+import com.grapevine.exception.GroupNotFoundException;
 import com.grapevine.model.Event;
 import com.grapevine.model.ShortEvent;
 import com.grapevine.model.User;
@@ -38,4 +39,17 @@ public class EventController {
         // Return the specific event
         return eventService.getEventById(eventId);
     }
+
+    @PostMapping("/create/{groupId}")
+    public Event createEvent(
+            @PathVariable Long groupId,
+            @RequestBody Event event,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session and get current user
+        User currentUser = userService.validateSession(sessionId);
+        return eventService.createEvent(event, groupId, currentUser);
+
+    }
+
 }
