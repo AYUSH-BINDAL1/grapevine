@@ -1,5 +1,5 @@
 # Local Testing Guide
-## The script sets up a complete development environment for the grapevine application, initializing Docker containers and populating a clean database with test users. To use the script, follow these two simple steps:
+## The test.sh script sets up a complete development environment for the grapevine application, initializing Docker containers and populating a clean database with test users. To use the script, follow these two simple steps:
 
 ### 1. Navigate to the `grapevine/backend` directory and make the script executable: `chmod +x test.sh`
 ### 2. Run the script: `./test.sh`
