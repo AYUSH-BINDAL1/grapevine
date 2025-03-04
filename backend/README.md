@@ -12,7 +12,7 @@
 | user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
 
 
-# API Endpoints Reference
+# API Endpoints Table
 
 ## Users
 
