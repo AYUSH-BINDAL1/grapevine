@@ -137,6 +137,9 @@ public class UserService {
         if (updatedUser.getCourses() != null) {
             existingUser.setCourses(updatedUser.getCourses());
         }
+        if (updatedUser.getWeeklyAvailability() != null) {
+            existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
+        }
         //Password should be handled separately with proper validation and encryption
         //Role changes might require special authorization
         return userRepository.save(existingUser);
