@@ -52,11 +52,12 @@
 
 ## Events
 
-| Method | Endpoint                | Request Body | Path Variable | Headers    | Description                    | Response                   |
-|--------|-------------------------|--------------|---------------|------------|--------------------------------|----------------------------|
-| GET    | `/events/all`           | -            | -             | Session-Id | Gets all events in database    | List of Event objects      |
-| GET    | `/events/all-short`     | -            | -             | Session-Id | Gets all events in short form  | List of ShortEvent objects |
-| GET    | `/events/{eventId}`     | -            | eventId       | Session-Id | Gets a specific event by ID    | Event object               |
+| Method | Endpoint                   | Request Body | Path Variable | Headers    | Description                        | Response                   |
+|--------|----------------------------|--------------|---------------|------------|------------------------------------|----------------------------|
+| GET    | `/events/all`              | -            | -             | Session-Id | Gets all events in database        | List of Event objects      |
+| GET    | `/events/all-short`        | -            | -             | Session-Id | Gets all events in short form      | List of ShortEvent objects |
+| GET    | `/events/{eventId}`        | -            | eventId       | Session-Id | Gets a specific event by ID        | Event object               |
+| POST   | `/events/create/{groupId}` | Event object | groupId       | Session-Id | Creates an event for a given group | Created Event object       |
 *Note:
 
 ## Sample Requests: User Registration
