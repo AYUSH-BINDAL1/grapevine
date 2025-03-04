@@ -346,17 +346,14 @@ public class UserService {
         return joinedShortEvents;
     }
 
-    // Add this method to UserService
-    public List<Location> getPreferredLocations(String userEmail) {
-        User user = getUserByEmail(userEmail);
+    public List<Location> getPreferredLocations(User currentUser) {
         List<Location> preferredLocations = new ArrayList<>();
 
-        if (user.getPreferredLocations() != null && !user.getPreferredLocations().isEmpty()) {
-            for (Long locationId : user.getPreferredLocations()) {
+        if (currentUser.getPreferredLocations() != null && !currentUser.getPreferredLocations().isEmpty()) {
+            for (Long locationId : currentUser.getPreferredLocations()) {
                 locationRepository.findById(locationId).ifPresent(preferredLocations::add);
             }
         }
-
         return preferredLocations;
     }
 

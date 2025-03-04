@@ -250,7 +250,7 @@ public class UserController {
         }
 
         // Return all preferred locations for the user
-        return userService.getPreferredLocations(userEmail);
+        return userService.getPreferredLocations(currentUser);
     }
 
     // sample of how other endpoints would use the session
