@@ -29,6 +29,11 @@ public class UserService {
     private final Map<String, SessionInfo> activeSessions = new HashMap<>();
 
     public String initiateUserRegistration(User user) {
+        // Check if user already exists
+        if (userRepository.findById(user.getUserEmail()).isPresent()) {
+            throw new UserAlreadyExistsException("A user with email " + user.getUserEmail() + " already exists");
+        }
+
         String verificationToken = generateVerificationToken();
         VerificationToken token = new VerificationToken(verificationToken, user.getUserEmail());
         tokenRepository.save(token);
