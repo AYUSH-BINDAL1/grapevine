@@ -1,13 +1,11 @@
 package com.grapevine.service;
 
 import com.grapevine.exception.UserNotFoundException;
-import com.grapevine.model.Group;
-import com.grapevine.model.ShortGroup;
+import com.grapevine.model.*;
+import com.grapevine.repository.EventRepository;
 import com.grapevine.repository.GroupRepository;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
-import com.grapevine.model.User;
-import com.grapevine.model.VerificationToken;
 import com.grapevine.repository.UserRepository;
 import com.grapevine.repository.VerificationTokenRepository;
 import com.grapevine.exception.*;
@@ -23,8 +21,9 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final VerificationTokenRepository tokenRepository;
-    private final GroupRepository groupRepository;
     private final EmailService emailService;
+    private final GroupRepository groupRepository;
+    private final EventRepository eventRepository;
 
     // session storage: sessionId -> SessionInfo
     private final Map<String, SessionInfo> activeSessions = new HashMap<>();
@@ -59,26 +58,6 @@ public class UserService {
     public User getUserByEmail(String userEmail) {
         return userRepository.findById(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + userEmail));
-    }
-
-    public User updateUser(String userEmail, User updatedUser) {
-        User existingUser = getUserByEmail(userEmail);
-
-        // Update the fields that can be modified
-        if (updatedUser.getName() != null) existingUser.setName(updatedUser.getName());
-        if (updatedUser.getBiography() != null) existingUser.setBiography(updatedUser.getBiography());
-        if (updatedUser.getYear() != null) existingUser.setYear(updatedUser.getYear());
-        if (updatedUser.getMajors() != null) existingUser.setMajors(updatedUser.getMajors());
-        if (updatedUser.getMinors() != null) existingUser.setMinors(updatedUser.getMinors());
-        if (updatedUser.getCourses() != null) existingUser.setCourses(updatedUser.getCourses());
-        if (updatedUser.getAvailableTimes() != null) existingUser.setAvailableTimes(updatedUser.getAvailableTimes());
-        if (updatedUser.getProfilePicturePath() != null) existingUser.setProfilePicturePath(updatedUser.getProfilePicturePath());
-        if (updatedUser.getWeeklyAvailability() != null) existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
-
-        // Password should be handled separately with proper validation and encryption
-        // Role changes might require special authorization
-
-        return userRepository.save(existingUser);
     }
 
     public String login(String email, String password) {
@@ -162,7 +141,6 @@ public class UserService {
         return userRepository.save(existingUser);
     }
 
-    //TODO: Fix this shit
     public List<Group> getAllGroups(String userEmail) {
         User currentUser = getUserByEmail(userEmail);
         List<Group> allGroups = new ArrayList<>();
@@ -220,6 +198,7 @@ public class UserService {
 
         return hostedGroups;
     }
+
     public List<ShortGroup> getHostedShortGroups(String userEmail) {
         User currentUser = getUserByEmail(userEmail);
         List<ShortGroup> hostedShortGroups = new ArrayList<>();
@@ -248,6 +227,7 @@ public class UserService {
 
         return joinedGroups;
     }
+
     public List<ShortGroup> getJoinedShortGroups(String userEmail) {
         User currentUser = getUserByEmail(userEmail);
         List<ShortGroup> joinedShortGroups = new ArrayList<>();
@@ -260,6 +240,106 @@ public class UserService {
         }
 
         return joinedShortGroups;
+    }
+
+    public List<Event> getAllEvents(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<Event> allEvents = new ArrayList<>();
+
+        // Get the events the user hosts
+        if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
+            for (Long eventId : currentUser.getHostedEvents()) {
+                eventRepository.findById(eventId).ifPresent(allEvents::add);
+            }
+        }
+
+        // Get the events the user participates in
+        if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
+            for (Long eventId : currentUser.getJoinedEvents()) {
+                eventRepository.findById(eventId).ifPresent(allEvents::add);
+            }
+        }
+
+        return allEvents;
+    }
+
+    public List<ShortEvent> getAllShortEvents(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<ShortEvent> allShortEvents = new ArrayList<>();
+
+        // Get ShortEvent objects for the events the user hosts
+        if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
+            for (Long eventId : currentUser.getHostedEvents()) {
+                eventRepository.findById(eventId)
+                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+            }
+        }
+
+        // Get ShortEvent objects for the events the user participates in
+        if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
+            for (Long eventId : currentUser.getJoinedEvents()) {
+                eventRepository.findById(eventId)
+                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+            }
+        }
+
+        return allShortEvents;
+    }
+
+    public List<Event> getHostedEvents(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<Event> hostedEvents = new ArrayList<>();
+
+        // Get the events the user hosts
+        if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
+            for (Long eventId : currentUser.getHostedEvents()) {
+                eventRepository.findById(eventId).ifPresent(hostedEvents::add);
+            }
+        }
+
+        return hostedEvents;
+    }
+
+    public List<ShortEvent> getHostedShortEvents(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<ShortEvent> hostedShortEvents = new ArrayList<>();
+
+        if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
+            for (Long eventId : currentUser.getHostedEvents()) {
+                eventRepository.findById(eventId)
+                        .ifPresent(event -> hostedShortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+            }
+        }
+
+        return hostedShortEvents;
+    }
+
+    public List<Event> getJoinedEvents(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<Event> joinedEvents = new ArrayList<>();
+
+        // Get the events the user participates in
+        if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
+            for (Long eventId : currentUser.getJoinedEvents()) {
+                eventRepository.findById(eventId).ifPresent(joinedEvents::add);
+            }
+        }
+
+        return joinedEvents;
+    }
+
+    public List<ShortEvent> getJoinedShortEvents(String userEmail) {
+        User currentUser = getUserByEmail(userEmail);
+        List<ShortEvent> joinedShortEvents = new ArrayList<>();
+
+        if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
+            for (Long eventId : currentUser.getJoinedEvents()) {
+                eventRepository.findById(eventId)
+                        .ifPresent(event -> joinedShortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+            }
+        }
+
+        return joinedShortEvents;
     }
 
 }
