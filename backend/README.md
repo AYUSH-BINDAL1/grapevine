@@ -1,6 +1,6 @@
 # BACKEND - LOCAL SETUP GUIDE
 
-#### The setup script will start the server application with all necessary services (database, mail server, etc.) in Docker containers. The script will also populate the database with some sample data.
+#### The setup script will start the server application with all necessary services (springboot server, postgres database, mail server, etc.) in Docker containers. The script will also populate the database with some sample data.
 
 ### Prerequisites: Docker Desktop must be installed and running on your machine.
 ### For Unix-based systems (macOS, Linux):
