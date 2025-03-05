@@ -51,10 +51,13 @@ if [ "$1" == "test" ]; then
 fi
 
 # Check if port 8080 is already in use
+# Check if port 8080 is already in use and kill the process if found
 if lsof -Pi :8080 -sTCP:LISTEN -t >/dev/null ; then
-  echo -e "${RED}Error: Port 8080 is already in use. Stop the service using that port first.${NC}"
-  echo -e "${YELLOW}You can use 'lsof -i :8080' to identify the process${NC}"
-  exit 1
+  PID=$(lsof -Pi :8080 -sTCP:LISTEN -t)
+  echo -e "${YELLOW}Port 8080 is in use by process $PID. Killing process...${NC}"
+  kill -9 $PID
+  sleep 2
+  echo -e "${GREEN}Process using port 8080 has been terminated.${NC}"
 fi
 
 # Start Docker containers
