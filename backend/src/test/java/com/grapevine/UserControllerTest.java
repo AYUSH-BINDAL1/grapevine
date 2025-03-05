@@ -53,11 +53,11 @@ public class UserControllerTest {
 
     @Test
     void testRegisterUser() {
-        when(userService.initiateUserRegistration(any(User.class))).thenReturn("TOKEN123");
+        when(userService.initiateUserRegistration(any(User.class))).thenReturn("TKN123");
 
-        String token = String.valueOf(userController.registerUser(testUser));
+        String token = String.valueOf(userController.registerUser(testUser).getBody());
 
-        assertEquals("TOKEN123", token);
+        assertEquals("TKN123", token);
         verify(userService).initiateUserRegistration(testUser);
     }
 
