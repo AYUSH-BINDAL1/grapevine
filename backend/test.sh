@@ -78,10 +78,10 @@ else
   # cd path/to/your/project && ./mvnw spring-boot:run &
   # Or
   # java -jar target/your-application.jar &
-  
+
   # Replace with your actual command
   ./mvnw spring-boot:run &
-  
+
   # Wait for application to start
   echo "Waiting for Spring Boot to start..."
   while ! curl -s $BACKEND_URL/users/register >/dev/null 2>&1; do
@@ -108,7 +108,7 @@ register_and_verify_user() {
     }" | tr -d '"')
 
   echo "Verification token for $email: $TOKEN"
-  
+
   echo "Verifying user: $email"
   curl -s --location --request POST "$BACKEND_URL/users/verify?token=$TOKEN" \
     --header 'Content-Type: application/json' \
@@ -118,7 +118,7 @@ register_and_verify_user() {
       \"name\": \"$name\",
       \"birthday\": \"2000-01-01\"
     }"
-  
+
   echo -e "\nUser $email registered and verified successfully!"
 }
 
