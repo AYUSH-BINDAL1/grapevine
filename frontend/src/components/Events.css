@@ -3,10 +3,6 @@ body {
     font-family: Arial, sans-serif;
 }
 
-.app {
-    padding: 20px;
-}
-
 h1 {
     margin-bottom: 20px;
 }
@@ -56,4 +52,9 @@ h1 {
 
 .create-event-button:hover {
     background-color: #8ebd89;
+}
+
+.app {
+    min-height: calc(100vh - 60px); /* 60px is approximate taskbar height */
+    padding-top: 20px;
 }
