@@ -24,6 +24,7 @@ function Taskbar() {
         <h3 onClick={()=>{navigate("/events")}} className='elem'>Events</h3>
         <h3 onClick={()=>{navigate("/forum")}} className='elem'>Forum</h3>
         <h3 onClick={()=>{navigate("/messages")}} className='elem'>Messages</h3>
+        <h3 onClick={()=>{navigate("/friends")}} className='elem'>Friends</h3>
         <img onClick={()=>{navigate("/profile")}} className='profile' src={profileImage} alt="Profile" />
       </nav>
     </div>
