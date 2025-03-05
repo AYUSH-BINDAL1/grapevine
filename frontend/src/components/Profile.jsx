@@ -443,6 +443,90 @@ function Profile() {
             <option value="sunday">Sunday</option>
           </select>
           <button className="add-time" onClick={saveAvailability}>Add Availability</button>
+          <button 
+            className="remove-time" 
+            onClick={() => {
+              const { day, startTime, endTime } = availability;
+              
+              if (!day || !startTime || !endTime) {
+                alert("Please select a day, start time, and end time");
+                return;
+              }
+            
+              // Convert day to starting index (24 hours per day)
+              const dayIndices = {
+                "monday": 0,
+                "tuesday": 24,
+                "wednesday": 48,
+                "thursday": 72,
+                "friday": 96,
+                "saturday": 120,
+                "sunday": 144
+              };
+              
+              const dayIndex = dayIndices[day];
+              
+              // Convert time strings to hours
+              const startHour = parseInt(startTime.split(":")[0]);
+              const endHour = parseInt(endTime.split(":")[0]);
+              
+              if (startHour >= endHour) {
+                alert("End time must be after start time");
+                return;
+              }
+            
+              // Create a new availability string
+              let newAvailabilityString = availabilityString.split('');
+              
+              // Mark the hours as unavailable (0)
+              for (let hour = startHour; hour < endHour; hour++) {
+                newAvailabilityString[dayIndex + hour] = '0';
+              }
+              
+              const updatedAvailabilityString = newAvailabilityString.join('');
+            
+              if (!userData) return;
+            
+              try {
+                const sessionId = localStorage.getItem('sessionId');
+                
+                if (!sessionId) {
+                  alert("You must be logged in to update availability");
+                  return;
+                }
+            
+                axios.put(
+                  `http://localhost:8080/users/${userData.userEmail}`,
+                  { weeklyAvailability: updatedAvailabilityString },
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Session-Id': sessionId
+                    }
+                  }
+                ).then(response => {
+                  if (response.status === 200) {
+                    setAvailabilityString(updatedAvailabilityString);
+                    
+                    // Update the stored user data
+                    const updatedUserData = { ...userData, weeklyAvailability: updatedAvailabilityString };
+                    localStorage.setItem('userData', JSON.stringify(updatedUserData));
+                    setUserData(updatedUserData);
+                    
+                    alert("Availability removed successfully!");
+                  }
+                }).catch(error => {
+                  console.error('Error removing availability:', error);
+                  alert("Failed to remove availability. Please try again.");
+                });
+              } catch (error) {
+                console.error('Error removing availability:', error);
+                alert("Failed to remove availability. Please try again.");
+              }
+            }}
+          >
+            Remove Availability
+          </button>
           
           <div className="availability-preview">
             <h4>Current Availability:</h4>
