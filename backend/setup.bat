@@ -30,6 +30,14 @@ IF "%1"=="test" (
     exit /b %ERRORLEVEL%
 )
 
+:: Check if port 8080 is already in use and kill the process if found
+FOR /F "tokens=5" %%P IN ('netstat -ano ^| findstr :8080 ^| findstr LISTENING') DO (
+    echo Port 8080 is in use by process %%P. Killing process...
+    taskkill /F /PID %%P
+    timeout /t 2 /nobreak > NUL
+    echo Process using port 8080 has been terminated.
+)
+
 echo Starting Docker containers...
 docker compose up -d --build
 
