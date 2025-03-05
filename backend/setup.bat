@@ -8,6 +8,8 @@
 ::      setup.bat
 ::   2. To stop all services:
 ::      setup.bat stop
+::   3. To run unit tests:
+::      setup.bat test
 
 echo Starting Docker setup for Grapevine application...
 
@@ -15,6 +17,25 @@ IF "%1"=="stop" (
     echo Stopping Docker containers...
     docker compose down
     exit /b 0
+)
+
+IF "%1"=="test" (
+    echo Running unit tests...
+    call .\mvnw.cmd test
+    IF %ERRORLEVEL% EQU 0 (
+        echo All tests passed!
+    ) ELSE (
+        echo Some tests failed. See above for details.
+    )
+    exit /b %ERRORLEVEL%
+)
+
+:: Check if port 8080 is already in use and kill the process if found
+FOR /F "tokens=5" %%P IN ('netstat -ano ^| findstr :8080 ^| findstr LISTENING') DO (
+    echo Port 8080 is in use by process %%P. Killing process...
+    taskkill /F /PID %%P
+    timeout /t 2 /nobreak > NUL
+    echo Process using port 8080 has been terminated.
 )
 
 echo Starting Docker containers...
@@ -41,3 +62,4 @@ echo Setup complete! The application is running in Docker containers.
 echo Access the application at http://localhost:8080
 echo Access Mailpit at http://localhost:8025
 echo To stop all containers, run: setup.bat stop
+echo To run unit tests, run: setup.bat test
