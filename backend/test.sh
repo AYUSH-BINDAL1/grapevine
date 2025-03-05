@@ -2,6 +2,31 @@
 
 # Script to set up the development environment for Grapevine application
 
+# Check for stop argument
+if [ "$1" == "stop" ]; then
+  echo "Stopping processes on port 8080..."
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    PID=$(lsof -ti:8080)
+    if [ -n "$PID" ]; then
+      echo "Killing process with PID: $PID"
+      kill -15 $PID
+    else
+      echo "No process found running on port 8080"
+    fi
+  else
+    # Linux and other Unix-like systems
+    PID=$(netstat -tulpn 2>/dev/null | grep ':8080' | awk '{print $7}' | cut -d'/' -f1)
+    if [ -n "$PID" ]; then
+      echo "Killing process with PID: $PID"
+      kill -15 $PID
+    else
+      echo "No process found running on port 8080"
+    fi
+  fi
+  exit 0
+fi
+
 echo "Starting Docker daemon..."
 # Check if Docker is running, if not start it
 if ! docker info >/dev/null 2>&1; then
@@ -53,10 +78,10 @@ else
   # cd path/to/your/project && ./mvnw spring-boot:run &
   # Or
   # java -jar target/your-application.jar &
-  
+
   # Replace with your actual command
   ./mvnw spring-boot:run &
-  
+
   # Wait for application to start
   echo "Waiting for Spring Boot to start..."
   while ! curl -s $BACKEND_URL/users/register >/dev/null 2>&1; do
@@ -83,7 +108,7 @@ register_and_verify_user() {
     }" | tr -d '"')
 
   echo "Verification token for $email: $TOKEN"
-  
+
   echo "Verifying user: $email"
   curl -s --location --request POST "$BACKEND_URL/users/verify?token=$TOKEN" \
     --header 'Content-Type: application/json' \
@@ -93,13 +118,13 @@ register_and_verify_user() {
       \"name\": \"$name\",
       \"birthday\": \"2000-01-01\"
     }"
-  
+
   echo -e "\nUser $email registered and verified successfully!"
 }
 
 # Register two users
-register_and_verify_user "testuser1@example.com" "pw1" "Test User 1"
-register_and_verify_user "testuser2@example.com" "pw2" "Test User 2"
+register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
+register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
 
 echo -e "\nLogin to test the users:"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"testuser1@example.com\", \"password\": \"pw1\"}'"
