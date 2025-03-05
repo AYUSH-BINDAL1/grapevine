@@ -2,6 +2,31 @@
 
 # Script to set up the development environment for Grapevine application
 
+# Check for stop argument
+if [ "$1" == "stop" ]; then
+  echo "Stopping processes on port 8080..."
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    PID=$(lsof -ti:8080)
+    if [ -n "$PID" ]; then
+      echo "Killing process with PID: $PID"
+      kill -15 $PID
+    else
+      echo "No process found running on port 8080"
+    fi
+  else
+    # Linux and other Unix-like systems
+    PID=$(netstat -tulpn 2>/dev/null | grep ':8080' | awk '{print $7}' | cut -d'/' -f1)
+    if [ -n "$PID" ]; then
+      echo "Killing process with PID: $PID"
+      kill -15 $PID
+    else
+      echo "No process found running on port 8080"
+    fi
+  fi
+  exit 0
+fi
+
 echo "Starting Docker daemon..."
 # Check if Docker is running, if not start it
 if ! docker info >/dev/null 2>&1; then
