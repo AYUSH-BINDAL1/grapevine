@@ -18,6 +18,7 @@
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Function to clean up
@@ -47,6 +48,16 @@ fi
 
 if [ "$1" == "test" ]; then
   run_tests
+fi
+
+# Check if port 8080 is already in use
+# Check if port 8080 is already in use and kill the process if found
+if lsof -Pi :8080 -sTCP:LISTEN -t >/dev/null ; then
+  PID=$(lsof -Pi :8080 -sTCP:LISTEN -t)
+  echo -e "${YELLOW}Port 8080 is in use by process $PID. Killing process...${NC}"
+  kill -9 $PID
+  sleep 2
+  echo -e "${GREEN}Process using port 8080 has been terminated.${NC}"
 fi
 
 # Start Docker containers
