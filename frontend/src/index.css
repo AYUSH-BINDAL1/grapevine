@@ -15,17 +15,18 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #ae92c6;
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #8ebd89;
 }
 
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  justify-content: center;
+  align-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -47,7 +48,7 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: #ae92c6;
 }
 button:focus,
 button:focus-visible {
@@ -56,13 +57,91 @@ button:focus-visible {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
+    color: #ae92c6;
     background-color: #ffffff;
   }
   a:hover {
-    color: #747bff;
+    color: #8ebd89;
   }
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Center the container on the screen */
+.registration-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* Update the color scheme */
+.registration-form {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid #8ebd89; /* Updated border color */
+}
+
+.registration-form h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.form-group input {
+  width: 80%; /* Adjust the width as needed */
+  max-width: 300px; /* Set a maximum width */
+  padding: 0.75rem;
+  border: 1px solid #8ebd89; /* Updated border color */
+  border-radius: 4px;
+  font-size: 1rem;
+  margin: 0 auto; /* Center the input */
+}
+
+.register-button {
+  width: 80%; /* Adjust the width as needed */
+  max-width: 300px; /* Set a maximum width */
+  padding: 0.75rem;
+  background-color: #ae92c6; /* Updated button color */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 0 auto; /* Center the button */
+}
+
+.register-button:hover {
+  background-color: #8ebd89; /* Updated hover color */
+}
+
+.sign-in-button {
+  width: 80%; /* Adjust the width as needed */
+  max-width: 300px; /* Set a maximum width */
+  padding: 0.75rem;
+  background-color: #ae92c6; /* Updated button color */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 1rem auto 0 auto; /* Center the button and add margin-top */
+}
+
+.sign-in-button:hover {
+  background-color: #8ebd89; /* Updated hover color */
 }
