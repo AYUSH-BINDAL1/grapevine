@@ -55,7 +55,7 @@ public class UserControllerTest {
     void testRegisterUser() {
         when(userService.initiateUserRegistration(any(User.class))).thenReturn("TOKEN123");
 
-        String token = userController.registerUser(testUser);
+        String token = String.valueOf(userController.registerUser(testUser));
 
         assertEquals("TOKEN123", token);
         verify(userService).initiateUserRegistration(testUser);
