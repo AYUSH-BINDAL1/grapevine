@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet } from 'react-router-dom';
 import Registration from './components/Registration';
 import Login from './components/Login';
 import Confirmation from './components/Confirmation';
@@ -12,15 +12,11 @@ import './App.css';
 
 function Taskbar() {
   const navigate = useNavigate();
-  const handleClick = (e) => {
-    console.log('Clicked:', e.target.textContent || 'profile');
-    navigate(e.target.textContent);
-  };
-
+  
   return (
     <div className='taskbar'>
       <nav className='taskbar-elem'>
-        <h3 onClick={()=>{navigate("/groups")}} className='elem'>Groups</h3>
+        <h3 onClick={()=>{navigate("/home")}} className='elem'>Groups</h3>
         <h3 onClick={()=>{navigate("/events")}} className='elem'>Events</h3>
         <h3 onClick={()=>{navigate("/forum")}} className='elem'>Forum</h3>
         <h3 onClick={()=>{navigate("/messages")}} className='elem'>Messages</h3>
@@ -31,10 +27,12 @@ function Taskbar() {
   );
 }
 
-function Home() {
+// Layout component that includes Taskbar and renders child routes
+function Layout() {
   return (
     <>
       <Taskbar />
+      <Outlet /> {/* This is where child routes will be rendered */}
     </>
   );
 }
@@ -43,17 +41,32 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes without taskbar */}
         <Route path="/" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/confirmation" element={<Confirmation />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/profile" element={<Profile />}/>
-        <Route path="*" element={<Nopath />} />
+        
+        {/* Protected routes with taskbar */}
+        <Route element={<Layout />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/events" element={<Events />} />
           <Route path="/create-event" element={<CreateEvent />} />
-        <Route path="/groups" element={<Groups />} />
+          <Route path="/forum" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="/friends" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="*" element={<Nopath />} />
+        </Route>
       </Routes>
     </Router>
+  );
+}
+
+function Home() {
+  return (
+    <div className="home-container">
+      <h1>Groups</h1>
+    </div>
   );
 }
 
