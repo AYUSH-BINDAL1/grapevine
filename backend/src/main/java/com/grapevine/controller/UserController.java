@@ -1,6 +1,7 @@
 package com.grapevine.controller;
 
 import com.grapevine.model.*;
+import com.grapevine.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +21,15 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public String registerUser(@RequestBody User user) {
-        return userService.initiateUserRegistration(user);
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        try {
+            String token = userService.initiateUserRegistration(user);
+            return ResponseEntity.ok(token);
+        } catch (UserAlreadyExistsException e) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage()));
+        }
     }
 
     @PostMapping("/verify")
