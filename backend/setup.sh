@@ -13,6 +13,8 @@
    #./setup.sh stop
    #4. To run unit tests:
    #./setup.sh test
+   #5. To open PostgreSQL console:
+   #./setup.sh db
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -41,6 +43,13 @@ run_tests() {
   exit $TEST_EXIT_CODE
 }
 
+# Function to open PostgreSQL console
+open_db_console() {
+  echo -e "${BLUE}Opening PostgreSQL console...${NC}"
+  docker exec -it backend-postgres-1 psql -U postgres
+  exit 0
+}
+
 # Check for arguments
 if [ "$1" == "stop" ]; then
   cleanup
@@ -50,7 +59,10 @@ if [ "$1" == "test" ]; then
   run_tests
 fi
 
-# Check if port 8080 is already in use
+if [ "$1" == "db" ]; then
+  open_db_console
+fi
+
 # Check if port 8080 is already in use and kill the process if found
 if lsof -Pi :8080 -sTCP:LISTEN -t >/dev/null ; then
   PID=$(lsof -Pi :8080 -sTCP:LISTEN -t)
@@ -120,3 +132,4 @@ echo -e "Access the application at http://localhost:8080"
 echo -e "Access Mailpit at http://localhost:8025"
 echo -e "To stop all containers, run: ./setup.sh stop"
 echo -e "To run unit tests, run: ./setup.sh test"
+echo -e "To access the PostgreSQL console, run: ./setup.sh db"
