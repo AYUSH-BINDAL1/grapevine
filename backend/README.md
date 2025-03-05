@@ -16,6 +16,10 @@
    ```bash
     ./setup.sh stop
     ```
+4. To run all tests:
+   ```bash
+    ./setup.sh test
+    ```
 
 ### For Windows:
 1. Run the batch script to start everything:
@@ -25,6 +29,10 @@
 2. To stop all services:
     ```bash
     setup.bat stop
+    ```
+3. To run all tests:
+    ```bash
+    setup.bat test
     ```
 
 ### The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
