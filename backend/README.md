@@ -1,10 +1,33 @@
-# Local Testing Guide
-## The test.sh script provides complete setup for the grapevine server, initializing Docker containers and populating a clean database with test users. To use the script:
+# BACKEND - LOCAL SETUP GUIDE
 
-### 1. Navigate to the `grapevine/backend` directory and make the script executable: `chmod +x test.sh`
-### 2. Run the script: `./test.sh`
+#### The setup script will start the server application with all necessary services (database, mail server, etc.) in Docker containers. The script will also populate the database with some sample data.
 
-## The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
+### Prerequisites: Docker Desktop must be installed and running on your machine.
+### For Unix-based systems (macOS, Linux):
+1. Make the script executable:
+   ```bash
+   chmod +x setup.sh
+   ```
+2.  Run the script to start everything:
+    ```bash
+    ./setup.sh
+    ```
+3. To stop all services:
+   ```bash
+    ./setup.sh stop
+    ```
+
+### For Windows:
+1. Run the batch script to start everything:
+    ```bash
+    setup.bat
+    ````
+2. To stop all services:
+    ```bash
+    setup.bat stop
+    ```
+
+### The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
 
 | Email | Password | Name | Birthday | Verified |
 |-------|----------|------|----------|----------|
@@ -12,7 +35,7 @@
 | user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
 
 
-# API Endpoints Table
+# API ENDPOINTS
 
 ## Users
 
@@ -65,7 +88,10 @@
 | Method | Endpoint         | Request Body | Path Variable | Headers    | Description                    | Response                 |
 |--------|------------------|--------------|---------------|------------|--------------------------------|--------------------------|
 | GET    | `/locations/all` | -            | -             | Session-Id | Gets all locations in database | List of Location objects |
-*Note:
+
+
+
+# SAMPLE REQUESTS
 
 ## Sample Requests: User Registration
 
