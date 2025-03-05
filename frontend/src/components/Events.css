@@ -24,7 +24,7 @@ h1 {
     flex: 0 0 auto;
     width: 200px;
     text-align: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px #8ebd89;
     border-radius: 8px;
     overflow: hidden;
     background: #fff;
@@ -44,7 +44,7 @@ h1 {
 
 
 .create-event-button {
-    background-color: #3498db;
+    background-color: #ae92c6;
     color: white;
     border: none;
     border-radius: 4px;
@@ -55,5 +55,5 @@ h1 {
 }
 
 .create-event-button:hover {
-    background-color: #2980b9;
+    background-color: #8ebd89;
 }
