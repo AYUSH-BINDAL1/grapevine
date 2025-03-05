@@ -2,7 +2,7 @@
 
 #### The setup script will start the server application with all necessary services (springboot server, postgres database, mail server, etc.) in Docker containers. The script will also populate the database with some sample data.
 
-### Prerequisites: Docker Desktop must be installed and running on your machine.
+### <ins> PRE-REQUISITES: Docker Desktop (which includes the Docker Engine and CLI) must be installed and running on your machine. </ins>
 ### For Unix-based systems (macOS, Linux):
 1. Make the script executable:
    ```bash

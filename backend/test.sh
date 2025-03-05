@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to set up the development environment for Grapevine application
+# OUTDATED: please use setup.sh or setup.bat instead
 
 # Check for stop argument
 if [ "$1" == "stop" ]; then
