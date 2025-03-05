@@ -38,6 +38,7 @@
 | GET    | `/users/{userEmail}/hosted-events-short` | -            | userEmail     | Session-Id  | Gets hosted events in short form  | List of ShortEvent objects |
 | GET    | `/users/{userEmail}/joined-events`       | -            | userEmail     | Session-Id  | Gets events user participates in  | List of Event objects      |
 | GET    | `/users/{userEmail}/joined-events-short` | -            | userEmail     | Session-Id  | Gets joined events in short form  | List of ShortEvent objects |
+| GET    | `/users/{userEmail}/preferred-locations` | -            | userEmail     | Session-Id  | Gets user's preferred locations   | List of Location objects   |
 ## Groups
 
 | Method | Endpoint                          | Request Body | Path Variable | Headers    | Description                     | Response                   |
@@ -52,11 +53,18 @@
 
 ## Events
 
-| Method | Endpoint                | Request Body | Path Variable | Headers    | Description                    | Response                   |
-|--------|-------------------------|--------------|---------------|------------|--------------------------------|----------------------------|
-| GET    | `/events/all`           | -            | -             | Session-Id | Gets all events in database    | List of Event objects      |
-| GET    | `/events/all-short`     | -            | -             | Session-Id | Gets all events in short form  | List of ShortEvent objects |
-| GET    | `/events/{eventId}`     | -            | eventId       | Session-Id | Gets a specific event by ID    | Event object               |
+| Method | Endpoint                   | Request Body | Path Variable | Headers    | Description                        | Response                   |
+|--------|----------------------------|--------------|---------------|------------|------------------------------------|----------------------------|
+| GET    | `/events/all`              | -            | -             | Session-Id | Gets all events in database        | List of Event objects      |
+| GET    | `/events/all-short`        | -            | -             | Session-Id | Gets all events in short form      | List of ShortEvent objects |
+| GET    | `/events/{eventId}`        | -            | eventId       | Session-Id | Gets a specific event by ID        | Event object               |
+| POST   | `/events/create/{groupId}` | Event object | groupId       | Session-Id | Creates an event for a given group | Created Event object       |
+
+## Locations
+
+| Method | Endpoint         | Request Body | Path Variable | Headers    | Description                    | Response                 |
+|--------|------------------|--------------|---------------|------------|--------------------------------|--------------------------|
+| GET    | `/locations/all` | -            | -             | Session-Id | Gets all locations in database | List of Location objects |
 *Note:
 
 ## Sample Requests: User Registration

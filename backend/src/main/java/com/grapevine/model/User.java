@@ -96,6 +96,10 @@ public class User {
         weeklyAvailability = sb.toString();
     }
 
+    @ElementCollection
+    @Column(name = "location_ids")
+    private List<Long> preferredLocations;
+
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 
     //Additional Attributes: Account Creation Date, Last Online Date, Profile Picture

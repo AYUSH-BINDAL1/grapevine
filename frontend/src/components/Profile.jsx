@@ -11,6 +11,8 @@ function Profile() {
     endTime: ""
   });
   const [availabilityString, setAvailabilityString] = useState("0".repeat(168));
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState("");
 
   useEffect(() => {
     // Load user data from localStorage
@@ -151,6 +153,62 @@ function Profile() {
     }
   };
 
+  useEffect(() => {
+    // Load user data from localStorage
+    const storedUserData = localStorage.getItem('userData');
+    if (storedUserData) {
+      const parsedData = JSON.parse(storedUserData);
+      setUserData(parsedData);
+      setEditedDescription(parsedData.biography || "");
+      
+      // If the user already has availability data, load it
+      if (parsedData.weeklyAvailability) {
+        setAvailabilityString(parsedData.weeklyAvailability);
+      }
+    }
+  }, []);
+
+  const handleEditDescription = () => {
+    setIsEditingDescription(true);
+  };
+
+  const handleSaveDescription = async () => {
+    if (!userData) return;
+
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      
+      if (!sessionId) {
+        alert("You must be logged in to save description");
+        return;
+      }
+
+      const response = await axios.put(
+        `http://localhost:8080/users/${userData.userEmail}`,
+        { biography: editedDescription },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        // Update the stored user data
+        const updatedUserData = { ...userData, biography: editedDescription };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+        setIsEditingDescription(false);
+        
+        alert("Description saved successfully!");
+      }
+    } catch (error) {
+      console.error('Error saving description:', error);
+      alert("Failed to save description. Please try again.");
+    }
+  };
+
   return (
     <div className="profile-page">
       <div className="profile-image-container">
@@ -166,8 +224,48 @@ function Profile() {
           </div>
         </div>
         <div className="description-info">
-          <h3 className="description">Description</h3>
-          <p className="description-details">{userData?.biography || "No description available"}</p>
+          <h3 className="description">
+            Description
+            {!isEditingDescription && (
+              <button 
+                className="edit-button" 
+                onClick={handleEditDescription}
+                style={{ marginLeft: '10px', fontSize: '0.8rem' }}
+              >
+                Edit
+              </button>
+            )}
+          </h3>
+          {isEditingDescription ? (
+            <div className="description-edit">
+              <textarea
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                className="description-textarea"
+                rows={4}
+                placeholder="Enter your description..."
+              />
+              <div className="description-actions">
+                <button 
+                  className="save-button"
+                  onClick={handleSaveDescription}
+                >
+                  Save
+                </button>
+                <button 
+                  className="cancel-button"
+                  onClick={() => {
+                    setIsEditingDescription(false);
+                    setEditedDescription(userData?.biography || "");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="description-details">{userData?.biography || "No description available"}</p>
+          )}
         </div>
       </div>
       <div className="availability-panel">
@@ -319,6 +417,58 @@ function Profile() {
           </div>
         </div>
       </div>
+      <div className="locations-container">
+          <h3 className="locations">Preferred Study Locations</h3>
+          <div className="locations-list">
+            {userData?.preferredLocations?.length > 0 ? (
+              userData.preferredLocations.map((location, index) => (
+                <div key={index} className="location">
+                  <p className="location-name">{location}</p>
+                </div>
+              ))
+            ) : (
+              <div className="location">
+                <p className="location-name">No preferred locations</p>
+              </div>
+            )}
+            <select 
+              className="location-select"
+              onChange={(e) => {
+                if (e.target.value && userData) {
+                  const updatedUserData = { 
+                    ...userData, 
+                    preferredLocations: [...(userData.preferredLocations || []), e.target.value] 
+                  };
+                  localStorage.setItem('userData', JSON.stringify(updatedUserData));
+                  setUserData(updatedUserData);
+                  
+                  const sessionId = localStorage.getItem('sessionId');
+                  if (sessionId) {
+                    axios.put(
+                      `http://localhost:8080/users/${userData.userEmail}`,
+                      { preferredLocations: updatedUserData.preferredLocations },
+                      {
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Session-Id': sessionId
+                        }
+                      }
+                    ).catch(error => {
+                      console.error('Error saving locations:', error);
+                    });
+                  }
+                }
+                e.target.value = "";
+              }}
+            >
+              <option value="">Select a location</option>
+              <option value="HICKS">HICKS</option>
+              <option value="Student Union">PMU</option>
+              <option value="Engineering Building">Engineering Building</option>
+              <option value="LWSN">LWSN</option>
+            </select>
+          </div>
+        </div>
       <div className="friends-container">
         <h3 className="friends">Friends</h3>
         <div className="friends-list">
