@@ -77,10 +77,6 @@ function Home() {
     fetchGroups();
   }, [navigate]);
 
-  useEffect(() => {
-    console.log('Groups state:', groups); // Log the groups state
-  }, [groups]);
-
   const handleCreateGroup = () => {
     navigate('/create-group');
   };
