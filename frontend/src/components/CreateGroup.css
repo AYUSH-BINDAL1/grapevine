@@ -1,4 +1,4 @@
-.create-event-container {
+.create-group-container {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -7,7 +7,7 @@
     font-family: Arial, sans-serif;
 }
 
-.create-event-form {
+.create-group-form {
     background-color: white;
     padding: 2rem;
     border-radius: 8px;
@@ -16,7 +16,7 @@
     max-width: 400px;
 }
 
-.create-event-form h2 {
+.create-group-form h2 {
     text-align: center;
     color: #333;
     margin-bottom: 1.5rem;
@@ -30,7 +30,7 @@
 .form-group textarea {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid #8ebd89;
+    border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
 }
@@ -40,7 +40,7 @@
     min-height: 100px;
 }
 
-.create-event-button {
+.create-group-button {
     width: 100%;
     padding: 0.75rem;
     background-color: #ae92c6;
@@ -52,14 +52,14 @@
     transition: background-color 0.2s;
 }
 
-.create-event-button:hover {
+.create-group-button:hover {
     background-color: #8ebd89;
 }
 
 .cancel-button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #6f2885;
+    background-color: #e74c3c;
     color: white;
     border: none;
     border-radius: 4px;
@@ -69,5 +69,5 @@
 }
 
 .cancel-button:hover {
-    background-color: #6f2885;
+    background-color: #c0392b;
 }

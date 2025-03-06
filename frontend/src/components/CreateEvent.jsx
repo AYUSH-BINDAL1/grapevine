@@ -1,6 +1,7 @@
 import './CreateEvent.css'
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 function CreateEvent() {
     const [formData, setFormData] = useState({
@@ -19,10 +20,34 @@ function CreateEvent() {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Event Created:', formData);
-        navigate('/events');
+        try {
+            const sessionId = localStorage.getItem('sessionId');
+            if (!sessionId) {
+                alert('You must be logged in to create an event.');
+                return;
+            }
+
+            const response = await axios.post(
+                'http://localhost:8080/events',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Session-Id': sessionId
+                    }
+                }
+            );
+
+            if (response.status === 201) {
+                console.log('Event Created:', response.data);
+                navigate('/events');
+            }
+        } catch (error) {
+            console.error('Error creating event:', error);
+            alert('Failed to create event. Please try again.');
+        }
     };
 
     const handleCancel = () => {

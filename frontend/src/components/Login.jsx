@@ -36,7 +36,7 @@ function Login() {
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Login failed. Please try again.');
+      alert('Login failed.');
     }
   };
 

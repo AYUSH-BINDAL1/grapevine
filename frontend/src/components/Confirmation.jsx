@@ -36,7 +36,7 @@ function Confirmation() {
       });
 
       if (response.status === 200) {
-        navigate('/');
+        navigate('/home');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -56,6 +56,10 @@ function Confirmation() {
             onChange={handleChange}
             placeholder="Confirmation Code"
             required
+            pattern="[A-Z0-9]{6}"
+            minLength="6"
+            maxLength="6"
+            title="Confirmation code must be 6 characters long and contain only capital letters and numbers."
           />
         </div>
         <button type="submit" className="register-button">

@@ -11,10 +11,16 @@
    #./setup.sh
    #3. To stop all services:
    #./setup.sh stop
+   #4. To run unit tests:
+   #./setup.sh test
+   #5. To open PostgreSQL console:
+   #./setup.sh db
 
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Function to clean up
@@ -24,9 +30,46 @@ cleanup() {
   exit 0
 }
 
-# Check for stop argument
+# Function to run tests
+run_tests() {
+  echo -e "${BLUE}Running unit tests...${NC}"
+  ./mvnw test
+  TEST_EXIT_CODE=$?
+  if [ $TEST_EXIT_CODE -eq 0 ]; then
+    echo -e "${GREEN}All tests passed!${NC}"
+  else
+    echo -e "${YELLOW}Some tests failed. See above for details.${NC}"
+  fi
+  exit $TEST_EXIT_CODE
+}
+
+# Function to open PostgreSQL console
+open_db_console() {
+  echo -e "${BLUE}Opening PostgreSQL console...${NC}"
+  docker exec -it backend-postgres-1 psql -U postgres
+  exit 0
+}
+
+# Check for arguments
 if [ "$1" == "stop" ]; then
   cleanup
+fi
+
+if [ "$1" == "test" ]; then
+  run_tests
+fi
+
+if [ "$1" == "db" ]; then
+  open_db_console
+fi
+
+# Check if port 8080 is already in use and kill the process if found
+if lsof -Pi :8080 -sTCP:LISTEN -t >/dev/null ; then
+  PID=$(lsof -Pi :8080 -sTCP:LISTEN -t)
+  echo -e "${YELLOW}Port 8080 is in use by process $PID. Killing process...${NC}"
+  kill -9 $PID
+  sleep 2
+  echo -e "${GREEN}Process using port 8080 has been terminated.${NC}"
 fi
 
 # Start Docker containers
@@ -88,3 +131,5 @@ echo -e "\n${GREEN}Setup complete! The application is running in Docker containe
 echo -e "Access the application at http://localhost:8080"
 echo -e "Access Mailpit at http://localhost:8025"
 echo -e "To stop all containers, run: ./setup.sh stop"
+echo -e "To run unit tests, run: ./setup.sh test"
+echo -e "To access the PostgreSQL console, run: ./setup.sh db"
