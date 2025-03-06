@@ -51,6 +51,7 @@ function Home() {
         const userEmail = JSON.parse(storedUserInfo).userEmail;
         try {
           const response = await axios.get(`http://localhost:8080/users/${userEmail}/all-groups-short`);
+          console.log('Fetched groups:', response.data); // Log the fetched data
           setGroups(response.data);
         } catch (error) {
           console.error('Error fetching groups:', error);
@@ -63,6 +64,10 @@ function Home() {
 
     fetchGroups();
   }, [navigate]);
+
+  useEffect(() => {
+    console.log('Groups state:', groups); // Log the groups state
+  }, [groups]);
 
   const handleCreateGroup = () => {
     navigate('/create-group');
