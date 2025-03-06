@@ -43,7 +43,7 @@
 .create-group-button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #3498db;
+    background-color: #ae92c6;
     color: white;
     border: none;
     border-radius: 4px;
@@ -53,7 +53,7 @@
 }
 
 .create-group-button:hover {
-    background-color: #2980b9;
+    background-color: #8ebd89;
 }
 
 .cancel-button {
