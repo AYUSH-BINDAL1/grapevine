@@ -211,3 +211,64 @@ h3{
 .app {  /* for Events component */
   padding-top: 60px; /* Adjust this value based on your taskbar height */
 }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  margin-bottom: 20px;
+}
+
+
+.scroll-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 16px;
+  padding-bottom: 10px;
+  scroll-snap-type: x mandatory;
+}
+
+.event-card {
+  flex: 0 0 auto;
+  width: 200px;
+  text-align: center;
+  box-shadow: 0 4px 8px #8ebd89;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  scroll-snap-align: start; /* Smooth scrolling */
+}
+
+.event-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.event-card h3 {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+
+.create-event-button {
+  background-color: #ae92c6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.create-event-button:hover {
+  background-color: #8ebd89;
+}
+
+.app {
+  min-height: calc(100vh - 60px); /* 60px is approximate taskbar height */
+  padding-top: 20px;
+}
