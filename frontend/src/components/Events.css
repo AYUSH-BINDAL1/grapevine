@@ -67,7 +67,7 @@ h1 {
 
 .event-card:hover {
     transform: translateY(-3px);
-    box-shadow: 2px 2px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 2px 2px 12px #8ebd89;
 }
 
 .event-card h3 {
