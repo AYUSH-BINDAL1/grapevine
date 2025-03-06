@@ -1,16 +1,45 @@
-# to test on a local mail server
-# https://medium.com/@kanezi.com/comprehensive-guide-to-email-in-spring-110d59f7c7c9
-# 1. make sure you have the docker daemon installed (or just open docker desktop)
-# 2. run all docker containers
-    # docker compose up -d  
-# 3. to check to make sure your mailpit container (the local mail server) is running:
-    # docker ps 
-# 4. to destroy and clean all containers:
-    # docker compose down -v
+version: '3.8'
+
 services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres@123
+      - SPRING_MAIL_HOST=mailpit
+      - SPRING_MAIL_PORT=1025
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres@123
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   mailpit:
     image: axllent/mailpit
-    container_name: mailpit
     ports:
-      - 8025:8025
-      - 1025:1025
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

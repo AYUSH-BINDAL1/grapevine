@@ -13,6 +13,13 @@ function Profile() {
   const [availabilityString, setAvailabilityString] = useState("0".repeat(168));
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState("");
+  // Add new state variables for profile editing
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editedProfileData, setEditedProfileData] = useState({
+    name: "",
+    userEmail: "",
+    majors: []
+  });
 
   useEffect(() => {
     // Load user data from localStorage
@@ -20,6 +27,12 @@ function Profile() {
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
       setUserData(parsedData);
+      setEditedDescription(parsedData.biography || "");
+      setEditedProfileData({
+        name: parsedData.name || "",
+        userEmail: parsedData.userEmail || "",
+        majors: parsedData.majors || []
+      });
       
       // If the user already has availability data, load it
       if (parsedData.weeklyAvailability) {
@@ -209,8 +222,130 @@ function Profile() {
     }
   };
 
+  const handleEditProfile = () => {
+    setIsEditingProfile(true);
+  };
+
+  const handleProfileInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === "majors") {
+      // Convert comma-separated string to array
+      setEditedProfileData({
+        ...editedProfileData,
+        [name]: value.split(',').map(item => item.trim()).filter(item => item !== "")
+      });
+    } else {
+      setEditedProfileData({
+        ...editedProfileData,
+        [name]: value
+      });
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userData) return;
+
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      
+      if (!sessionId) {
+        alert("You must be logged in to save profile information");
+        return;
+      }
+
+      const response = await axios.put(
+        `http://localhost:8080/users/${userData.userEmail}`,
+        editedProfileData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        // Update the stored user data
+        const updatedUserData = { ...userData, ...editedProfileData };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+        setIsEditingProfile(false);
+        
+        alert("Profile information saved successfully!");
+      }
+    } catch (error) {
+      console.error('Error saving profile information:', error);
+      alert("Failed to save profile information. Please try again.");
+    }
+  };
+
   return (
     <div className="profile-page">
+      <button className="edit-profile-button" onClick={handleEditProfile}>
+        Edit Profile
+      </button>
+      
+      {isEditingProfile && (
+        <div className="edit-profile-modal">
+          <div className="edit-profile-form">
+            <h3>Edit Profile Information</h3>
+            <div className="form-group">
+              <label htmlFor="name">Name</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={editedProfileData.name}
+                onChange={handleProfileInputChange}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="userEmail">Email</label>
+              <input
+                type="email"
+                id="userEmail"
+                name="userEmail"
+                value={editedProfileData.userEmail}
+                onChange={handleProfileInputChange}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="majors">Majors (comma separated)</label>
+              <input
+                type="text"
+                id="majors"
+                name="majors"
+                value={editedProfileData.majors.join(', ')}
+                onChange={handleProfileInputChange}
+                placeholder="e.g. CS, Math, Statistics"
+              />
+            </div>
+            <div className="form-buttons">
+              <button 
+                className="save-profile-button"
+                onClick={handleSaveProfile}
+              >
+                Save Changes
+              </button>
+              <button 
+                className="cancel-profile-button"
+                onClick={() => {
+                  setIsEditingProfile(false);
+                  setEditedProfileData({
+                    name: userData?.name || "",
+                    userEmail: userData?.userEmail || "",
+                    majors: userData?.majors || []
+                  });
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="profile-image-container">
         <img src={profileImage} alt="Profile" className="profile-image" />
       </div>
@@ -308,6 +443,90 @@ function Profile() {
             <option value="sunday">Sunday</option>
           </select>
           <button className="add-time" onClick={saveAvailability}>Add Availability</button>
+          <button 
+            className="remove-time" 
+            onClick={() => {
+              const { day, startTime, endTime } = availability;
+              
+              if (!day || !startTime || !endTime) {
+                alert("Please select a day, start time, and end time");
+                return;
+              }
+            
+              // Convert day to starting index (24 hours per day)
+              const dayIndices = {
+                "monday": 0,
+                "tuesday": 24,
+                "wednesday": 48,
+                "thursday": 72,
+                "friday": 96,
+                "saturday": 120,
+                "sunday": 144
+              };
+              
+              const dayIndex = dayIndices[day];
+              
+              // Convert time strings to hours
+              const startHour = parseInt(startTime.split(":")[0]);
+              const endHour = parseInt(endTime.split(":")[0]);
+              
+              if (startHour >= endHour) {
+                alert("End time must be after start time");
+                return;
+              }
+            
+              // Create a new availability string
+              let newAvailabilityString = availabilityString.split('');
+              
+              // Mark the hours as unavailable (0)
+              for (let hour = startHour; hour < endHour; hour++) {
+                newAvailabilityString[dayIndex + hour] = '0';
+              }
+              
+              const updatedAvailabilityString = newAvailabilityString.join('');
+            
+              if (!userData) return;
+            
+              try {
+                const sessionId = localStorage.getItem('sessionId');
+                
+                if (!sessionId) {
+                  alert("You must be logged in to update availability");
+                  return;
+                }
+            
+                axios.put(
+                  `http://localhost:8080/users/${userData.userEmail}`,
+                  { weeklyAvailability: updatedAvailabilityString },
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Session-Id': sessionId
+                    }
+                  }
+                ).then(response => {
+                  if (response.status === 200) {
+                    setAvailabilityString(updatedAvailabilityString);
+                    
+                    // Update the stored user data
+                    const updatedUserData = { ...userData, weeklyAvailability: updatedAvailabilityString };
+                    localStorage.setItem('userData', JSON.stringify(updatedUserData));
+                    setUserData(updatedUserData);
+                    
+                    alert("Availability removed successfully!");
+                  }
+                }).catch(error => {
+                  console.error('Error removing availability:', error);
+                  alert("Failed to remove availability. Please try again.");
+                });
+              } catch (error) {
+                console.error('Error removing availability:', error);
+                alert("Failed to remove availability. Please try again.");
+              }
+            }}
+          >
+            Remove Availability
+          </button>
           
           <div className="availability-preview">
             <h4>Current Availability:</h4>

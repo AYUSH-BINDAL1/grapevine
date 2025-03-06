@@ -30,7 +30,7 @@
 .form-group textarea {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid #ddd;
+    border: 1px solid #8ebd89;
     border-radius: 4px;
     font-size: 1rem;
 }
@@ -43,7 +43,7 @@
 .create-event-button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #3498db;
+    background-color: #ae92c6;
     color: white;
     border: none;
     border-radius: 4px;
@@ -53,13 +53,13 @@
 }
 
 .create-event-button:hover {
-    background-color: #2980b9;
+    background-color: #8ebd89;
 }
 
 .cancel-button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #e74c3c;
+    background-color: #6f2885;
     color: white;
     border: none;
     border-radius: 4px;
@@ -69,5 +69,5 @@
 }
 
 .cancel-button:hover {
-    background-color: #c0392b;
+    background-color: #6f2885;
 }

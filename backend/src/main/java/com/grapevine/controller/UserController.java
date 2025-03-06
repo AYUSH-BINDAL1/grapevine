@@ -1,6 +1,7 @@
 package com.grapevine.controller;
 
 import com.grapevine.model.*;
+import com.grapevine.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +21,15 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public String registerUser(@RequestBody User user) {
-        return userService.initiateUserRegistration(user);
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        try {
+            String token = userService.initiateUserRegistration(user);
+            return ResponseEntity.ok(token);
+        } catch (UserAlreadyExistsException e) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage()));
+        }
     }
 
     @PostMapping("/verify")
@@ -236,6 +244,21 @@ public class UserController {
         }
         //Return all events the user is participating in, in short form
         return userService.getJoinedShortEvents(userEmail);
+    }
+
+    @GetMapping("/{userEmail}/preferred-locations")
+    public List<Location> getPreferredLocations(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own preferred locations");
+        }
+
+        // Return all preferred locations for the user
+        return userService.getPreferredLocations(currentUser);
     }
 
     // sample of how other endpoints would use the session

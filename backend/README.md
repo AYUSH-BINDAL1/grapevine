@@ -1,10 +1,41 @@
-# Local Testing Guide
-## The test.sh script provides complete setup for the grapevine server, initializing Docker containers and populating a clean database with test users. To use the script:
+# BACKEND - LOCAL SETUP GUIDE
 
-### 1. Navigate to the `grapevine/backend` directory and make the script executable: `chmod +x test.sh`
-### 2. Run the script: `./test.sh`
+#### The setup script will start the server application with all necessary services (springboot server, postgres database, mail server, etc.) in Docker containers. The script will also populate the database with some sample data.
 
-## The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
+### <ins> PRE-REQUISITES: Docker Desktop (which includes the Docker Engine and CLI) must be installed and running on your machine. </ins>
+### For Unix-based systems (macOS, Linux):
+1. Make the script executable:
+   ```bash
+   chmod +x setup.sh
+   ```
+2.  Run the script to start everything:
+    ```bash
+    ./setup.sh
+    ```
+3. To stop all services:
+   ```bash
+    ./setup.sh stop
+    ```
+4. To run all tests:
+   ```bash
+    ./setup.sh test
+    ```
+
+### For Windows:
+1. Run the batch script to start everything:
+    ```bash
+    setup.bat
+    ````
+2. To stop all services:
+    ```bash
+    setup.bat stop
+    ```
+3. To run all tests:
+    ```bash
+    setup.bat test
+    ```
+
+### The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
 
 | Email | Password | Name | Birthday | Verified |
 |-------|----------|------|----------|----------|
@@ -12,7 +43,7 @@
 | user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
 
 
-# API Endpoints Table
+# API ENDPOINTS
 
 ## Users
 
@@ -38,6 +69,7 @@
 | GET    | `/users/{userEmail}/hosted-events-short` | -            | userEmail     | Session-Id  | Gets hosted events in short form  | List of ShortEvent objects |
 | GET    | `/users/{userEmail}/joined-events`       | -            | userEmail     | Session-Id  | Gets events user participates in  | List of Event objects      |
 | GET    | `/users/{userEmail}/joined-events-short` | -            | userEmail     | Session-Id  | Gets joined events in short form  | List of ShortEvent objects |
+| GET    | `/users/{userEmail}/preferred-locations` | -            | userEmail     | Session-Id  | Gets user's preferred locations   | List of Location objects   |
 ## Groups
 
 | Method | Endpoint                          | Request Body | Path Variable | Headers    | Description                     | Response                   |
@@ -58,7 +90,16 @@
 | GET    | `/events/all-short`        | -            | -             | Session-Id | Gets all events in short form      | List of ShortEvent objects |
 | GET    | `/events/{eventId}`        | -            | eventId       | Session-Id | Gets a specific event by ID        | Event object               |
 | POST   | `/events/create/{groupId}` | Event object | groupId       | Session-Id | Creates an event for a given group | Created Event object       |
-*Note:
+
+## Locations
+
+| Method | Endpoint         | Request Body | Path Variable | Headers    | Description                    | Response                 |
+|--------|------------------|--------------|---------------|------------|--------------------------------|--------------------------|
+| GET    | `/locations/all` | -            | -             | Session-Id | Gets all locations in database | List of Location objects |
+
+
+
+# SAMPLE REQUESTS
 
 ## Sample Requests: User Registration
 
