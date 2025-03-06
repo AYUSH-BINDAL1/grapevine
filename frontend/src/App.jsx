@@ -115,6 +115,7 @@ function App() {
           <Route path="/forum" element={<Nopath />} /> {/* Placeholder */}
           <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
           <Route path="/friends" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="/group/:id" element={<Groups />} />
           <Route path="*" element={<Nopath />} />
         </Route>
       </Routes>
