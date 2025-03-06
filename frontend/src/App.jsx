@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet } from 'react-router-dom';
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import axios from 'axios';
 import Registration from './components/Registration';
 import Login from './components/Login';
 import Confirmation from './components/Confirmation';
@@ -8,9 +9,9 @@ import Nopath from './components/Nopath';
 import profileImage from './assets/temp-profile.webp';
 import Events from './components/Events';
 import CreateEvent from "./components/CreateEvent.jsx";
-import Groups from "./components/Groups.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import './App.css';
+import './components/Groups.css';
 
 function Taskbar() {
   const navigate = useNavigate();
@@ -40,26 +41,54 @@ function Layout() {
 }
 
 function Home() {
-  const groups = [
-    { id: 1, title: 'Group 1', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-    { id: 2, title: 'Group 2', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-    { id: 3, title: 'Group 3', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-    { id: 4, title: 'Group 4', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-    { id: 5, title: 'Group 5', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-    { id: 6, title: 'Group 6', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-    { id: 7, title: 'Group 7', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-    { id: 8, title: 'Group 8', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-  ];
-
+  const [groups, setGroups] = useState([]);
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      const storedUserInfo = localStorage.getItem('userInfo');
+      const sessionId = localStorage.getItem('sessionId');
+      
+      if (storedUserInfo && sessionId) {
+        const userEmail = JSON.parse(storedUserInfo).userEmail;
+        try {
+          const response = await axios.get(
+            `http://localhost:8080/users/${userEmail}/all-groups-short`,
+            {
+              headers: {
+                'Session-Id': sessionId
+              }
+            }
+          );
+          setGroups(response.data);
+        } catch (error) {
+          console.error('Error fetching groups:', error);
+          if (error.response && error.response.status === 401) {
+            alert('Session expired. Please login again.');
+            navigate('/');
+          }
+        }
+      } else {
+        alert('No user information or session found. Please login again.');
+        navigate('/');
+      }
+    };
+  
+    fetchGroups();
+  }, [navigate]);
 
   const handleCreateGroup = () => {
     navigate('/create-group');
   };
 
-  const handleGroupClick = (groupId) => {
-    navigate(`/group/${groupId}`);
+  const handleGroupClick = async (groupId) => {
+    try {
+      await axios.get(`http://localhost:8080/groups/${groupId}`);
+      navigate(`/group/${groupId}`);
+    } catch (error) {
+      console.error('Error navigating to group:', error);
+    }
   };
 
   const scrollLeft = () => {
@@ -83,9 +112,9 @@ function Home() {
             <p>You are not part of any groups. Create one or join an existing group!</p>
           ) : (
             groups.map((group) => (
-              <div key={group.id} className="group-card" onClick={() => handleGroupClick(group.id)}>
-                <img src={group.image} alt={group.title} />
-                <h3>{group.title}</h3>
+              <div key={group.groupId} className="group-card" onClick={() => handleGroupClick(group.groupId)}>
+                <h3>{group.name || group.groupName || 'Unnamed Group'}</h3>
+                <p>ID: {group.groupId}</p> {/* Temporarily add this to see if IDs show */}
               </div>
             ))
           )}
