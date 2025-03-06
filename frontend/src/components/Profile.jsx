@@ -592,57 +592,169 @@ function Profile() {
         </div>
       </div>
       <div className="locations-container">
-          <h3 className="locations">Preferred Study Locations</h3>
-          <div className="locations-list">
-            {userData?.preferredLocations?.length > 0 ? (
-              userData.preferredLocations.map((location, index) => (
-                <div key={index} className="location">
-                  <p className="location-name">{location}</p>
-                </div>
-              ))
-            ) : (
-              <div className="location">
-                <p className="location-name">No preferred locations</p>
-              </div>
-            )}
-            <select 
-              className="location-select"
-              onChange={(e) => {
-                if (e.target.value && userData) {
-                  const updatedUserData = { 
-                    ...userData, 
-                    preferredLocations: [...(userData.preferredLocations || []), e.target.value] 
-                  };
-                  localStorage.setItem('userData', JSON.stringify(updatedUserData));
-                  setUserData(updatedUserData);
-                  
-                  const sessionId = localStorage.getItem('sessionId');
-                  if (sessionId) {
-                    axios.put(
-                      `http://localhost:8080/users/${userData.userEmail}`,
-                      { preferredLocations: updatedUserData.preferredLocations },
-                      {
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Session-Id': sessionId
-                        }
-                      }
-                    ).catch(error => {
-                      console.error('Error saving locations:', error);
-                    });
-                  }
-                }
-                e.target.value = "";
-              }}
-            >
-              <option value="">Select a location</option>
-              <option value="HICKS">HICKS</option>
-              <option value="Student Union">PMU</option>
-              <option value="Engineering Building">Engineering Building</option>
-              <option value="LWSN">LWSN</option>
-            </select>
+  <h3 className="locations">Preferred Study Locations</h3>
+  <div className="locations-list">
+    {userData?.preferredLocations?.length > 0 ? (
+      userData.preferredLocations.map((locationId, index) => {
+        // Create a mapping of location IDs to short names
+        const locationNames = {
+          1: "WALC",
+          2: "LWSN",
+          3: "PMUC",
+          4: "HAMP",
+          5: "RAWL",
+          6: "CHAS",
+          7: "CL50",
+          8: "FRNY",
+          9: "KRAN",
+          10: "MSEE",
+          11: "MATH",
+          12: "PHYS",
+          13: "POTR",
+          14: "HAAS",
+          15: "HIKS",
+          16: "BRWN",
+          17: "HEAV",
+          18: "BRNG",
+          19: "SC",
+          20: "WTHR",
+          21: "UNIV",
+          22: "YONG",
+          23: "ME",
+          24: "ELLT",
+          25: "PMU",
+          26: "STEW"
+        };
+
+        // Handle both numeric IDs and legacy string location names
+        const locationName = typeof locationId === 'number' 
+          ? locationNames[locationId]
+          : locationId; // For backwards compatibility
+        
+        return (
+          <div key={index} className="location">
+            <p className="location-name">{locationName}</p>
           </div>
-        </div>
+        );
+      })
+    ) : (
+      <div className="location">
+        <p className="location-name">No preferred locations</p>
+      </div>
+    )}
+
+    <select 
+      className="location-select"
+      onChange={(e) => {
+        if (e.target.value && userData) {
+          // Convert selected value to numeric ID
+          const locationId = parseInt(e.target.value, 10);
+          
+          // Create array of preferred location IDs`
+          const currentLocationIds = userData.preferredLocations?.map(loc => {
+            // If it's already a number, use it directly
+            if (typeof loc === 'number') return loc;
+            
+            // If locations were previously stored as strings, try to find their IDs
+            // This is for backward compatibility
+            const locationMap = {
+              "WALC": 1,
+              "LWSN": 2,
+              "PMUC": 3,
+              "HAMP": 4,
+              "RAWL": 5,
+              "CHAS": 6,
+              "CL50": 7,
+              "FRNY": 8,
+              "KRAN": 9,
+              "MSEE": 10,
+              "MATH": 11,
+              "PHYS": 12,
+              "POTR": 13,
+              "HAAS": 14,
+              "HIKS": 15,
+              "BRWN": 16,
+              "HEAV": 17,
+              "BRNG": 18,
+              "SC": 19,
+              "WTHR": 20,
+              "UNIV": 21,
+              "YONG": 22,
+              "ME": 23,
+              "ELLT": 24,
+              "PMU": 25,
+              "STEW": 26,
+              // Additional mappings for legacy data
+              "HICKS": 15,
+              "Student Union": 25,
+              "Engineering Building": 23
+            };
+            return locationMap[loc] || null;
+          }).filter(id => id !== null) || [];
+          
+          // Add new location ID if not already in the list
+          if (!currentLocationIds.includes(locationId)) {
+            currentLocationIds.push(locationId);
+          }
+          
+          // Create updated user data with location IDs
+          const updatedUserData = { 
+            ...userData, 
+            preferredLocations: currentLocationIds
+          };
+          
+          localStorage.setItem('userData', JSON.stringify(updatedUserData));
+          setUserData(updatedUserData);
+          
+          const sessionId = localStorage.getItem('sessionId');
+          if (sessionId) {
+            axios.put(
+              `http://localhost:8080/users/${userData.userEmail}`,
+              { preferredLocations: currentLocationIds },
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Session-Id': sessionId
+                }
+              }
+            ).catch(error => {
+              console.error('Error saving locations:', error);
+            });
+          }
+        }
+        e.target.value = "";
+      }}
+    >
+      <option value="">Select a location</option>
+      <option value="1">WALC</option>
+      <option value="2">LWSN</option>
+      <option value="3">PMUC</option>
+      <option value="4">HAMP</option>
+      <option value="5">RAWL</option>
+      <option value="6">CHAS</option>
+      <option value="7">CL50</option>
+      <option value="8">FRNY</option>
+      <option value="9">KRAN</option>
+      <option value="10">MSEE</option>
+      <option value="11">MATH</option>
+      <option value="12">PHYS</option>
+      <option value="13">POTR</option>
+      <option value="14">HAAS</option>
+      <option value="15">HIKS</option>
+      <option value="16">BRWN</option>
+      <option value="17">HEAV</option>
+      <option value="18">BRNG</option>
+      <option value="19">SC</option>
+      <option value="20">WTHR</option>
+      <option value="21">UNIV</option>
+      <option value="22">YONG</option>
+      <option value="23">ME</option>
+      <option value="24">ELLT</option>
+      <option value="25">PMU</option>
+      <option value="26">STEW</option>
+    </select>
+  </div>
+</div>
       <div className="friends-container">
         <h3 className="friends">Friends</h3>
         <div className="friends-list">
