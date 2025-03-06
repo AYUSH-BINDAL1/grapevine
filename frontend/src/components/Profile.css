@@ -550,3 +550,14 @@
     display: flex;
     gap: 10px;
   }
+
+.input-error {
+  border-color: #ff3860 !important;
+}
+
+.error-message {
+  color: #ff3860;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  display: block;
+}
