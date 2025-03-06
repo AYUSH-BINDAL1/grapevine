@@ -1,0 +1,57 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.app {
+    padding: 20px;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+.scroll-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 16px;
+    padding-bottom: 10px;
+    scroll-snap-type: x mandatory;
+}
+
+.group-card {
+    flex: 0 0 auto;
+    width: 200px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    scroll-snap-align: start;
+}
+
+.group-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.group-card h3 {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.create-group-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.create-group-button:hover {
+    background-color: #2980b9;
+}

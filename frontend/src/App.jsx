@@ -7,6 +7,8 @@ import Nopath from './components/Nopath';
 import profileImage from './assets/temp-profile.webp';
 import Events from './components/Events';
 import CreateEvent from "./components/CreateEvent.jsx";
+import Groups from "./components/Groups.jsx";
+import CreateGroups from "./components/CreateGroups.jsx";
 import './App.css';
 
 function Taskbar() {
@@ -19,7 +21,7 @@ function Taskbar() {
   return (
     <div className='taskbar'>
       <nav className='taskbar-elem'>
-        <h3 onClick={()=>{navigate("/home")}} className='elem'>Groups</h3>
+        <h3 onClick={()=>{navigate("/groups")}} className='elem'>Groups</h3>
         <h3 onClick={()=>{navigate("/events")}} className='elem'>Events</h3>
         <h3 onClick={()=>{navigate("/forum")}} className='elem'>Forum</h3>
         <h3 onClick={()=>{navigate("/messages")}} className='elem'>Messages</h3>
@@ -45,6 +47,8 @@ function App() {
         <Route path="/registration" element={<Registration />} />
         <Route path="/confirmation" element={<Confirmation />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/groups" element={<Groups />} />
+        <Route path="/create-group" element={<CreateGroups />} />
         <Route path="/profile" element={<Profile />}/>
         <Route path="*" element={<Nopath />} />
           <Route path="/events" element={<Events />} />
