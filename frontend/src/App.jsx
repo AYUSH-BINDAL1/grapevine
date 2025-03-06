@@ -1,20 +1,22 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import axios from 'axios';
 import Registration from './components/Registration';
 import Login from './components/Login';
 import Confirmation from './components/Confirmation';
 import Profile from './components/Profile';
 import Nopath from './components/Nopath';
+import profileImage from './assets/temp-profile.webp';
 import Events from './components/Events';
+import Groups from './components/Groups';
 import CreateEvent from "./components/CreateEvent.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
-import profileImage from './assets/temp-profile.webp';
 import './App.css';
 import './components/Groups.css';
 
 function Taskbar() {
   const navigate = useNavigate();
+  
   return (
       <div className="taskbar">
         <nav className="taskbar-elem">
@@ -29,12 +31,13 @@ function Taskbar() {
   );
 }
 
+// Layout component that includes Taskbar and renders child routes
 function Layout() {
   return (
-      <>
-        <Taskbar />
-        <Outlet />
-      </>
+    <>
+      <Taskbar />
+      <Outlet /> {/* This is where child routes will be rendered */}
+    </>
   );
 }
 
@@ -47,7 +50,7 @@ function Home() {
     const fetchGroups = async () => {
       const storedUserInfo = localStorage.getItem('userData');
       const sessionId = localStorage.getItem('sessionId');
-
+      
       if (storedUserInfo && sessionId) {
         const parsedUser = JSON.parse(storedUserInfo);
         const userEmail = parsedUser.userEmail;
@@ -75,7 +78,7 @@ function Home() {
         navigate('/');
       }
     };
-
+  
     fetchGroups();
   }, [navigate]);
 
@@ -83,8 +86,13 @@ function Home() {
     navigate('/create-group');
   };
 
-  const handleGroupClick = (groupId) => {
-    navigate(`/group/${groupId}`);
+  const handleGroupClick = async (groupId) => {
+    try {
+      await axios.get(`http://localhost:8080/groups/${groupId}`);
+      navigate(`/group/${groupId}`);
+    } catch (error) {
+      console.error('Error navigating to group:', error);
+    }
   };
 
   const scrollLeft = () => {
@@ -126,27 +134,28 @@ function Home() {
 
 function App() {
   return (
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Login />} />
-          <Route path="/registration" element={<Registration />} />
-          <Route path="/confirmation" element={<Confirmation />} />
-
-          {/* Protected Routes with Taskbar */}
-          <Route element={<Layout />}>
-            <Route path="/home" element={<Home />} />
-            <Route path="/create-group" element={<CreateGroup />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/create-event" element={<CreateEvent />} />
-            <Route path="/forum" element={<Nopath />} /> {/* Placeholder */}
-            <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
-            <Route path="/friends" element={<Nopath />} /> {/* Placeholder */}
-            <Route path="*" element={<Nopath />} />
-          </Route>
-        </Routes>
-      </Router>
+    <Router>
+      <Routes>
+        {/* Public routes without taskbar */}
+        <Route path="/" element={<Login />} />
+        <Route path="/registration" element={<Registration />} />
+        <Route path="/confirmation" element={<Confirmation />} />
+        
+        {/* Protected routes with taskbar */}
+        <Route element={<Layout />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/create-group" element={<CreateGroup />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/create-event" element={<CreateEvent />} />
+          <Route path="/forum" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="/friends" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="/group/:id" element={<Groups />} />
+          <Route path="*" element={<Nopath />} />
+        </Route>
+      </Routes>
+    </Router>
   );
 }
 
