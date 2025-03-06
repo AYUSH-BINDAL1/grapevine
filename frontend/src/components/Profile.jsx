@@ -243,9 +243,17 @@ function Profile() {
     }
   };
 
+  // Update the handleSaveProfile function to include confirmation
   const handleSaveProfile = async () => {
     if (!userData) return;
-
+  
+    // Add confirmation dialog
+    const confirmSave = window.confirm("Are you sure you want to save these changes to your profile?");
+    
+    if (!confirmSave) {
+      return; // User canceled the action
+    }
+  
     try {
       const sessionId = localStorage.getItem('sessionId');
       
@@ -253,7 +261,7 @@ function Profile() {
         alert("You must be logged in to save profile information");
         return;
       }
-
+  
       const response = await axios.put(
         `http://localhost:8080/users/${userData.userEmail}`,
         editedProfileData,
@@ -264,7 +272,7 @@ function Profile() {
           }
         }
       );
-
+  
       if (response.status === 200) {
         // Update the stored user data
         const updatedUserData = { ...userData, ...editedProfileData };
