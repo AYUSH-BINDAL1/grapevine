@@ -9,8 +9,8 @@
     background-color: #f5f5f5; 
     font-family: Arial, sans-serif;
     /* Adjust height to account for taskbar */
-    min-height: calc(100vh - 60px); /* 60px is approximate taskbar height */
-    padding-top: 20px;
+    min-height: calc(100vh - 80px); /* 60px is approximate taskbar height */
+    padding-top: 60px;
 }
 
 .profile-image-container {
