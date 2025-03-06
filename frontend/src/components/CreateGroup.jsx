@@ -51,7 +51,7 @@ function CreateGroup() {
 
             if (response.status === 200) {
                 console.log('Group Created:', response.data);
-                navigate('/home');
+                navigate(`/group/${response.data.groupId}`);
             }
         } catch (error) {
             console.error('Error creating group:', error);

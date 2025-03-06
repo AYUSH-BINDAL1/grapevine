@@ -20,7 +20,7 @@ function CreateEvent() {
     useEffect(() => {
         const fetchGroups = async () => {
             try {
-                const email = localStorage.getItem('email') || "test@example.com";
+                const email = JSON.parse(localStorage.getItem('userData')).userEmail;
                 const url = `http://localhost:8080/users/${email}/hosted-groups`;
                 const sessionId = localStorage.getItem('sessionId');
                 const response = await axios.get(url, {
@@ -80,7 +80,7 @@ function CreateEvent() {
 
             if (response.status === 200) {
                 console.log('Event Created:', response.data);
-                navigate('/events');
+                navigate(`/event/${response.data.eventId}`);
             }
         } catch (error) {
             console.error('Error creating event:', error);

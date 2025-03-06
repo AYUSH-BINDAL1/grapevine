@@ -75,7 +75,7 @@ function Groups() {
 
   useEffect(() => {
     const fetchGroups = async () => {
-      const storedUserInfo = localStorage.getItem('userInfo');
+      const storedUserInfo = localStorage.getItem('userData');
       if (storedUserInfo) {
         const userEmail = JSON.parse(storedUserInfo).userEmail;
         try {
