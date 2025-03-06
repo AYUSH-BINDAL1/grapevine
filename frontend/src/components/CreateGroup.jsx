@@ -60,7 +60,7 @@ function CreateGroup() {
     };
 
     const handleCancel = () => {
-        navigate('/groups');
+        navigate('/home');
     };
 
     return (
