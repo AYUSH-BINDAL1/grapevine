@@ -9,6 +9,7 @@ import Nopath from './components/Nopath';
 import profileImage from './assets/temp-profile.webp';
 import Events from './components/Events';
 import CreateEvent from "./components/CreateEvent.jsx";
+import CreateGroup from "./components/CreateGroup.jsx";
 import './App.css';
 import './components/Groups.css';
 
@@ -136,6 +137,7 @@ function App() {
         {/* Protected routes with taskbar */}
         <Route element={<Layout />}>
           <Route path="/home" element={<Home />} />
+          <Route path="/create-group" element={<CreateGroup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/events" element={<Events />} />
           <Route path="/create-event" element={<CreateEvent />} />

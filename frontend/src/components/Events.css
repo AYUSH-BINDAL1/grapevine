@@ -3,6 +3,12 @@ body {
     font-family: Arial, sans-serif;
 }
 
+.app {
+    padding: 20px;
+    min-height: calc(100vh - 60px);
+    padding-top: 20px;
+}
+
 h1 {
     margin-bottom: 20px;
 }
@@ -20,12 +26,16 @@ h1 {
     flex: 0 0 auto;
     width: 200px;
     text-align: center;
-    box-shadow: 0 4px 8px #8ebd89;
     border-radius: 8px;
     overflow: hidden;
     background: #fff;
-    scroll-snap-align: start; /* Smooth scrolling */
-}
+    scroll-snap-align: start;
+  }
+  
+  .event-card:hover {
+    transform: translateY(5px);
+    box-shadow: 0 4px 8px #8ebd89;
+  }
 
 .event-card img {
     width: 100%;
