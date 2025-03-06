@@ -560,4 +560,6 @@
   font-size: 0.8rem;
   margin-top: 5px;
   display: block;
+  margin-left: 10px;
+  text-align: left;
 }
