@@ -20,12 +20,16 @@ h1 {
     flex: 0 0 auto;
     width: 200px;
     text-align: center;
-    box-shadow: 0 4px 8px #8ebd89;
     border-radius: 8px;
     overflow: hidden;
     background: #fff;
     scroll-snap-align: start; /* Smooth scrolling */
-}
+  }
+  
+  .event-card:hover {
+    transform: translateY(5px);
+    box-shadow: 0 4px 8px #8ebd89;
+  }
 
 .event-card img {
     width: 100%;
