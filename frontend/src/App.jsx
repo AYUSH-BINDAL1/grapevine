@@ -48,7 +48,7 @@ function Home() {
 
   useEffect(() => {
     const fetchGroups = async () => {
-      const storedUserInfo = localStorage.getItem('userInfo');
+      const storedUserInfo = localStorage.getItem('userData');
       const sessionId = localStorage.getItem('sessionId');
       
       if (storedUserInfo && sessionId) {
@@ -83,13 +83,8 @@ function Home() {
     navigate('/create-group');
   };
 
-  const handleGroupClick = async (groupId) => {
-    try {
-      await axios.get(`http://localhost:8080/groups/${groupId}`);
-      navigate(`/group/${groupId}`);
-    } catch (error) {
-      console.error('Error navigating to group:', error);
-    }
+  const handleGroupClick = (groupId) => {
+    navigate(`/group/${groupId}`);
   };
 
   const scrollLeft = () => {
