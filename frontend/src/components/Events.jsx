@@ -1,22 +1,44 @@
 import './Events.css';
 import { useNavigate } from 'react-router-dom';
-import { useRef } from 'react';
-import axios from "axios";
+import { useRef, useEffect, useState } from 'react';
+import axios from 'axios';
 
 function Events() {
-    const events = [
-        { id: 1, title: 'Event 1', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-        { id: 2, title: 'Event 2', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-        { id: 3, title: 'Event 3', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-        { id: 4, title: 'Event 4', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-        { id: 5, title: 'Event 5', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-        { id: 6, title: 'Event 6', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-        { id: 7, title: 'Event 7', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-        { id: 8, title: 'Event 8', image: 'https://via.placeholder.com/150?text=Image+Not+Found' },
-    ];
-
+    const [events, setEvents] = useState([]);
     const navigate = useNavigate();
     const scrollContainerRef = useRef(null);
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const userDataString = localStorage.getItem('userData');
+
+                const sessionId = localStorage.getItem('sessionId');
+                if (!userDataString || !sessionId) {
+                    alert('No user information or session found. Please login again.');
+                    navigate('/');
+                    return;
+                }
+                const userData = JSON.parse(userDataString);
+                const email = userData.userEmail;
+
+                const url = `http://localhost:8080/users/${email}/all-events-short`;
+                const response = await axios.get(url, {
+                    headers: { 'Session-Id': sessionId }
+                });
+                console.log('Events fetched:', response.data);
+                setEvents(response.data);
+            } catch (error) {
+                console.error('Error fetching events:', error);
+                if (error.response && error.response.status === 401) {
+                    alert('Session expired. Please login again.');
+                    navigate('/');
+                }
+            }
+        };
+
+        fetchEvents();
+    }, []);
 
     const handleCreateEvent = () => {
         navigate('/create-event');
@@ -43,15 +65,18 @@ function Events() {
             <div className="scroll-wrapper2">
                 <button className="scroll-arrow2 left" onClick={scrollLeft}>&lt;</button>
                 <div className="scroll-container2" ref={scrollContainerRef}>
-                    {events.length === 0 ? (
-                        <p>You are not part of any events. Create one or join an existing event!</p>
-                    ) : (
-                        events.map((event) => (
-                            <div key={event.id} className="event-card" onClick={() => handleEventClick(event.id)}>
-                                <img src={event.image} alt={event.title} />
-                                <h3>{event.title}</h3>
+                    {events.length > 0 ? (
+                        events.map((ev) => (
+                            <div
+                                key={ev.eventId}
+                                className="event-card"
+                                onClick={() => handleEventClick(ev.eventId)}
+                            >
+                                <h3 className="event-name">{ev.name || "Unnamed Event"}</h3>
                             </div>
                         ))
+                    ) : (
+                        <p>No events found</p>
                     )}
                 </div>
                 <button className="scroll-arrow2 right" onClick={scrollRight}>&gt;</button>

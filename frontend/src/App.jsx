@@ -18,16 +18,16 @@ function Taskbar() {
   const navigate = useNavigate();
   
   return (
-    <div className='taskbar'>
-      <nav className='taskbar-elem'>
-        <h3 onClick={()=>{navigate("/home")}} className='elem'>Groups</h3>
-        <h3 onClick={()=>{navigate("/events")}} className='elem'>Events</h3>
-        <h3 onClick={()=>{navigate("/forum")}} className='elem'>Forum</h3>
-        <h3 onClick={()=>{navigate("/messages")}} className='elem'>Messages</h3>
-        <h3 onClick={()=>{navigate("/friends")}} className='elem'>Friends</h3>
-        <img onClick={()=>{navigate("/profile")}} className='profile' src={profileImage} alt="Profile" />
-      </nav>
-    </div>
+      <div className="taskbar">
+        <nav className="taskbar-elem">
+          <h3 onClick={() => navigate("/home")} className="elem">Groups</h3>
+          <h3 onClick={() => navigate("/events")} className="elem">Events</h3>
+          <h3 onClick={() => navigate("/forum")} className="elem">Forum</h3>
+          <h3 onClick={() => navigate("/messages")} className="elem">Messages</h3>
+          <h3 onClick={() => navigate("/friends")} className="elem">Friends</h3>
+          <img onClick={() => navigate("/profile")} className="profile" src={profileImage} alt="Profile" />
+        </nav>
+      </div>
   );
 }
 
@@ -52,16 +52,19 @@ function Home() {
       const sessionId = localStorage.getItem('sessionId');
       
       if (storedUserInfo && sessionId) {
-        const userEmail = JSON.parse(storedUserInfo).userEmail;
+        const parsedUser = JSON.parse(storedUserInfo);
+        const userEmail = parsedUser.userEmail;
+        console.log("Fetching groups for:", userEmail);
         try {
           const response = await axios.get(
-            `http://localhost:8080/users/${userEmail}/all-groups-short`,
-            {
-              headers: {
-                'Session-Id': sessionId
+              `http://localhost:8080/users/${userEmail}/all-groups-short`,
+              {
+                headers: {
+                  'Session-Id': sessionId
+                }
               }
-            }
           );
+          console.log("Groups fetched:", response.data);
           setGroups(response.data);
         } catch (error) {
           console.error('Error fetching groups:', error);
@@ -96,28 +99,31 @@ function Home() {
   };
 
   return (
-    <div className="app">
-      <h1>Groups</h1>
-      <button onClick={handleCreateGroup} className="create-group-button">
-        Create Group
-      </button>
-      <div className="scroll-wrapper2">
-        <button className="scroll-arrow2 left" onClick={scrollLeft}>&lt;</button>
-        <div className="scroll-container2" ref={scrollContainerRef}>
-          {groups.length === 0 ? (
-            <p>You are not part of any groups. Create one or join an existing group!</p>
-          ) : (
-            groups.map((group) => (
-              <div key={group.groupId} className="group-card" onClick={() => handleGroupClick(group.groupId)}>
-                <h3>{group.name || group.groupName || 'Unnamed Group'}</h3>
-                <p>ID: {group.groupId}</p> {/* Temporarily add this to see if IDs show */}
-              </div>
-            ))
-          )}
+      <div className="app">
+        <h1>Groups</h1>
+        <button onClick={handleCreateGroup} className="create-group-button">
+          Create Group
+        </button>
+        <div className="scroll-wrapper2">
+          <button className="scroll-arrow2 left" onClick={scrollLeft}>&lt;</button>
+          <div className="scroll-container2" ref={scrollContainerRef}>
+            {groups.length === 0 ? (
+                <p>You are not part of any groups. Create one or join an existing group!</p>
+            ) : (
+                groups.map((group) => (
+                    <div
+                        key={group.groupId}
+                        className="group-card"
+                        onClick={() => handleGroupClick(group.groupId)}
+                    >
+                      <h3>{group.name}</h3>
+                    </div>
+                ))
+            )}
+          </div>
+          <button className="scroll-arrow2 right" onClick={scrollRight}>&gt;</button>
         </div>
-        <button className="scroll-arrow2 right" onClick={scrollRight}>&gt;</button>
       </div>
-    </div>
   );
 }
 
