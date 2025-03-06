@@ -8,6 +8,7 @@ import Profile from './components/Profile';
 import Nopath from './components/Nopath';
 import profileImage from './assets/temp-profile.webp';
 import Events from './components/Events';
+import Groups from './components/Groups';
 import CreateEvent from "./components/CreateEvent.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import './App.css';
