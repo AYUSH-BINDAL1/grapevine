@@ -6,15 +6,17 @@ import axios from 'axios';
 function CreateGroup() {
     const [formData, setFormData] = useState({
         name: '',
-        description: ''
+        description: '',
+        maxUsers: ''
     });
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -26,9 +28,19 @@ function CreateGroup() {
                 return;
             }
 
+            // Prepare the payload for the group creation request
+            const payload = {
+                name: formData.name,
+                description: formData.description,
+                maxUsers: parseInt(formData.maxUsers, 10),
+                hosts: [localStorage.getItem('email') || "test@example.com"],
+                participants: [],
+                events: null
+            };
+
             const response = await axios.post(
-                'http://localhost:8080/groups',
-                formData,
+                'http://localhost:8080/groups/create',
+                payload,
                 {
                     headers: {
                         'Content-Type': 'application/json',
@@ -37,9 +49,9 @@ function CreateGroup() {
                 }
             );
 
-            if (response.status === 201) {
+            if (response.status === 200) {
                 console.log('Group Created:', response.data);
-                navigate('/groups');
+                navigate('/home');
             }
         } catch (error) {
             console.error('Error creating group:', error);
@@ -66,11 +78,21 @@ function CreateGroup() {
                     />
                 </div>
                 <div className="form-group">
-                    <textarea
-                        name="description"
-                        value={formData.description}
+          <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Description"
+              required
+          />
+                </div>
+                <div className="form-group">
+                    <input
+                        type="number"
+                        name="maxUsers"
+                        value={formData.maxUsers}
                         onChange={handleChange}
-                        placeholder="Description"
+                        placeholder="Max Users"
                         required
                     />
                 </div>
