@@ -27,7 +27,7 @@ function CreateGroup() {
             }
 
             const response = await axios.post(
-                'http://localhost:8080/groups',
+                'http://localhost:8080/home',
                 formData,
                 {
                     headers: {
@@ -39,7 +39,7 @@ function CreateGroup() {
 
             if (response.status === 201) {
                 console.log('Group Created:', response.data);
-                navigate('/groups');
+                navigate('/home');
             }
         } catch (error) {
             console.error('Error creating group:', error);
@@ -48,7 +48,7 @@ function CreateGroup() {
     };
 
     const handleCancel = () => {
-        navigate('/groups');
+        navigate('/home');
     };
 
     return (
