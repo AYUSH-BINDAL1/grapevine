@@ -1,5 +1,7 @@
-import './Events.css'
+import './Events.css';
 import { useNavigate } from 'react-router-dom';
+import { useRef } from 'react';
+import axios from "axios";
 
 function Events() {
     const events = [
@@ -14,6 +16,7 @@ function Events() {
     ];
 
     const navigate = useNavigate();
+    const scrollContainerRef = useRef(null);
 
     const handleCreateEvent = () => {
         navigate('/create-event');
@@ -23,26 +26,38 @@ function Events() {
         navigate(`/event/${eventId}`);
     };
 
+    const scrollLeft = () => {
+        scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+    };
+
+    const scrollRight = () => {
+        scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+    };
+
     return (
         <div className="app">
             <h1>Events</h1>
             <button onClick={handleCreateEvent} className="create-event-button">
                 Create Event
             </button>
-            <div className="scroll-container">
-                {events.length === 0 ? (
-                    <p>You are not part of any events. Create one or join an existing event!</p>
-                ) : (
-                    events.map((event) => (
-                        <div key={event.id} className="event-card" onClick={() => handleEventClick(event.id)}>
-                            <img src={event.image} alt={event.title} />
-                            <h3>{event.title}</h3>
-                        </div>
-                    ))
-                )}
+            <div className="scroll-wrapper2">
+                <button className="scroll-arrow2 left" onClick={scrollLeft}>&lt;</button>
+                <div className="scroll-container2" ref={scrollContainerRef}>
+                    {events.length === 0 ? (
+                        <p>You are not part of any events. Create one or join an existing event!</p>
+                    ) : (
+                        events.map((event) => (
+                            <div key={event.id} className="event-card" onClick={() => handleEventClick(event.id)}>
+                                <img src={event.image} alt={event.title} />
+                                <h3>{event.title}</h3>
+                            </div>
+                        ))
+                    )}
+                </div>
+                <button className="scroll-arrow2 right" onClick={scrollRight}>&gt;</button>
             </div>
         </div>
     );
 }
 
-export default Events
+export default Events;
