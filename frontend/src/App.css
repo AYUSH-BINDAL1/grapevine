@@ -272,3 +272,28 @@ h1 {
   min-height: calc(100vh - 60px); /* 60px is approximate taskbar height */
   padding-top: 20px;
 }
+
+.group-card {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.group-card h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}

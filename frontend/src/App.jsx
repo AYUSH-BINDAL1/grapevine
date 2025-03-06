@@ -47,20 +47,33 @@ function Home() {
   useEffect(() => {
     const fetchGroups = async () => {
       const storedUserInfo = localStorage.getItem('userInfo');
-      if (storedUserInfo) {
+      const sessionId = localStorage.getItem('sessionId');
+      
+      if (storedUserInfo && sessionId) {
         const userEmail = JSON.parse(storedUserInfo).userEmail;
         try {
-          const response = await axios.get(`http://localhost:8080/users/${userEmail}/all-groups-short`);
+          const response = await axios.get(
+            `http://localhost:8080/users/${userEmail}/all-groups-short`,
+            {
+              headers: {
+                'Session-Id': sessionId
+              }
+            }
+          );
           setGroups(response.data);
         } catch (error) {
           console.error('Error fetching groups:', error);
+          if (error.response && error.response.status === 401) {
+            alert('Session expired. Please login again.');
+            navigate('/');
+          }
         }
       } else {
-        alert('No user information found. Please register again.');
-        navigate('/registration');
+        alert('No user information or session found. Please login again.');
+        navigate('/');
       }
     };
-
+  
     fetchGroups();
   }, [navigate]);
 
@@ -99,7 +112,8 @@ function Home() {
           ) : (
             groups.map((group) => (
               <div key={group.groupId} className="group-card" onClick={() => handleGroupClick(group.groupId)}>
-                <h3>{group.name}</h3>
+                <h3>{group.name || group.groupName || 'Unnamed Group'}</h3>
+                <p>ID: {group.groupId}</p> {/* Temporarily add this to see if IDs show */}
               </div>
             ))
           )}
