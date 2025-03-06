@@ -119,9 +119,81 @@ register_and_verify_user() {
   echo -e "\nUser $email registered and verified successfully!"
 }
 
+# Add this function after the register_and_verify_user function
+create_groups_for_user1() {
+  echo -e "\n${GREEN}Logging in as user1 to get session ID...${NC}"
+  SESSION_ID=$(curl -s -X POST "$BACKEND_URL/users/login" \
+    -H "Content-Type: application/json" \
+    -d '{"email": "user1@purdue.edu", "password": "pw1"}' | grep -o '"sessionId":"[^"]*' | sed 's/"sessionId":"//g')
+
+  echo "Session ID for user1: $SESSION_ID"
+
+  echo -e "\n${GREEN}Creating 5 groups for user1...${NC}"
+
+  # Group 1: Java Study Group
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Java Study Group",
+      "description": "A group to study Java and Spring Boot",
+      "maxUsers": 15
+    }'
+  echo -e "${GREEN}Created: Java Study Group${NC}"
+
+  # Group 2: Algorithm Practice
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Algorithm Practice",
+      "description": "Weekly algorithm problem solving sessions",
+      "maxUsers": 12
+    }'
+  echo -e "${GREEN}Created: Algorithm Practice${NC}"
+
+  # Group 3: Web Development Club
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Web Development Club",
+      "description": "Learn and practice modern web technologies",
+      "maxUsers": 20
+    }'
+  echo -e "${GREEN}Created: Web Development Club${NC}"
+
+  # Group 4: Database Systems
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Database Systems",
+      "description": "SQL and NoSQL database discussion group",
+      "maxUsers": 10
+    }'
+  echo -e "${GREEN}Created: Database Systems${NC}"
+
+  # Group 5: Machine Learning Lab
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Machine Learning Lab",
+      "description": "Hands-on projects with ML frameworks",
+      "maxUsers": 15
+    }'
+  echo -e "${GREEN}Created: Machine Learning Lab${NC}"
+
+  echo -e "\n${GREEN}Successfully created 5 groups for user1@purdue.edu${NC}"
+}
+
 # Register two users
 register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
 register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
+
+# Create groups for user1
+create_groups_for_user1
 
 echo -e "\n${GREEN}Login to test the users:${NC}"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user1@purdue.edu\", \"password\": \"pw1\"}'"
