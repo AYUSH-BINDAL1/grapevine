@@ -86,13 +86,8 @@ function Home() {
     navigate('/create-group');
   };
 
-  const handleGroupClick = async (groupId) => {
-    try {
-      await axios.get(`http://localhost:8080/groups/${groupId}`);
-      navigate(`/group/${groupId}`);
-    } catch (error) {
-      console.error('Error navigating to group:', error);
-    }
+  const handleGroupClick = (groupId) => {
+    navigate(`/group/${groupId}`);
   };
 
   const scrollLeft = () => {
