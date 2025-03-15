@@ -13,6 +13,7 @@ import com.grapevine.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +50,11 @@ public class EventService {
             throw new UnauthorizedException("Only group hosts can create events");
         }
 
+        // Validate event time - must be in the future
+        if (event.getEventTime() != null && event.getEventTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Event time must be in the future");
+        }
+
         // Initialize lists if null
         if (event.getHosts() == null) {
             event.setHosts(new ArrayList<>());
@@ -82,7 +88,7 @@ public class EventService {
 
         return savedEvent;
     }
-
+    
     public Event getEventById(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId));
