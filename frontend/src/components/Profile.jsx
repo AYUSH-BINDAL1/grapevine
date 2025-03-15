@@ -1,7 +1,14 @@
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
+
+// Add this validation function near the top of your Profile component
+const validateEmail = (email) => {
+  // Regular expression for basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
 function Profile() {
   const [userData, setUserData] = useState(null);
@@ -20,6 +27,8 @@ function Profile() {
     userEmail: "",
     majors: []
   });
+  // Add these state variables to your component
+  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     // Load user data from localStorage
@@ -48,46 +57,6 @@ function Profile() {
     });
   };
 
-  const handleAddAvailability = () => {
-    const { day, startTime, endTime } = availability;
-    
-    if (!day || !startTime || !endTime) {
-      alert("Please select a day, start time, and end time");
-      return;
-    }
-
-    // Convert day to starting index (24 hours per day)
-    const dayIndices = {
-      "monday": 0,
-      "tuesday": 24,
-      "wednesday": 48,
-      "thursday": 72,
-      "friday": 96,
-      "saturday": 120,
-      "sunday": 144
-    };
-    
-    const dayIndex = dayIndices[day];
-    
-    // Convert time strings to hours
-    const startHour = parseInt(startTime.split(":")[0]);
-    const endHour = parseInt(endTime.split(":")[0]);
-    
-    if (startHour >= endHour) {
-      alert("End time must be after start time");
-      return;
-    }
-
-    // Create a new availability string
-    let newAvailabilityString = availabilityString.split('');
-    
-    // Mark the hours as available (1)
-    for (let hour = startHour; hour < endHour; hour++) {
-      newAvailabilityString[dayIndex + hour] = '1';
-    }
-    
-    setAvailabilityString(newAvailabilityString.join(''));
-  };
 
   const saveAvailability = async () => {
     const { day, startTime, endTime } = availability;
@@ -226,6 +195,7 @@ function Profile() {
     setIsEditingProfile(true);
   };
 
+  // Update the handleProfileInputChange function to validate email as the user types
   const handleProfileInputChange = (e) => {
     const { name, value } = e.target;
     
@@ -235,6 +205,19 @@ function Profile() {
         ...editedProfileData,
         [name]: value.split(',').map(item => item.trim()).filter(item => item !== "")
       });
+    } else if (name === "userEmail") {
+      // Update the email in the state
+      setEditedProfileData({
+        ...editedProfileData,
+        [name]: value
+      });
+      
+      // Validate email format and provide feedback
+      if (value && !validateEmail(value)) {
+        setEmailError("Please enter a valid email address");
+      } else {
+        setEmailError("");
+      }
     } else {
       setEditedProfileData({
         ...editedProfileData,
@@ -243,9 +226,23 @@ function Profile() {
     }
   };
 
+  // Update the handleSaveProfile function to include email validation
   const handleSaveProfile = async () => {
     if (!userData) return;
 
+    // Validate email
+    if (!validateEmail(editedProfileData.userEmail)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+    
+    // Add confirmation dialog
+    const confirmSave = window.confirm("Are you sure you want to save these changes to your profile?");
+    
+    if (!confirmSave) {
+      return; // User canceled the action
+    }
+  
     try {
       const sessionId = localStorage.getItem('sessionId');
       
@@ -253,7 +250,7 @@ function Profile() {
         alert("You must be logged in to save profile information");
         return;
       }
-
+  
       const response = await axios.put(
         `http://localhost:8080/users/${userData.userEmail}`,
         editedProfileData,
@@ -264,7 +261,7 @@ function Profile() {
           }
         }
       );
-
+  
       if (response.status === 200) {
         // Update the stored user data
         const updatedUserData = { ...userData, ...editedProfileData };
@@ -308,7 +305,9 @@ function Profile() {
                 name="userEmail"
                 value={editedProfileData.userEmail}
                 onChange={handleProfileInputChange}
+                className={emailError ? "input-error" : ""}
               />
+              {emailError && <span className="error-message">{emailError}</span>}
             </div>
             <div className="form-group">
               <label htmlFor="majors">Majors (comma separated)</label>

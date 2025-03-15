@@ -119,9 +119,82 @@ register_and_verify_user() {
   echo -e "\nUser $email registered and verified successfully!"
 }
 
+# Add this function after the register_and_verify_user function
+# Add this function after the register_and_verify_user function
+create_groups_for_user1() {
+  echo -e "\n${GREEN}Logging in as user1 to get session ID...${NC}"
+  SESSION_ID=$(curl -s -X POST "$BACKEND_URL/users/login" \
+    -H "Content-Type: application/json" \
+    -d '{"email": "user1@purdue.edu", "password": "pw1"}' | grep -o '"sessionId":"[^"]*' | sed 's/"sessionId":"//g')
+
+  echo "Session ID for user1: $SESSION_ID"
+
+  echo -e "\n${GREEN}Creating 5 groups for user1...${NC}"
+
+  # Group 1: CS 307 Study Group
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "CS 307 Study Group",
+      "description": "A collaborative study group for CS 307 Software Engineering. We meet twice a week to discuss course material, work on projects, and prepare for exams. All skill levels welcome!",
+      "maxUsers": 25
+    }'
+  echo -e "${GREEN}Created: CS 307 Study Group${NC}"
+
+  # Group 2: Calculus III Study Group
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Calculus III Study Group",
+      "description": "Dedicated to mastering multivariable calculus. We work through complex problems together and explain concepts to each other. Join us to conquer Calc III!",
+      "maxUsers": 15
+    }'
+  echo -e "${GREEN}Created: Calculus III Study Group${NC}"
+
+  # Group 3: Organic Chemistry Group
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Organic Chemistry Group",
+      "description": "Focus on mastering organic chemistry concepts, reaction mechanisms, and lab techniques. We help each other prepare for exams and understand difficult topics.",
+      "maxUsers": 20
+    }'
+  echo -e "${GREEN}Created: Organic Chemistry Group${NC}"
+
+  # Group 4: Algorithm Practice
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Algorithm Practice",
+      "description": "Weekly algorithm problem solving sessions. We tackle leetcode problems and discuss efficient solutions and techniques.",
+      "maxUsers": 12
+    }'
+  echo -e "${GREEN}Created: Algorithm Practice${NC}"
+
+  # Group 5: Web Development Club
+  curl -s --location --request POST "$BACKEND_URL/groups/create" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $SESSION_ID" \
+    --data '{
+      "name": "Web Development Club",
+      "description": "Learn and practice modern web technologies including React, Node.js, and cloud deployment. Beginners and experts welcome!",
+      "maxUsers": 18
+    }'
+  echo -e "${GREEN}Created: Web Development Club${NC}"
+
+  echo -e "\n${GREEN}Successfully created 5 groups for user1@purdue.edu${NC}"
+}
+
 # Register two users
 register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
 register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
+
+# Create groups for user1
+create_groups_for_user1
 
 echo -e "\n${GREEN}Login to test the users:${NC}"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user1@purdue.edu\", \"password\": \"pw1\"}'"

@@ -168,49 +168,7 @@ h3{
   background-color: #8ebd89; /* Updated hover color */
 }
 
-/* events */
-
-.scroll-container {
-  display: flex;
-  overflow-x: auto;
-  gap: 16px;
-  padding-bottom: 10px;
-}
-
-.event-card {
-  flex: 0 0 auto;
-  width: 200px;
-  text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.event-card img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.event-card h3 {
-  margin: 10px 0;
-  font-size: 16px;
-}
-
-/* Add space for content below the fixed taskbar */
-.content-container {
-  padding-top: 60px; /* Adjust this value based on your taskbar height */
-  width: 100%;
-  min-height: 100vh;
-}
-
-/* Adjust layout for components with taskbar */
-.home-container,
-.profile-page,
-.app {  /* for Events component */
-  padding-top: 60px; /* Adjust this value based on your taskbar height */
-}
+/* groups */
 
 body {
   margin: 0;
@@ -221,54 +179,162 @@ h1 {
   margin-bottom: 20px;
 }
 
-
-.scroll-container {
+.scroll-wrapper2 {
   display: flex;
-  overflow-x: auto;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.scroll-container2 {
+  display: flex;
+  overflow-x: scroll;
   gap: 16px;
   padding-bottom: 10px;
   scroll-snap-type: x mandatory;
+  width: 900px;
 }
 
-.event-card {
-  flex: 0 0 auto;
-  width: 200px;
-  text-align: center;
+
+.scroll-container2::-webkit-scrollbar {
+  display: none;
+}
+
+
+.scroll-container2 {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+.group-card:hover {
+  transform: translateY(5px);
   box-shadow: 0 4px 8px #8ebd89;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-  scroll-snap-align: start; /* Smooth scrolling */
 }
 
-.event-card img {
+.group-card img {
   width: 100%;
   height: auto;
   display: block;
 }
 
-.event-card h3 {
-  margin: 10px 0;
-  font-size: 16px;
+
+.app {
+  min-height: calc(100vh - 60px);
+  padding-top: 20px;
 }
 
-
-.create-event-button {
-  background-color: #ae92c6;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  margin-bottom: 20px;
-}
-
-.create-event-button:hover {
-  background-color: #8ebd89;
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
 }
 
 .app {
-  min-height: calc(100vh - 60px); /* 60px is approximate taskbar height */
-  padding-top: 20px;
+  padding: 20px;
 }
+
+h1 {
+  margin-bottom: 20px;
+  text-align: center;
+  color: #8ebd89;
+}
+
+.scroll-wrapper2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.scroll-container2 {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 5px 0;
+  scroll-snap-type: x mandatory;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  white-space: nowrap;
+  scroll-behavior: smooth;
+}
+
+.scroll-container2::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scroll-container2::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.group-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+  width: 180px;
+  height: 120px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  padding: 8px;
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  overflow: hidden;
+}
+
+.group-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 2px 2px 12px #8ebd89;
+}
+
+.group-card h3 {
+  margin: 0;
+  padding: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  color: black;
+  text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-width: 90%;
+}
+
+
+.scroll-arrow2 {
+  background-color: #ae92c6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.scroll-arrow2.left {
+  left: 5px;
+}
+
+.scroll-arrow2.right {
+  right: 5px;
+}
+
+.scroll-arrow2:hover {
+  background-color: #8ebd89;
+}
+
+
