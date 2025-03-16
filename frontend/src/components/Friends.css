@@ -129,6 +129,36 @@
   background-size: contain;
 }
 
+.no-friends-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  text-align: center;
+  min-height: 200px;
+}
+
+.empty-state-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+}
+
+.no-friends-message h3 {
+  margin: 0 0 15px;
+  color: #333;
+  font-size: 24px;
+}
+
+.no-friends-message p {
+  margin: 0;
+  color: #666;
+  font-size: 16px;
+  max-width: 300px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .friend-card {
