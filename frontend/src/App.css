@@ -177,6 +177,7 @@ body {
 h1 {
   margin-bottom: 20px;
   text-align: center;
+  color: #8ebd89;
 }
 
 .app {
@@ -241,7 +242,7 @@ h1 {
 
 .group-card:hover {
   transform: translateY(-3px);
-  box-shadow: 2px 2px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 2px 2px 12px #8ebd89;
 }
 
 .group-card img {

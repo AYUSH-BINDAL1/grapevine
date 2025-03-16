@@ -9,6 +9,7 @@ import Nopath from './components/Nopath';
 import profileImage from './assets/temp-profile.webp';
 import Events from './components/Events';
 import Groups from './components/Groups';
+import Friends from './components/Friends';
 import CreateEvent from "./components/CreateEvent.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import EventDetails from "./components/EventDetails";
@@ -146,7 +147,7 @@ function App() {
           <Route path="/create-event" element={<CreateEvent />} />
           <Route path="/forum" element={<Nopath />} /> {/* Placeholder */}
           <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
-          <Route path="/friends" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="/friends" element={<Friends />} /> {/* Placeholder */}
           <Route path="/group/:id" element={<Groups />} />
           <Route path="/event/:eventId" element={<EventDetails />} />
           <Route path="*" element={<Nopath />} />

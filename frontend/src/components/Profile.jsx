@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
@@ -57,46 +57,6 @@ function Profile() {
     });
   };
 
-  const handleAddAvailability = () => {
-    const { day, startTime, endTime } = availability;
-    
-    if (!day || !startTime || !endTime) {
-      alert("Please select a day, start time, and end time");
-      return;
-    }
-
-    // Convert day to starting index (24 hours per day)
-    const dayIndices = {
-      "monday": 0,
-      "tuesday": 24,
-      "wednesday": 48,
-      "thursday": 72,
-      "friday": 96,
-      "saturday": 120,
-      "sunday": 144
-    };
-    
-    const dayIndex = dayIndices[day];
-    
-    // Convert time strings to hours
-    const startHour = parseInt(startTime.split(":")[0]);
-    const endHour = parseInt(endTime.split(":")[0]);
-    
-    if (startHour >= endHour) {
-      alert("End time must be after start time");
-      return;
-    }
-
-    // Create a new availability string
-    let newAvailabilityString = availabilityString.split('');
-    
-    // Mark the hours as available (1)
-    for (let hour = startHour; hour < endHour; hour++) {
-      newAvailabilityString[dayIndex + hour] = '1';
-    }
-    
-    setAvailabilityString(newAvailabilityString.join(''));
-  };
 
   const saveAvailability = async () => {
     const { day, startTime, endTime } = availability;

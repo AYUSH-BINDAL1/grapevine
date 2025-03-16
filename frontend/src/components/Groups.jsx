@@ -1,6 +1,6 @@
 import './Groups.css';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useRef, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import profileImage from '../assets/temp-profile.webp'; // Import the profile image for review avatars
 
 function Groups() {
