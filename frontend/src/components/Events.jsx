@@ -38,7 +38,7 @@ function Events() {
         };
 
         fetchEvents();
-    }, []);
+    }, [navigate]);
 
     const handleCreateEvent = () => {
         navigate('/create-event');

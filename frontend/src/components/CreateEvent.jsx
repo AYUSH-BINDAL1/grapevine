@@ -11,12 +11,43 @@ function CreateEvent() {
         time: '',
         maxUsers: '',
         isPublic: false,
-        groupId: ''
+        groupId: '',
+        location: ''
     });
+
     const [groups, setGroups] = useState([]);
     const navigate = useNavigate();
 
-    // Fetch all groups for the current user
+    const hardcodedLocations = [
+        "WALC",
+        "LWSN",
+        "PMUC",
+        "HAMP",
+        "RAWL",
+        "CHAS",
+        "CL50",
+        "FRNY",
+        "KRAN",
+        "MSEE",
+        "MATH",
+        "PHYS",
+        "POTR",
+        "HAAS",
+        "HIKS",
+        "BRWN",
+        "HEAV",
+        "BRNG",
+        "SC",
+        "WTHR",
+        "UNIV",
+        "YONG",
+        "ME",
+        "ELLT",
+        "PMU",
+        "STEW"
+    ];
+
+    // Fetch user's hosted groups
     useEffect(() => {
         const fetchGroups = async () => {
             try {
@@ -24,15 +55,14 @@ function CreateEvent() {
                 const url = `http://localhost:8080/users/${email}/hosted-groups`;
                 const sessionId = localStorage.getItem('sessionId');
                 const response = await axios.get(url, {
-                    headers: {
-                        'Session-Id': sessionId
-                    }
+                    headers: { 'Session-Id': sessionId }
                 });
                 setGroups(response.data);
             } catch (error) {
                 console.error("Error fetching groups:", error);
             }
         };
+
         fetchGroups();
     }, []);
 
@@ -72,10 +102,7 @@ function CreateEvent() {
             const url = `http://localhost:8080/events/create/${formData.groupId}`;
 
             const response = await axios.post(url, payload, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Session-Id': sessionId
-                }
+                headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId }
             });
 
             if (response.status === 200) {
@@ -107,13 +134,13 @@ function CreateEvent() {
                     />
                 </div>
                 <div className="form-group">
-          <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Description"
-              required
-          />
+                    <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        placeholder="Description"
+                        required
+                    />
                 </div>
                 <div className="form-group">
                     <input
@@ -169,6 +196,24 @@ function CreateEvent() {
                         ))}
                     </select>
                 </div>
+
+                {/* Hardcoded Location Dropdown */}
+                <div className="form-group">
+                    <select
+                        name="location"
+                        value={formData.location}
+                        onChange={handleChange}
+                        required
+                    >
+                        <option value="">Select Location</option>
+                        {hardcodedLocations.map((location, index) => (
+                            <option key={index} value={location}>
+                                {location}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 <button type="submit" className="create-event-button">
                     Create Event
                 </button>
