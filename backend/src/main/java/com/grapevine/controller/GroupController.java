@@ -56,6 +56,7 @@ public class GroupController {
         return groupService.getGroupById(groupId);
     }
 
+
     @PostMapping("/{groupId}/events/create")
     public Event createEvent(
             @PathVariable Long groupId,
@@ -88,6 +89,7 @@ public class GroupController {
     }
 
 
+
     //TODO: Needs to be fixed
     /*
     @GetMapping("/search")
@@ -116,7 +118,7 @@ public class GroupController {
     }
 
     @PostMapping("/{groupId}/join")
-    public ResponseEntity<Group> joinGroup(
+    public ResponseEntity<Group> joinGroup()
             @PathVariable Long groupId,
             @RequestHeader(name = "Session-Id", required = true) String sessionId) {
         Group group = groupService.joinGroup(groupId, sessionId);
