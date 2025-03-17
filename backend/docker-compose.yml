@@ -9,11 +9,22 @@ services:
       mailpit:
         condition: service_started
     environment:
+      # postgres db authentication
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/postgres
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres@123
+
+      # mail server for sending emails (currently local using mailpit)
       - SPRING_MAIL_HOST=mailpit
       - SPRING_MAIL_PORT=1025
+
+      # static image hosting on buckets (currently local using minio)
+      - SPRING_CLOUD_AWS_ENDPOINT=http://minio:9000
+      - SPRING_CLOUD_AWS_ENDPOINT_PUBLIC=http://localhost:9000
+      - SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY=minioadmin
+      - SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY=minioadmin
+      - SPRING_CLOUD_AWS_REGION_STATIC=us-east-1
+      - SPRING_CLOUD_AWS_S3_PATH_STYLE_ACCESS=true
     restart: unless-stopped
 
   postgres:
@@ -39,5 +50,23 @@ services:
       - "8025:8025"
     restart: unless-stopped
 
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"  # api
+      - "9001:9001"  # bucket console
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres-data:
+  minio-data:
