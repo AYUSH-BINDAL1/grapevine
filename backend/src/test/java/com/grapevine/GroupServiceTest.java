@@ -49,6 +49,7 @@ public class GroupServiceTest {
         testGroup.setName("Test Group");
         testGroup.setDescription("Group for testing");
         testGroup.setMaxUsers(10);
+        testGroup.setPublic(true); // Set isPublic attribute
         testGroup.setHosts(new ArrayList<>());
         testGroup.setParticipants(new ArrayList<>());
 
@@ -71,6 +72,7 @@ public class GroupServiceTest {
         secondGroup.setName("Second Group");
         secondGroup.setDescription("Another group");
         secondGroup.setMaxUsers(15);
+        secondGroup.setPublic(false); // Set isPublic attribute
         secondGroup.setHosts(new ArrayList<>());
         secondGroup.setParticipants(new ArrayList<>());
         expectedGroups.add(secondGroup);
@@ -84,7 +86,9 @@ public class GroupServiceTest {
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals("Test Group", result.get(0).getName());
+        assertTrue(result.get(0).isPublic());
         assertEquals("Second Group", result.get(1).getName());
+        assertFalse(result.get(1).isPublic());
         verify(groupRepository).findAll();
     }
 
@@ -111,6 +115,7 @@ public class GroupServiceTest {
         Group secondGroup = new Group();
         secondGroup.setGroupId(2L);
         secondGroup.setName("Second Group");
+        secondGroup.setPublic(false); // Set isPublic attribute
         groups.add(secondGroup);
 
         when(groupRepository.findAll()).thenReturn(groups);
@@ -123,8 +128,10 @@ public class GroupServiceTest {
         assertEquals(2, result.size());
         assertEquals(1L, result.get(0).getGroupId());
         assertEquals("Test Group", result.get(0).getName());
+        assertTrue(result.get(0).isPublic());
         assertEquals(2L, result.get(1).getGroupId());
         assertEquals("Second Group", result.get(1).getName());
+        assertFalse(result.get(1).isPublic());
         verify(groupRepository).findAll();
     }
 
@@ -149,6 +156,7 @@ public class GroupServiceTest {
         groupToCreate.setName("New Group");
         groupToCreate.setDescription("New group for testing");
         groupToCreate.setMaxUsers(10);
+        groupToCreate.setPublic(true); // Set isPublic attribute
         // Hosts and participants are null
 
         when(groupRepository.save(any(Group.class))).thenReturn(testGroup);
@@ -160,6 +168,7 @@ public class GroupServiceTest {
         assertNotNull(result);
         assertEquals(testGroup.getGroupId(), result.getGroupId());
         assertEquals(testGroup.getName(), result.getName());
+        assertEquals(testGroup.isPublic(), result.isPublic());
 
         // Verify the group was initialized correctly
         verify(groupRepository).save(any(Group.class));
@@ -174,6 +183,7 @@ public class GroupServiceTest {
         // Arrange
         Group groupToCreate = new Group();
         groupToCreate.setName("New Group");
+        groupToCreate.setPublic(true); // Set isPublic attribute
         // Hosts and participants are null
 
         when(groupRepository.save(any(Group.class))).thenAnswer(invocation -> {
@@ -189,6 +199,7 @@ public class GroupServiceTest {
         assertNotNull(result.getHosts());
         assertNotNull(result.getParticipants());
         assertTrue(result.getHosts().contains(testUser.getUserEmail()));
+        assertTrue(result.isPublic());
         verify(groupRepository).save(any(Group.class));
     }
 
@@ -204,6 +215,7 @@ public class GroupServiceTest {
         assertNotNull(result);
         assertEquals(1L, result.getGroupId());
         assertEquals("Test Group", result.getName());
+        assertTrue(result.isPublic());
         verify(groupRepository).findById(1L);
     }
 

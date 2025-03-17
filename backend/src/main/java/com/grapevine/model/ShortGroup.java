@@ -12,4 +12,5 @@ import lombok.ToString;
 public class ShortGroup {
     private Long groupId;
     private String name;
+    private boolean isPublic;
 }
