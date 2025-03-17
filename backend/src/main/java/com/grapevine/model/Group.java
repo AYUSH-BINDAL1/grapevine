@@ -40,6 +40,10 @@ public class Group {
     @Column(name = "max_users", nullable = false)
     private Integer maxUsers;
 
+    @NotNull
+    @Column(name = "is_public", nullable = false)
+    private boolean isPublic;
+
     @ElementCollection
     @Column(name = "host_emails")
     private List<String> hosts;
@@ -64,4 +68,5 @@ public class Group {
     @ElementCollection
     @Column(name = "event_ids")
     private List<Long> events;
+
 }

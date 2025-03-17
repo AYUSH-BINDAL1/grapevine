@@ -243,8 +243,8 @@ public class UserControllerTest {
 
     @Test
     void testGetAllShortGroups_Success() {
-        ShortGroup group1 = new ShortGroup(1L, "Group 1");
-        ShortGroup group2 = new ShortGroup(2L, "Group 2");
+        ShortGroup group1 = new ShortGroup(1L, "Group 1", true);
+        ShortGroup group2 = new ShortGroup(2L, "Group 2", false);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
         when(userService.getAllShortGroups("test@example.com")).thenReturn(Arrays.asList(group1, group2));
@@ -255,8 +255,10 @@ public class UserControllerTest {
         assertEquals(2, result.size());
         assertEquals(1L, result.get(0).getGroupId());
         assertEquals("Group 1", result.get(0).getName());
+        assertTrue(result.get(0).isPublic());
         assertEquals(2L, result.get(1).getGroupId());
         assertEquals("Group 2", result.get(1).getName());
+        assertFalse(result.get(1).isPublic());
         verify(userService).validateSession(testSessionId);
         verify(userService).getAllShortGroups("test@example.com");
     }
@@ -321,7 +323,7 @@ public class UserControllerTest {
 
     @Test
     void testGetHostedShortGroups_Success() {
-        ShortGroup group = new ShortGroup(1L, "Hosted Group");
+        ShortGroup group = new ShortGroup(1L, "Hosted Group", true);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
         when(userService.getHostedShortGroups("test@example.com")).thenReturn(List.of(group));
@@ -331,6 +333,7 @@ public class UserControllerTest {
         assertEquals(1, result.size());
         assertEquals(1L, result.get(0).getGroupId());
         assertEquals("Hosted Group", result.get(0).getName());
+        assertTrue(result.get(0).isPublic());
         verify(userService).validateSession(testSessionId);
         verify(userService).getHostedShortGroups("test@example.com");
     }

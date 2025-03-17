@@ -179,7 +179,7 @@ public class UserService {
         if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
             for (Long groupId : currentUser.getHostedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
             }
         }
 
@@ -187,7 +187,7 @@ public class UserService {
         if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
             for (Long groupId : currentUser.getJoinedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
             }
         }
 
@@ -215,7 +215,7 @@ public class UserService {
         if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
             for (Long groupId : currentUser.getHostedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> hostedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+                        .ifPresent(group -> hostedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
             }
         }
 
@@ -244,7 +244,7 @@ public class UserService {
         if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
             for (Long groupId : currentUser.getJoinedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> joinedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+                        .ifPresent(group -> joinedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
             }
         }
 
