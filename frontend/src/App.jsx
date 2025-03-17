@@ -13,6 +13,7 @@ import Friends from './components/Friends';
 import CreateEvent from "./components/CreateEvent.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import CourseSearch from './components/CourseSearch.jsx';
+import EventDetails from "./components/EventDetails";
 import './App.css';
 import './components/Groups.css';
 
@@ -155,6 +156,7 @@ function App() {
           <Route path="/friends" element={<Friends />} /> {/* Placeholder */}
           <Route path="/courseSearch" element={<CourseSearch />} />
           <Route path="/group/:id" element={<Groups />} />
+          <Route path="/event/:eventId" element={<EventDetails />} />
           <Route path="*" element={<Nopath />} />
         </Route>
       </Routes>
