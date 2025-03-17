@@ -1,7 +1,9 @@
 package com.grapevine;
 
 import com.grapevine.controller.EventController;
+import com.grapevine.exception.EventNotFoundException;
 import com.grapevine.exception.InvalidSessionException;
+import com.grapevine.exception.UnauthorizedException;
 import com.grapevine.model.Event;
 import com.grapevine.model.ShortEvent;
 import com.grapevine.model.User;
@@ -18,6 +20,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import java.time.LocalDateTime;
+import org.mockito.ArgumentMatchers;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class EventControllerTest {
 
@@ -139,5 +145,150 @@ public class EventControllerTest {
                 () -> eventController.getEvent(1L, nullSessionId));
         verify(userService).validateSession(nullSessionId);
         verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void updateEvent_Success() {
+        // Arrange
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+        updatedEvent.setDescription("Updated description");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.updateEvent(eq(1L), any(Event.class), eq(testUser)))
+                .thenReturn(updatedEvent);
+
+        // Act
+        Event result = eventController.updateEvent(1L, updatedEvent, testSessionId);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Updated Event", result.getName());
+        assertEquals("Updated description", result.getDescription());
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).updateEvent(eq(1L), any(Event.class), eq(testUser));
+    }
+
+    @Test
+    void updateEvent_InvalidSession() {
+        // Arrange
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class,
+                () -> eventController.updateEvent(1L, updatedEvent, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void updateEvent_EventNotFound() {
+        // Arrange
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.updateEvent(eq(999L), any(Event.class), eq(testUser)))
+                .thenThrow(new EventNotFoundException("Event not found with id: 999"));
+
+        // Act & Assert
+        assertThrows(EventNotFoundException.class,
+                () -> eventController.updateEvent(999L, updatedEvent, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).updateEvent(eq(999L), any(Event.class), eq(testUser));
+    }
+
+    @Test
+    void updateEvent_Unauthorized() {
+        // Arrange
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.updateEvent(eq(1L), any(Event.class), eq(testUser)))
+                .thenThrow(new UnauthorizedException("Only event hosts can update events"));
+
+        // Act & Assert
+        assertThrows(UnauthorizedException.class,
+                () -> eventController.updateEvent(1L, updatedEvent, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).updateEvent(eq(1L), any(Event.class), eq(testUser));
+    }
+
+    @Test
+    void updateEvent_InvalidDateTime() {
+        // Arrange
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+        updatedEvent.setEventTime(LocalDateTime.now().minusDays(1));
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.updateEvent(eq(1L), any(Event.class), eq(testUser)))
+                .thenThrow(new IllegalArgumentException("Event time must be in the future"));
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class,
+                () -> eventController.updateEvent(1L, updatedEvent, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).updateEvent(eq(1L), any(Event.class), eq(testUser));
+    }
+
+    @Test
+    void deleteEvent_Success() {
+        // Arrange
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        doNothing().when(eventService).deleteEvent(1L, testUser);
+
+        // Act
+        eventController.deleteEvent(1L, testSessionId);
+
+        // Assert
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).deleteEvent(1L, testUser);
+    }
+
+    @Test
+    void deleteEvent_InvalidSession() {
+        // Arrange
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class,
+                () -> eventController.deleteEvent(1L, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void deleteEvent_EventNotFound() {
+        // Arrange
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        doThrow(new EventNotFoundException("Event not found with id: 999"))
+                .when(eventService).deleteEvent(999L, testUser);
+
+        // Act & Assert
+        assertThrows(EventNotFoundException.class,
+                () -> eventController.deleteEvent(999L, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).deleteEvent(999L, testUser);
+    }
+
+    @Test
+    void deleteEvent_Unauthorized() {
+        // Arrange
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        doThrow(new UnauthorizedException("Only event hosts can delete events"))
+                .when(eventService).deleteEvent(1L, testUser);
+
+        // Act & Assert
+        assertThrows(UnauthorizedException.class,
+                () -> eventController.deleteEvent(1L, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).deleteEvent(1L, testUser);
     }
 }

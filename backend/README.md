@@ -35,13 +35,24 @@
     setup.bat test
     ```
 
-### The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
+### The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process. 
+<ins> *If you've created test data locally and you want to keep it after restarting setup, read the configuration modes in src/main/resources/application.properties and change the ddl-auto configuration from create to update. <ins>
 
+#### Users
 | Email | Password | Name | Birthday | Verified |
 |-------|----------|------|----------|----------|
 | user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes |
 | user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
 
+#### Groups
+
+| Group Name | Description | Max Users | Created By |
+|------------|-------------|-----------|------------|
+| CS 307 Study Group | A collaborative study group for CS 307 Software Engineering. We meet twice a week to discuss course material, work on projects, and prepare for exams. All skill levels welcome! | 25 | user1@purdue.edu |
+| Calculus III Study Group | Dedicated to mastering multivariable calculus. We work through complex problems together and explain concepts to each other. Join us to conquer Calc III! | 15 | user1@purdue.edu |
+| Organic Chemistry Group | Focus on mastering organic chemistry concepts, reaction mechanisms, and lab techniques. We help each other prepare for exams and understand difficult topics. | 20 | user1@purdue.edu |
+| Algorithm Practice | Weekly algorithm problem solving sessions. We tackle leetcode problems and discuss efficient solutions and techniques. | 12 | user1@purdue.edu |
+| Web Development Club | Learn and practice modern web technologies including React, Node.js, and cloud deployment. Beginners and experts welcome! | 18 | user1@purdue.edu |
 
 # API ENDPOINTS
 

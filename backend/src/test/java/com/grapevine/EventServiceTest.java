@@ -27,6 +27,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.time.LocalDateTime;
+import org.mockito.ArgumentMatchers;
+import static org.mockito.ArgumentMatchers.eq;
+
 public class EventServiceTest {
 
     @Mock
@@ -395,5 +399,211 @@ public class EventServiceTest {
         assertTrue(result.isEmpty());
         verify(groupRepository).findById(1L);
         verifyNoInteractions(eventRepository);
+    }
+    @Test
+    void updateEvent_Success() {
+        // Arrange
+        Event existingEvent = new Event();
+        existingEvent.setEventId(1L);
+        existingEvent.setName("Original Event");
+        existingEvent.setDescription("Original description");
+        existingEvent.setMaxUsers(10);
+        existingEvent.setIsPublic(false);
+        existingEvent.setEventTime(LocalDateTime.now().plusDays(7));
+        existingEvent.setHosts(new ArrayList<>(List.of("test@example.com")));
+        existingEvent.setParticipants(new ArrayList<>(List.of("participant@example.com")));
+        existingEvent.setGroupId(1L);
+
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+        updatedEvent.setDescription("Updated description");
+        updatedEvent.setMaxUsers(15);
+        updatedEvent.setIsPublic(true);
+        updatedEvent.setEventTime(LocalDateTime.now().plusDays(14));
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(existingEvent));
+        when(eventRepository.save(any(Event.class))).thenReturn(existingEvent);
+
+        // Act
+        Event result = eventService.updateEvent(1L, updatedEvent, testUser);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Updated Event", result.getName());
+        assertEquals("Updated description", result.getDescription());
+        assertEquals(15, result.getMaxUsers());
+        assertTrue(result.getIsPublic());
+        assertEquals(updatedEvent.getEventTime(), result.getEventTime());
+        verify(eventRepository).findById(1L);
+        verify(eventRepository).save(existingEvent);
+    }
+
+    @Test
+    void updateEvent_EventNotFound() {
+        // Arrange
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+
+        when(eventRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        EventNotFoundException exception = assertThrows(EventNotFoundException.class,
+                () -> eventService.updateEvent(999L, updatedEvent, testUser));
+
+        assertEquals("Event not found with id: 999", exception.getMessage());
+        verify(eventRepository).findById(999L);
+        verify(eventRepository, never()).save(any(Event.class));
+    }
+
+    @Test
+    void updateEvent_UserNotHost() {
+        // Arrange
+        Event existingEvent = new Event();
+        existingEvent.setEventId(1L);
+        existingEvent.setName("Original Event");
+        existingEvent.setHosts(new ArrayList<>(List.of("otherhost@example.com")));
+
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(existingEvent));
+
+        // Act & Assert
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class,
+                () -> eventService.updateEvent(1L, updatedEvent, testUser));
+
+        assertEquals("Only event hosts can update events", exception.getMessage());
+        verify(eventRepository).findById(1L);
+        verify(eventRepository, never()).save(any(Event.class));
+    }
+
+    @Test
+    void updateEvent_InvalidDateTime() {
+        // Arrange
+        Event existingEvent = new Event();
+        existingEvent.setEventId(1L);
+        existingEvent.setName("Original Event");
+        existingEvent.setHosts(new ArrayList<>(List.of("test@example.com")));
+
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+        updatedEvent.setEventTime(LocalDateTime.now().minusDays(1)); // Past date
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(existingEvent));
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> eventService.updateEvent(1L, updatedEvent, testUser));
+
+        assertEquals("Event time must be in the future", exception.getMessage());
+        verify(eventRepository).findById(1L);
+        verify(eventRepository, never()).save(any(Event.class));
+    }
+
+    @Test
+    void updateEvent_InvalidMaxUsers() {
+        // Arrange
+        Event existingEvent = new Event();
+        existingEvent.setEventId(1L);
+        existingEvent.setName("Original Event");
+        existingEvent.setHosts(new ArrayList<>(List.of("test@example.com")));
+        existingEvent.setParticipants(new ArrayList<>(
+                Arrays.asList("user1@example.com", "user2@example.com", "user3@example.com")));
+
+        Event updatedEvent = new Event();
+        updatedEvent.setName("Updated Event");
+        updatedEvent.setMaxUsers(2); // Less than current participants count (3)
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(existingEvent));
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> eventService.updateEvent(1L, updatedEvent, testUser));
+
+        assertEquals("Max users cannot be less than the current number of participants", exception.getMessage());
+        verify(eventRepository).findById(1L);
+        verify(eventRepository, never()).save(any(Event.class));
+    }
+
+    @Test
+    void deleteEvent_Success() {
+        // Arrange
+        Event eventToDelete = new Event();
+        eventToDelete.setEventId(1L);
+        eventToDelete.setName("Event To Delete");
+        eventToDelete.setGroupId(1L);
+        eventToDelete.setHosts(new ArrayList<>(List.of("test@example.com")));
+        eventToDelete.setParticipants(new ArrayList<>(List.of("participant@example.com")));
+
+        Group group = new Group();
+        group.setGroupId(1L);
+        group.setEvents(new ArrayList<>(List.of(1L)));
+
+        User host = new User();
+        host.setUserEmail("test@example.com");
+        host.setHostedEvents(new ArrayList<>(List.of(1L)));
+
+        User participant = new User();
+        participant.setUserEmail("participant@example.com");
+        participant.setJoinedEvents(new ArrayList<>(List.of(1L)));
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(eventToDelete));
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(userRepository.findById("test@example.com")).thenReturn(Optional.of(host));
+        when(userRepository.findById("participant@example.com")).thenReturn(Optional.of(participant));
+
+        // Act
+        eventService.deleteEvent(1L, testUser);
+
+        // Assert
+        verify(eventRepository).findById(1L);
+        verify(groupRepository).findById(1L);
+        verify(userRepository).findById("test@example.com");
+        verify(userRepository).findById("participant@example.com");
+        verify(groupRepository).save(group);
+        verify(userRepository).save(host);
+        verify(userRepository).save(participant);
+        verify(eventRepository).delete(eventToDelete);
+
+        assertFalse(group.getEvents().contains(1L));
+        assertFalse(host.getHostedEvents().contains(1L));
+        assertFalse(participant.getJoinedEvents().contains(1L));
+    }
+
+    @Test
+    void deleteEvent_EventNotFound() {
+        // Arrange
+        when(eventRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        EventNotFoundException exception = assertThrows(EventNotFoundException.class,
+                () -> eventService.deleteEvent(999L, testUser));
+
+        assertEquals("Event not found with id: 999", exception.getMessage());
+        verify(eventRepository).findById(999L);
+        verify(eventRepository, never()).delete(any(Event.class));
+        verifyNoInteractions(groupRepository);
+        verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    void deleteEvent_UserNotHost() {
+        // Arrange
+        Event eventToDelete = new Event();
+        eventToDelete.setEventId(1L);
+        eventToDelete.setName("Event To Delete");
+        eventToDelete.setHosts(new ArrayList<>(List.of("otherhost@example.com")));
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(eventToDelete));
+
+        // Act & Assert
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class,
+                () -> eventService.deleteEvent(1L, testUser));
+
+        assertEquals("Only event hosts can delete events", exception.getMessage());
+        verify(eventRepository).findById(1L);
+        verify(eventRepository, never()).delete(any(Event.class));
+        verifyNoInteractions(groupRepository);
+        verifyNoInteractions(userRepository);
     }
 }
