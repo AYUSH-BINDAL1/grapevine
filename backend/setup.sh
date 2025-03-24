@@ -50,6 +50,50 @@ open_db_console() {
   exit 0
 }
 
+setup_bucket() {
+  echo -e "\n${GREEN}Setting up MinIO bucket...${NC}"
+
+  echo "Waiting for MinIO to become available..."
+  MAX_RETRIES=30
+  RETRY_COUNT=0
+
+  while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s http://localhost:9000/minio/health/live > /dev/null; then
+      echo "MinIO is up and running!"
+      sleep 5
+      break
+    fi
+
+    echo "Waiting for MinIO to start... ($(($RETRY_COUNT + 1))/$MAX_RETRIES)"
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    sleep 2
+
+    if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+      echo -e "${RED}MinIO failed to start within the expected time.${NC}"
+      return 1
+    fi
+  done
+
+  # Find the MinIO container ID
+  MINIO_CONTAINER=$(docker ps | grep minio/minio | awk '{print $1}')
+
+  if [ -z "$MINIO_CONTAINER" ]; then
+    echo -e "${RED}MinIO container not found${NC}"
+    return 1
+  fi
+
+  echo "Setting up MinIO client..."
+  docker exec $MINIO_CONTAINER mc alias set local http://localhost:9000 minioadmin minioadmin
+
+  echo "Creating bucket..."
+  docker exec $MINIO_CONTAINER mc mb --ignore-existing local/images
+
+  echo "Setting public access policy..."
+  docker exec $MINIO_CONTAINER mc anonymous set download local/images
+
+  echo -e "${GREEN}MinIO bucket 'images' created with public access${NC}"
+}
+
 # Check for arguments
 if [ "$1" == "stop" ]; then
   cleanup
@@ -119,8 +163,6 @@ register_and_verify_user() {
   echo -e "\nUser $email registered and verified successfully!"
 }
 
-# Add this function after the register_and_verify_user function
-# Add this function after the register_and_verify_user function
 create_groups_for_user1() {
   echo -e "\n${GREEN}Logging in as user1 to get session ID...${NC}"
   SESSION_ID=$(curl -s -X POST "$BACKEND_URL/users/login" \
@@ -200,9 +242,12 @@ echo -e "\n${GREEN}Login to test the users:${NC}"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user1@purdue.edu\", \"password\": \"pw1\"}'"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user2@purdue.edu\", \"password\": \"pw2\"}'"
 
+setup_bucket
+
 echo -e "\n${GREEN}Setup complete! The application is running in Docker containers.${NC}"
 echo -e "Access the application at http://localhost:8080"
 echo -e "Access Mailpit at http://localhost:8025"
+echo -e "Access MinIO Console at http://localhost:9001 (login: minioadmin/minioadmin)"
 echo -e "To stop all containers, run: ./setup.sh stop"
 echo -e "To run unit tests, run: ./setup.sh test"
 echo -e "To access the PostgreSQL console, run: ./setup.sh db"

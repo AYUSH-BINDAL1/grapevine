@@ -3,7 +3,7 @@
 #### The setup script will start the server application with all necessary services (springboot server, postgres database, mail server, etc.) in Docker containers. The script will also populate the database with some sample data.
 
 ### <ins> PRE-REQUISITES: Docker Desktop (which includes the Docker Engine and CLI) must be installed and running on your machine. </ins>
-### For Unix-based systems (macOS, Linux):
+### Run the following from a Unix-based shell (If you're on windows, use WSL or Git Bash):
 1. Make the script executable:
    ```bash
    chmod +x setup.sh
@@ -12,7 +12,7 @@
     ```bash
     ./setup.sh
     ```
-3. To stop all services:
+3. To stop and clean up all services:
    ```bash
     ./setup.sh stop
     ```
@@ -20,19 +20,9 @@
    ```bash
     ./setup.sh test
     ```
-
-### For Windows:
-1. Run the batch script to start everything:
-    ```bash
-    setup.bat
-    ````
-2. To stop all services:
-    ```bash
-    setup.bat stop
-    ```
-3. To run all tests:
-    ```bash
-    setup.bat test
+5. To access the database console:
+   ```bash
+    ./setup.sh db
     ```
 
 ### The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process. 
