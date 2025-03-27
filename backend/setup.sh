@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # simple script for running the application with all dependencies
-# note: this script is for unix-based systems only (macOS, linux)
-#       if you are using windows, please run setup.bat instead
+# note: this script should be run from a UNIX-based shell (e.g., Git Bash on Windows)
 
 # INSTRUCTIONS:
    #1. Make the script executable:
@@ -47,6 +46,27 @@ run_tests() {
 open_db_console() {
   echo -e "${BLUE}Opening PostgreSQL console...${NC}"
   docker exec -it backend-postgres-1 psql -U postgres
+  exit 0
+}
+
+# Function to redeploy Spring Boot application
+redeploy_app() {
+  echo -e "${BLUE}Redeploying Spring Boot application...${NC}"
+
+  # Build the app with Maven
+  ./mvnw clean package -DskipTests
+
+  # Restart just the backend container
+  docker compose up -d --build backend
+
+  # Wait for the application to be ready
+  echo -e "${GREEN}Waiting for Spring Boot application to restart...${NC}"
+  while ! curl -s $BACKEND_URL/users/register >/dev/null 2>&1; do
+    echo "Waiting for application to become available..."
+    sleep 2
+  done
+
+  echo -e "${GREEN}Spring Boot application redeployed successfully!${NC}"
   exit 0
 }
 
@@ -105,6 +125,10 @@ fi
 
 if [ "$1" == "db" ]; then
   open_db_console
+fi
+
+if [ "$1" == "r" ]; then
+  redeploy_app
 fi
 
 # Check if port 8080 is already in use and kill the process if found
@@ -231,12 +255,50 @@ create_groups_for_user1() {
   echo -e "\n${GREEN}Successfully created 5 groups for user1@purdue.edu${NC}"
 }
 
+set_instructor_role() {
+  echo -e "\n${GREEN}Setting user1 as instructor...${NC}"
+
+  # Login to get session ID
+  echo "Logging in as user1..."
+  LOGIN_RESPONSE=$(curl -s -X POST "$BACKEND_URL/users/login" \
+    -H "Content-Type: application/json" \
+    -d '{"email": "user1@purdue.edu", "password": "pw1"}')
+
+  SESSION_ID=$(echo "$LOGIN_RESPONSE" | grep -o '"sessionId":"[^"]*' | sed 's/"sessionId":"//g')
+
+  if [ -z "$SESSION_ID" ]; then
+    echo -e "${RED}Failed to login as user1${NC}"
+    return 1
+  fi
+
+  echo "Session ID: $SESSION_ID"
+
+  # Get current user details
+  USER_DATA=$(curl -s -X GET "$BACKEND_URL/users/user1@purdue.edu" \
+    -H "Session-Id: $SESSION_ID")
+
+  # Update user data with instructor role
+  echo "Updating user role to INSTRUCTOR..."
+  UPDATED_USER=$(echo "$USER_DATA" | sed 's/"role":"STUDENT"/"role":"INSTRUCTOR"/g')
+
+  # Send update request
+  RESULT=$(curl -s -X PUT "$BACKEND_URL/users/user1@purdue.edu" \
+    -H "Content-Type: application/json" \
+    -H "Session-Id: $SESSION_ID" \
+    -d "$UPDATED_USER")
+
+  echo -e "${GREEN}User1 role updated to instructor successfully!${NC}"
+}
+
 # Register two users
 register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
 register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
 
 # Create groups for user1
 create_groups_for_user1
+
+# Set user1 as instructor
+set_instructor_role
 
 echo -e "\n${GREEN}Login to test the users:${NC}"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user1@purdue.edu\", \"password\": \"pw1\"}'"

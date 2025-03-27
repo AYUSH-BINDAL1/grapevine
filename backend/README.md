@@ -29,10 +29,10 @@
 <ins> *If you've created test data locally and you want to keep it after restarting setup, read the configuration modes in src/main/resources/application.properties and change the ddl-auto configuration from create to update. <ins>
 
 #### Users
-| Email | Password | Name | Birthday | Verified |
-|-------|----------|------|----------|----------|
-| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes |
-| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
+| Email | Password | Name | Birthday | Verified | Role
+|-------|----------|------|----------|----------|---------|
+| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes | INSTRUCTOR |
+| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes | STUDENT |
 
 #### Groups
 

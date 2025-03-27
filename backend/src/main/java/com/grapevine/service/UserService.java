@@ -119,8 +119,7 @@ public class UserService {
     public User updateUser(String userEmail, User updatedUser) {
         User existingUser = getUserByEmail(userEmail);
 
-        //Update the fields that can be modified
-        //TODO: Probably need to add more
+        // Update the fields that can be modified
         if (updatedUser.getName() != null) {
             existingUser.setName(updatedUser.getName());
         }
@@ -144,6 +143,9 @@ public class UserService {
         }
         if (updatedUser.getPreferredLocations() != null) {
             existingUser.setPreferredLocations(updatedUser.getPreferredLocations());
+        }
+        if (updatedUser.getRole() != null) {
+            existingUser.setRole(updatedUser.getRole());
         }
         //Password should be handled separately with proper validation and encryption
         //Role changes might require special authorization
