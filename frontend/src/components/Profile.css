@@ -563,3 +563,21 @@
   margin-left: 10px;
   text-align: left;
 }
+
+.view-students-button {
+  position: absolute;
+  top: 80px;
+  right: 150px;
+  background-color: #ae92c6;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.view-students-button:hover {
+  background-color: #9a7db1;
+}
