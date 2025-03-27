@@ -37,6 +37,8 @@ function Profile() {
       const parsedData = JSON.parse(storedUserData);
       setUserData(parsedData);
       setEditedDescription(parsedData.biography || "");
+      
+      // Store the majors array directly
       setEditedProfileData({
         name: parsedData.name || "",
         userEmail: parsedData.userEmail || "",
@@ -467,9 +469,20 @@ function Profile() {
             >
               Remove Availability
             </button>
-            
+
             <div className="availability-preview">
               <h4>Current Availability:</h4>
+
+              <div className="time-indicators-container">
+                <div className="time-indicators-spacer"></div>
+                <div className="time-indicators">
+                  {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
+                    <div key={hour} className="time-indicator">
+                      <span>{hour}:00</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <div className="availability-visual">
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
                   <div key={day} className="day-row">

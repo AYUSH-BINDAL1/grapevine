@@ -78,7 +78,6 @@ function Home() {
   const [showPrivate, setShowPrivate] = useState(false);
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
-  const allGroupsScrollRef = useRef(null);
 
   useEffect(() => {
     const fetchGroups = async () => {

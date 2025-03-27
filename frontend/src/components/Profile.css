@@ -373,6 +373,36 @@ It also includes responsive design for different screen sizes. */
   cursor: pointer;
 }
 
+/* Add these styles to Profile.css for the time indicators */
+.time-indicators-container {
+  display: flex;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.time-indicators-spacer {
+  width: 100px; /* Same width as day-name to align properly */
+  flex-shrink: 0;
+}
+
+.time-indicators {
+  display: flex;
+  flex: 1;
+}
+
+.time-indicator {
+  flex: 3;
+  text-align: left;
+  font-size: 12px;
+  color: #666;
+  position: relative;
+}
+
+.time-indicator span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
 /* Availability preview section */
 .availability-preview {
   margin-top: 25px;
@@ -612,6 +642,14 @@ It also includes responsive design for different screen sizes. */
   .add-time, 
   .remove-time {
     width: 100%;
+  }
+
+  .time-indicators-spacer {
+    width: 80px;
+  }
+  
+  .time-indicator {
+    font-size: 10px;
   }
 }
 
