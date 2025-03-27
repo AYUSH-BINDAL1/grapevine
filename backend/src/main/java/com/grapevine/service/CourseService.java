@@ -12,6 +12,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,23 +39,26 @@ public class CourseService {
         return courseRepository.findShortCourseByCourseKey(courseKey);
     }
 
-    public List<Course> searchCoursesByRegex(String regex) {
-        List<Course> allCourses = getAllCourses();
-        return allCourses.stream()
-                .filter(course ->
-                        course.getCourseKey().toUpperCase().matches(".*" + regex.toUpperCase() + ".*") ||
-                                course.getSubject().toUpperCase().matches(".*" + regex.toUpperCase() + ".*") ||
-                                course.getTitle().toUpperCase().matches(".*" + regex.toUpperCase() + ".*"))
-                .collect(java.util.stream.Collectors.toList());
+    public List<Course> searchCoursesByRegex(String query) {
+        // escape special regex characters to treat the input as a literal string
+        String escapedQuery = Pattern.quote(query);
+        // create case-insensitive regex pattern
+        Pattern pattern = Pattern.compile(".*" + escapedQuery + ".*", Pattern.CASE_INSENSITIVE);
+
+        return courseRepository.findAll().stream()
+                .filter(course -> pattern.matcher(course.getCourseKey()).matches())
+                .collect(Collectors.toList());
     }
 
-    public List<CourseRepository.ShortCourse> searchShortCoursesByRegex(String regex) {
-        List<CourseRepository.ShortCourse> allShortCourses = getAllShortCourses();
-        return allShortCourses.stream()
-                .filter(course ->
-                        course.getCourseKey().toUpperCase().matches(".*" + regex.toUpperCase() + ".*") ||
-                                course.getTitle().toUpperCase().matches(".*" + regex.toUpperCase() + ".*"))
-                .collect(java.util.stream.Collectors.toList());
+    public List<CourseRepository.ShortCourse> searchShortCoursesByRegex(String query) {
+        String escapedQuery = Pattern.quote(query);
+
+        Pattern pattern = Pattern.compile(".*" + escapedQuery + ".*", Pattern.CASE_INSENSITIVE);
+
+        return getAllShortCourses().stream()
+                .filter(course -> pattern.matcher(course.getCourseKey()).matches() ||
+                        (course.getTitle() != null && pattern.matcher(course.getTitle()).matches()))
+                .collect(Collectors.toList());
     }
 
     @PostConstruct
