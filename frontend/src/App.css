@@ -12,9 +12,13 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 10px 20px;
-  max-width: 1200px;
+  padding: 8px 10px;
+  max-width: 1300px;
   margin: 0 auto;
+}
+
+.taskbar-elem  img{
+  margin-right: 40px;
 }
 
 .profile {

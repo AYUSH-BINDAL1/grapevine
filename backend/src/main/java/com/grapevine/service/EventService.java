@@ -135,8 +135,8 @@ public class EventService {
             existingEvent.setIsPublic(updatedEvent.getIsPublic());
         }
 
-        if (updatedEvent.getLocation() != null) {
-            existingEvent.setLocation(updatedEvent.getLocation());
+        if (updatedEvent.getLocationId() != null) {
+            existingEvent.setLocationId(updatedEvent.getLocationId());
         }
 
         if (updatedEvent.getEventTime() != null) {
