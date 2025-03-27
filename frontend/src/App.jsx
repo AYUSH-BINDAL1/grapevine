@@ -14,6 +14,7 @@ import CreateEvent from "./components/CreateEvent.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import CourseSearch from './components/CourseSearch.jsx';
 import EventDetails from "./components/EventDetails";
+import UsrProfile from './components/UsrProfile';
 import './App.css';
 import './components/Groups.css';
 
@@ -178,6 +179,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/user/:userId" element={<UsrProfile />} />
         
         {/* Protected routes with taskbar */}
         <Route element={<Layout />}>

@@ -4,6 +4,7 @@ import com.grapevine.exception.GroupNotFoundException;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.model.Group;
 //import com.grapevine.model.Rating;
+import com.grapevine.model.Rating;
 import com.grapevine.model.ShortGroup;
 import com.grapevine.model.User;
 import com.grapevine.repository.GroupRepository;
@@ -12,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -72,6 +75,171 @@ public class GroupService {
                 .orElseThrow(() -> new GroupNotFoundException("Group not found with id: " + groupId));
     }
 
+    public Map<String, Object> getGroupRatings(Long groupId) {
+        Group group = getGroupById(groupId);
+        Rating rating = group.getRating();
+
+        if (rating == null) {
+            // If no rating exists, return empty lists
+            Map<String, Object> emptyResult = new HashMap<>();
+            emptyResult.put("scores", new ArrayList<>());
+            emptyResult.put("reviews", new ArrayList<>());
+            return emptyResult;
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("scores", rating.getScores());
+        result.put("reviews", rating.getReviews());
+
+        return result;
+    }
+
+    /**
+     * Returns the average rating and total number of reviews for a group
+     */
+    public Map<String, Object> getGroupRatingSummary(Long groupId) {
+        Group group = getGroupById(groupId);
+        Rating rating = group.getRating();
+
+        Map<String, Object> summary = new HashMap<>();
+
+        if (rating == null) {
+            // If no rating exists, return defaults
+            summary.put("averageRating", 0.0f);
+            summary.put("totalReviews", 0);
+        } else {
+            summary.put("averageRating", rating.getAverageRating());
+            summary.put("totalReviews", rating.getScores().size());
+        }
+
+        return summary;
+    }
+
+    public Group addOrUpdateRating(Long groupId, Float score, String review, String userEmail) {
+        Group group = getGroupById(groupId);
+
+        // Initialize Rating if null
+        if (group.getRating() == null) {
+            group.setRating(new Rating());
+        }
+
+        Rating rating = group.getRating();
+
+        // Initialize collections if null
+        if (rating.getUserEmails() == null) {
+            rating.setUserEmails(new ArrayList<>());
+            rating.setScores(new ArrayList<>());
+            rating.setReviews(new ArrayList<>());
+        }
+
+        // Check if user has already rated this group
+        int existingIndex = rating.getUserEmails().indexOf(userEmail);
+
+        if (existingIndex != -1) {
+            // Update existing rating/review
+            if (score != null) {
+                // Update score if provided
+                rating.getScores().set(existingIndex, score);
+            }
+
+            if (review != null) {
+                // Update review if provided
+                rating.getReviews().set(existingIndex, review);
+            }
+        } else {
+            // Add new rating/review
+            rating.getUserEmails().add(userEmail);
+
+            // Handle score (use neutral value if not provided)
+            if (score != null) {
+                rating.getScores().add(score);
+            } else {
+                // Use a dummy score that won't affect average (null works too)
+                rating.getScores().add(0.0f); // This will be ignored in average calculation
+            }
+
+            // Handle review (use empty string if not provided)
+            rating.getReviews().add(review != null ? review : "");
+        }
+
+        // Recalculate average - modify to ignore dummy scores
+        recalculateAverageRating(rating);
+
+        // Save updated group
+        return groupRepository.save(group);
+    }
+
+    /**
+     * Helper method to recalculate average rating ignoring dummy scores
+     */
+    private void recalculateAverageRating(Rating rating) {
+        if (rating.getScores() == null || rating.getScores().isEmpty()) {
+            rating.setAverageRating(0.0f);
+            return;
+        }
+
+        float sum = 0;
+        int count = 0;
+
+        for (Float score : rating.getScores()) {
+            // Only include non-zero scores in the average
+            if (score != null && score > 0) {
+                sum += score;
+                count++;
+            }
+        }
+
+        rating.setAverageRating(count > 0 ? sum / count : 0.0f);
+    }
+
+    /**
+     * Gets a specific user's rating for a group
+     */
+    public Map<String, Object> getUserRating(Long groupId, String userEmail) {
+        Group group = getGroupById(groupId);
+        Map<String, Object> result = new HashMap<>();
+
+        // Default values if no rating exists
+        result.put("score", null);
+        result.put("review", null);
+
+        if (group.getRating() != null && group.getRating().getUserEmails() != null) {
+            Rating rating = group.getRating();
+            int index = rating.getUserEmails().indexOf(userEmail);
+
+            if (index != -1) {
+                result.put("score", rating.getScores().get(index));
+                result.put("review", rating.getReviews().get(index));
+            }
+        }
+
+        return result;
+    }
+
+    public Group deleteUserRating(Long groupId, String userEmail) {
+        Group group = getGroupById(groupId);
+
+        if (group.getRating() != null && group.getRating().getUserEmails() != null) {
+            Rating rating = group.getRating();
+            int index = rating.getUserEmails().indexOf(userEmail);
+
+            if (index != -1) {
+                // Remove user's rating and review
+                rating.getUserEmails().remove(index);
+                rating.getScores().remove(index);
+                rating.getReviews().remove(index);
+
+                // Recalculate average rating
+                recalculateAverageRating(rating);
+
+                // Save updated group
+                return groupRepository.save(group);
+            }
+        }
+
+        // Return the group as is if no rating found
+        return group;
+    }
 
 
 
