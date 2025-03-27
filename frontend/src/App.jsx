@@ -14,11 +14,12 @@ import CreateEvent from "./components/CreateEvent.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import CourseSearch from './components/CourseSearch.jsx';
 import EventDetails from "./components/EventDetails";
+import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import './App.css';
 import './components/Groups.css';
 
-const searchEnabled = true;
+export const searchEnabled = true;
 
 function Taskbar() {
   const navigate = useNavigate();
@@ -52,42 +53,47 @@ function Layout() {
 
 function Home() {
   const [groups, setGroups] = useState([]);
+  const [allGroups, setAllGroups] = useState([]);
+  const [showPrivate, setShowPrivate] = useState(false);
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
+  const allGroupsScrollRef = useRef(null);
 
   useEffect(() => {
     const fetchGroups = async () => {
       const storedUserInfo = localStorage.getItem('userData');
       const sessionId = localStorage.getItem('sessionId');
-      
+
       if (storedUserInfo && sessionId) {
         const parsedUser = JSON.parse(storedUserInfo);
         const userEmail = parsedUser.userEmail;
-        console.log("Fetching groups for:", userEmail);
         try {
           const response = await axios.get(
               `http://localhost:8080/users/${userEmail}/all-groups-short`,
-              {
-                headers: {
-                  'Session-Id': sessionId
-                }
-              }
+              { headers: { 'Session-Id': sessionId } }
           );
-          console.log("Groups fetched:", response.data);
           setGroups(response.data);
         } catch (error) {
-          console.error('Error fetching groups:', error);
-          if (error.response && error.response.status === 401) {
+          console.error('Error fetching user groups:', error);
+          if (error.response?.status === 401) {
             alert('Session expired. Please login again.');
             navigate('/');
           }
+        }
+
+        try {
+          const allRes = await axios.get("http://localhost:8080/groups/all-short", {
+            headers: { 'Session-Id': sessionId }
+          });
+          setAllGroups(allRes.data);
+        } catch (error) {
+          console.error('Error fetching all groups:', error);
         }
       } else {
         alert('No user information or session found. Please login again.');
         navigate('/');
       }
     };
-  
     fetchGroups();
   }, [navigate]);
 
@@ -99,12 +105,12 @@ function Home() {
     navigate(`/group/${groupId}`);
   };
 
-  const scrollLeft = () => {
-    scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+  const scrollLeft = (ref) => {
+    ref.current.scrollBy({ left: -300, behavior: 'smooth' });
   };
 
-  const scrollRight = () => {
-    scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+  const scrollRight = (ref) => {
+    ref.current.scrollBy({ left: 300, behavior: 'smooth' });
   };
 
   return (
@@ -113,11 +119,12 @@ function Home() {
         <button onClick={handleCreateGroup} className="create-group-button">
           Create Group
         </button>
+
         <div className="scroll-wrapper2">
-          <button className="scroll-arrow2 left" onClick={scrollLeft}>&lt;</button>
+          <button className="scroll-arrow2 left" onClick={() => scrollLeft(scrollContainerRef)}>&lt;</button>
           <div className="scroll-container2" ref={scrollContainerRef}>
             {groups.length === 0 ? (
-                <p>You are not part of any groups. Create one or join an existing group!</p>
+                <p>You are not part of any groups.</p>
             ) : (
                 groups.map((group) => (
                     <div
@@ -130,7 +137,36 @@ function Home() {
                 ))
             )}
           </div>
-          <button className="scroll-arrow2 right" onClick={scrollRight}>&gt;</button>
+          <button className="scroll-arrow2 right" onClick={() => scrollRight(scrollContainerRef)}>&gt;</button>
+        </div>
+
+        <h2 className="section-header">All Groups</h2>
+        <div className="all-groups-layout">
+          <div className="filters-panel">
+            <h3>Filters</h3>
+            <label>
+              <input
+                  type="checkbox"
+                  checked={showPrivate}
+                  onChange={(e) => setShowPrivate(e.target.checked)}
+              /> Private Groups
+            </label>
+          </div>
+          <div className="all-groups-grid">
+            {allGroups.length === 0 ? (
+                <p>No groups found.</p>
+            ) : (
+                allGroups.map((group) => (
+                    <div
+                        key={group.groupId}
+                        className="group-card"
+                        onClick={() => handleGroupClick(group.groupId)}
+                    >
+                      <h3>{group.name}</h3>
+                    </div>
+                ))
+            )}
+          </div>
         </div>
       </div>
   );
@@ -157,6 +193,7 @@ function App() {
           <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
           <Route path="/friends" element={<Friends />} /> {/* Placeholder */}
           <Route path="/courseSearch" element={<CourseSearch />} />
+          <Route path="/view-students" element={<ViewStudents />} />
           <Route path="/group/:id" element={<Groups />} />
           <Route path="/event/:eventId" element={<EventDetails />} />
           <Route path="*" element={<Nopath />} />

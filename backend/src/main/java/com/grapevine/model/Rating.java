@@ -45,14 +45,24 @@ public class Rating {
     @OneToOne(mappedBy = "rating")
     private Group group;
 
-    public void addRating(Float score, String review) {
+    @ElementCollection
+    @CollectionTable(
+            name = "rating_users",
+            joinColumns = @JoinColumn(name = "rating_id")
+    )
+    @Column(name = "user_email")
+    private List<String> userEmails = new ArrayList<>();
+
+    // Update the addRating method
+    public void addRating(Float score, String review, String userEmail) {
         scores.add(score);
         reviews.add(review);
+        userEmails.add(userEmail);
         recalculateAverageRating();
     }
 
-    private void recalculateAverageRating() {
-        if (scores.isEmpty()) {
+    public void recalculateAverageRating() {
+        if (scores == null || scores.isEmpty()) {
             this.averageRating = 0.0f;
             return;
         }
