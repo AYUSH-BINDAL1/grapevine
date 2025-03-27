@@ -3,7 +3,7 @@
 #### The setup script will start the server application with all necessary services (springboot server, postgres database, mail server, etc.) in Docker containers. The script will also populate the database with some sample data.
 
 ### <ins> PRE-REQUISITES: Docker Desktop (which includes the Docker Engine and CLI) must be installed and running on your machine. </ins>
-### For Unix-based systems (macOS, Linux):
+### Run the following from a Unix-based shell (If you're on windows, use WSL or Git Bash):
 1. Make the script executable:
    ```bash
    chmod +x setup.sh
@@ -12,7 +12,7 @@
     ```bash
     ./setup.sh
     ```
-3. To stop all services:
+3. To stop and clean up all services:
    ```bash
     ./setup.sh stop
     ```
@@ -20,28 +20,29 @@
    ```bash
     ./setup.sh test
     ```
-
-### For Windows:
-1. Run the batch script to start everything:
-    ```bash
-    setup.bat
-    ````
-2. To stop all services:
-    ```bash
-    setup.bat stop
-    ```
-3. To run all tests:
-    ```bash
-    setup.bat test
+5. To access the database console:
+   ```bash
+    ./setup.sh db
     ```
 
-### The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process.
+### The database is automatically cleaned when started and is populated with the following entities. You can log in to one of the user accounts to do your testing without going through the entire registration process. 
+<ins> *If you've created test data locally and you want to keep it after restarting setup, read the configuration modes in src/main/resources/application.properties and change the ddl-auto configuration from create to update. <ins>
 
-| Email | Password | Name | Birthday | Verified |
-|-------|----------|------|----------|----------|
-| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes |
-| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
+#### Users
+| Email | Password | Name | Birthday | Verified | Role
+|-------|----------|------|----------|----------|---------|
+| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes | INSTRUCTOR |
+| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes | STUDENT |
 
+#### Groups
+
+| Group Name | Description | Max Users | Created By |
+|------------|-------------|-----------|------------|
+| CS 307 Study Group | A collaborative study group for CS 307 Software Engineering. We meet twice a week to discuss course material, work on projects, and prepare for exams. All skill levels welcome! | 25 | user1@purdue.edu |
+| Calculus III Study Group | Dedicated to mastering multivariable calculus. We work through complex problems together and explain concepts to each other. Join us to conquer Calc III! | 15 | user1@purdue.edu |
+| Organic Chemistry Group | Focus on mastering organic chemistry concepts, reaction mechanisms, and lab techniques. We help each other prepare for exams and understand difficult topics. | 20 | user1@purdue.edu |
+| Algorithm Practice | Weekly algorithm problem solving sessions. We tackle leetcode problems and discuss efficient solutions and techniques. | 12 | user1@purdue.edu |
+| Web Development Club | Learn and practice modern web technologies including React, Node.js, and cloud deployment. Beginners and experts welcome! | 18 | user1@purdue.edu |
 
 # API ENDPOINTS
 

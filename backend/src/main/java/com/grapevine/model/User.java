@@ -1,8 +1,5 @@
 package com.grapevine.model;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -99,6 +96,14 @@ public class User {
     @ElementCollection
     @Column(name = "location_ids")
     private List<Long> preferredLocations;
+
+    public enum Role {
+        STUDENT,
+        INSTRUCTOR
+    }
+
+    @Column(name = "role")
+    private Role role = Role.STUDENT;
 
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 

@@ -30,7 +30,7 @@ public class GroupService {
         List<ShortGroup> shortGroups = new ArrayList<>();
 
         for (Group group : groups) {
-            shortGroups.add(new ShortGroup(group.getGroupId(), group.getName()));
+            shortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic()));
         }
 
         return shortGroups;

@@ -119,8 +119,7 @@ public class UserService {
     public User updateUser(String userEmail, User updatedUser) {
         User existingUser = getUserByEmail(userEmail);
 
-        //Update the fields that can be modified
-        //TODO: Probably need to add more
+        // Update the fields that can be modified
         if (updatedUser.getName() != null) {
             existingUser.setName(updatedUser.getName());
         }
@@ -144,6 +143,9 @@ public class UserService {
         }
         if (updatedUser.getPreferredLocations() != null) {
             existingUser.setPreferredLocations(updatedUser.getPreferredLocations());
+        }
+        if (updatedUser.getRole() != null) {
+            existingUser.setRole(updatedUser.getRole());
         }
         //Password should be handled separately with proper validation and encryption
         //Role changes might require special authorization
@@ -179,7 +181,7 @@ public class UserService {
         if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
             for (Long groupId : currentUser.getHostedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
             }
         }
 
@@ -187,7 +189,7 @@ public class UserService {
         if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
             for (Long groupId : currentUser.getJoinedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
             }
         }
 
@@ -215,7 +217,7 @@ public class UserService {
         if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
             for (Long groupId : currentUser.getHostedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> hostedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+                        .ifPresent(group -> hostedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
             }
         }
 
@@ -244,7 +246,7 @@ public class UserService {
         if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
             for (Long groupId : currentUser.getJoinedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> joinedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName())));
+                        .ifPresent(group -> joinedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
             }
         }
 

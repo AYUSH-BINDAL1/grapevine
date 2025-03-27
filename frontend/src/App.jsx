@@ -9,10 +9,16 @@ import Nopath from './components/Nopath';
 import profileImage from './assets/temp-profile.webp';
 import Events from './components/Events';
 import Groups from './components/Groups';
+import Friends from './components/Friends';
 import CreateEvent from "./components/CreateEvent.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
+import CourseSearch from './components/CourseSearch.jsx';
+import EventDetails from "./components/EventDetails";
+import UsrProfile from './components/UsrProfile';
 import './App.css';
 import './components/Groups.css';
+
+const searchEnabled = true;
 
 function Taskbar() {
   const navigate = useNavigate();
@@ -25,6 +31,9 @@ function Taskbar() {
           <h3 onClick={() => navigate("/forum")} className="elem">Forum</h3>
           <h3 onClick={() => navigate("/messages")} className="elem">Messages</h3>
           <h3 onClick={() => navigate("/friends")} className="elem">Friends</h3>
+          {searchEnabled && (
+            <h3 onClick={() => navigate("/courseSearch")} className="elem">SearchDemo</h3>
+          )}
           <img onClick={() => navigate("/profile")} className="profile" src={profileImage} alt="Profile" />
         </nav>
       </div>
@@ -135,6 +144,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/user/:userId" element={<UsrProfile />} />
         
         {/* Protected routes with taskbar */}
         <Route element={<Layout />}>
@@ -145,8 +155,10 @@ function App() {
           <Route path="/create-event" element={<CreateEvent />} />
           <Route path="/forum" element={<Nopath />} /> {/* Placeholder */}
           <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
-          <Route path="/friends" element={<Nopath />} /> {/* Placeholder */}
+          <Route path="/friends" element={<Friends />} /> {/* Placeholder */}
+          <Route path="/courseSearch" element={<CourseSearch />} />
           <Route path="/group/:id" element={<Groups />} />
+          <Route path="/event/:eventId" element={<EventDetails />} />
           <Route path="*" element={<Nopath />} />
         </Route>
       </Routes>

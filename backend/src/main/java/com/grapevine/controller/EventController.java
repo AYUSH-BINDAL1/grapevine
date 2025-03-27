@@ -52,4 +52,24 @@ public class EventController {
 
     }
 
+    @PutMapping("/{eventId}")
+    public Event updateEvent(
+            @PathVariable Long eventId,
+            @RequestBody Event updatedEvent,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session and get current user
+        User currentUser = userService.validateSession(sessionId);
+        return eventService.updateEvent(eventId, updatedEvent, currentUser);
+    }
+
+    @DeleteMapping("/{eventId}")
+    public void deleteEvent(
+            @PathVariable Long eventId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session and get current user
+        User currentUser = userService.validateSession(sessionId);
+        eventService.deleteEvent(eventId, currentUser);
+    }
 }

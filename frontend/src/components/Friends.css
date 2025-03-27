@@ -1,0 +1,308 @@
+.friends-page {
+  padding: 20px 20px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+.friends-container {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  position: relative;
+  width: 85%;
+  overflow: hidden;
+}
+
+.friends-container h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 24px;
+}
+
+/* This is the key styling for horizontal layout */
+.friends-list {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 20px;
+  padding: 20px 5px;
+  scroll-behavior: smooth;
+  
+  /* Hide default scrollbar */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.friends-list::-webkit-scrollbar {
+  display: none;
+}
+
+.friend-card {
+  flex: 0 0 auto;
+  width: 180px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.friend-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px #8ebd89;
+}
+
+.friend-card img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 15px;
+  border: 3px solid #8ebd89;
+}
+
+.friend-card h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Add these styles for the search container */
+.search-container {
+  margin-top: 30px;
+  display: flex;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  gap: 10px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.search-bar {
+  flex: 1;
+  padding: 12px 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-bar:focus {
+  border-color: #8ebd89;
+  box-shadow: 0 0 0 2px rgba(142, 189, 137, 0.2);
+}
+
+.search-button {
+  background-color: #8ebd89;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-button:hover {
+  background-color: #7aa875;
+}
+
+.friend-search {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.no-friends-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  text-align: center;
+  min-height: 200px;
+}
+
+.empty-state-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+}
+
+.no-friends-message h3 {
+  margin: 0 0 15px;
+  color: #333;
+  font-size: 24px;
+}
+
+.no-friends-message p {
+  margin: 0;
+  color: #666;
+  font-size: 16px;
+  max-width: 300px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .friend-card {
+    width: 150px;
+    padding: 15px;
+  }
+  
+  .friend-card img {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .search-container {
+    flex-direction: column;
+    max-width: 100%;
+  }
+  
+  .search-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Add these styles to your Friends.css file */
+
+/* Overall search section */
+.search-section {
+  margin-top: 30px;
+}
+
+/* Search container (already included but adding for reference) */
+.search-container {
+  display: flex;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  gap: 10px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Search results section */
+.search-results {
+  max-width: 800px;
+  margin: 20px auto 0;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.search-results h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 18px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.search-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search-result-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  transition: background-color 0.2s;
+}
+
+.search-result-card:hover {
+  background-color: #f0f0f0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  cursor: pointer;
+}
+
+.search-result-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #8ebd89;
+}
+
+.search-result-details {
+  margin-left: 15px;
+}
+
+.search-result-details h4 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  color: #333;
+}
+
+.search-result-details p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.add-friend-btn {
+  background-color: #8ebd89;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-friend-btn:hover {
+  background-color: #7aa875;
+}
+
+.no-results {
+  max-width: 600px;
+  margin: 20px auto 0;
+  text-align: center;
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  color: #666;
+  font-style: italic;
+}
+
+/* Disabled state for search button */
+.search-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
