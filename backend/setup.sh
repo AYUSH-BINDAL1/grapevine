@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # simple script for running the application with all dependencies
-# note: this script is for unix-based systems only (macOS, linux)
-#       if you are using windows, please run setup.bat instead
+# note: this script should be run from a UNIX-based shell (e.g., Git Bash on Windows)
 
 # INSTRUCTIONS:
    #1. Make the script executable:
