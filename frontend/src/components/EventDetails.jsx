@@ -17,9 +17,11 @@ function EventDetails() {
                     navigate("/");
                     return;
                 }
+
                 const response = await axios.get(`http://localhost:8080/events/${eventId}`, {
-                    headers: { "Session-Id": sessionId }
+                    headers: { "Session-Id": sessionId },
                 });
+
                 setEventData(response.data);
             } catch (error) {
                 console.error("Error fetching event details:", error);
@@ -32,23 +34,55 @@ function EventDetails() {
     }, [eventId, navigate]);
 
     if (!eventData) {
-        return <p>Loading event details...</p>;
+        return <div className="event-details-loading">Loading event details...</div>;
     }
+
+    const handleGroupRedirect = () => {
+        if (eventData.groupId) {
+            navigate(`/group/${eventData.groupId}`);
+        }
+    };
 
     return (
         <div className="event-details-container">
-            <h1 className="event-title">{eventData.name}</h1>
-            <div className="event-info">
-                <p><strong>Description:</strong> {eventData.description}</p>
-                <p><strong>Location:</strong> {eventData.location || "Not specified"}</p>
-                <p><strong>Event Time:</strong> {new Date(eventData.eventTime).toLocaleString()}</p>
-                <p><strong>Max Participants:</strong> {eventData.maxUsers}</p>
-                <p><strong>Visibility:</strong> {eventData.isPublic ? "Public" : "Private"}</p>
-                <p><strong>Host:</strong> {eventData.hosts && eventData.hosts.join(', ')}</p>
-            </div>
-            <button className="back-button" onClick={() => navigate("/events")}>
-                Back to Events
+            <button className="event-details-back" onClick={() => navigate("/events")}>
+                ← Back to Events
             </button>
+
+            <div className="event-details-header">
+                <h1 className="event-details-title">{eventData.name}</h1>
+                <div className="event-details-meta">
+                    <div className="event-details-meta-item">📍 {eventData.location || "Not specified"}</div>
+                    <div className="event-details-meta-item">🕒 {new Date(eventData.eventTime).toLocaleString()}</div>
+                    <div className="event-details-meta-item">👥 Max Participants: {eventData.maxUsers}</div>
+                    <div className="event-details-meta-item">🔒 {eventData.isPublic ? "Public" : "Private"}</div>
+                    {eventData.groupId && (
+                        <div className="event-details-meta-item event-details-link" onClick={handleGroupRedirect}>
+                            🔗 Go to Group
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="event-details-body">
+                <div className="event-details-section">
+                    <h2>Description</h2>
+                    <p>{eventData.description || "No description provided."}</p>
+                </div>
+
+                <div className="event-details-section">
+                    <h2>Host(s)</h2>
+                    {eventData.hosts?.length > 0 ? (
+                        <ul>
+                            {eventData.hosts.map((host, index) => (
+                                <li key={index}>{host}</li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>No hosts assigned.</p>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
