@@ -290,3 +290,29 @@ h1 {
   background-color: #8ebd89;
 }
 
+.all-groups-layout {
+  display: flex;
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.filters-panel {
+  width: 180px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  height: fit-content;
+  background-color: #f8f8f8;
+}
+
+.filters-panel h3 {
+  margin-top: 0;
+}
+
+.all-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  flex: 1;
+}
+
