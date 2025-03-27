@@ -50,6 +50,7 @@
   text-align: center;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 }
 
 .friend-card:hover {
@@ -180,5 +181,128 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Add these styles to your Friends.css file */
+
+/* Overall search section */
+.search-section {
+  margin-top: 30px;
+}
+
+/* Search container (already included but adding for reference) */
+.search-container {
+  display: flex;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  gap: 10px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Search results section */
+.search-results {
+  max-width: 800px;
+  margin: 20px auto 0;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.search-results h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 18px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.search-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search-result-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  transition: background-color 0.2s;
+}
+
+.search-result-card:hover {
+  background-color: #f0f0f0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  cursor: pointer;
+}
+
+.search-result-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #8ebd89;
+}
+
+.search-result-details {
+  margin-left: 15px;
+}
+
+.search-result-details h4 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  color: #333;
+}
+
+.search-result-details p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.add-friend-btn {
+  background-color: #8ebd89;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-friend-btn:hover {
+  background-color: #7aa875;
+}
+
+.no-results {
+  max-width: 600px;
+  margin: 20px auto 0;
+  text-align: center;
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  color: #666;
+  font-style: italic;
+}
+
+/* Disabled state for search button */
+.search-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
