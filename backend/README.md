@@ -29,10 +29,10 @@
 <ins> *If you've created test data locally and you want to keep it after restarting setup, read the configuration modes in src/main/resources/application.properties and change the ddl-auto configuration from create to update. <ins>
 
 #### Users
-| Email | Password | Name | Birthday | Verified |
-|-------|----------|------|----------|----------|
-| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes |
-| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes |
+| Email | Password | Name | Birthday | Verified | Role
+|-------|----------|------|----------|----------|---------|
+| user1@purdue.edu | pw1 | Test UserOne | 2000-01-01 | Yes | INSTRUCTOR |
+| user2@purdue.edu | pw2 | Test UserTwo | 2000-01-01 | Yes | STUDENT |
 
 #### Groups
 
@@ -73,15 +73,21 @@
 | GET    | `/users/{userEmail}/preferred-locations` | -            | userEmail     | Session-Id  | Gets user's preferred locations   | List of Location objects   |
 ## Groups
 
-| Method | Endpoint                          | Request Body | Path Variable | Headers    | Description                     | Response                   |
-|--------|-----------------------------------|--------------|---------------|------------|---------------------------------|----------------------------|
-| GET    | `/groups/all`                     | -            | -             | Session-Id | Gets all groups in database     | List of Group objects      |
-| GET    | `/groups/all-short`               | -            | -             | Session-Id | Gets all groups in short form   | List of ShortGroup objects |
-| POST   | `/groups/create`                  | Group object | -             | Session-Id | Creates a new group             | Created Group object       |
-| GET    | `/groups/{groupId}`               | -            | groupId       | Session-Id | Gets a specific group by ID     | Group object               |
-| POST   | `/groups/{groupId}/events/create` | Event object | groupId       | Session-Id | Creates an event for a group    | Created Event object       |
-| GET    | `/groups/{groupId}/events`        | -            | groupId       | Session-Id | Gets all events for a group     | List of Event objects      |
-| GET    | `/groups/{groupId}/events-short`  | -            | groupId       | Session-Id | Gets group events in short form | List of ShortEvent objects |
+| Method | Endpoint                            | Request Body  | Path Variable | Headers    | Description                     | Response                    |
+|--------|-------------------------------------|---------------|---------------|------------|---------------------------------|-----------------------------|
+| GET    | `/groups/all`                       | -             | -             | Session-Id | Gets all groups in database     | List of Group objects       |
+| GET    | `/groups/all-short`                 | -             | -             | Session-Id | Gets all groups in short form   | List of ShortGroup objects  |
+| POST   | `/groups/create`                    | Group object  | -             | Session-Id | Creates a new group             | Created Group object        |
+| GET    | `/groups/{groupId}`                 | -             | groupId       | Session-Id | Gets a specific group by ID     | Group object                |
+| POST   | `/groups/{groupId}/events/create`   | Event object  | groupId       | Session-Id | Creates an event for a group    | Created Event object        |
+| GET    | `/groups/{groupId}/events`          | -             | groupId       | Session-Id | Gets all events for a group     | List of Event objects       |
+| GET    | `/groups/{groupId}/events-short`    | -             | groupId       | Session-Id | Gets group events in short form | List of ShortEvent objects  |
+| GET    | `/groups/{groupId}/ratings-reviews` | -             | groupId       | Session-Id | Gets all ratings and reviews    | Map with scores and reviews |
+| GET    | `/groups/{groupId}/average-rating`  | -             | groupId       | Session-Id | Gets average rating and count   | Map with rating summary     |
+| POST   | `/groups/{groupId}/add-rating`      | RatingRequest | groupId       | Session-Id | Adds a rating and/or review     | Updated Group object        |
+| GET    | `/groups/{groupId}/my-rating`       | -             | groupId       | Session-Id | Gets user's own rating/review   | Map with score and review   |
+| PUT    | `/groups/{groupId}/update-rating`   | RatingRequest | groupId       | Session-Id | Updates a rating and/or review  | Updated Group object        |
+| DELETE | `/groups/{groupId}/delete-rating`   | -             | groupId       | Session-Id | Deletes a rating and review     | Updated Group object        |
 
 ## Events
 
