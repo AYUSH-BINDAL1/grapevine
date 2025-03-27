@@ -138,6 +138,7 @@ function Home() {
           <button className="scroll-arrow2 right" onClick={() => scrollRight(scrollContainerRef)}>&gt;</button>
         </div>
 
+        <h2 className="section-header">All Groups</h2>
         <div className="all-groups-layout">
           <div className="filters-panel">
             <h3>Filters</h3>
@@ -146,7 +147,7 @@ function Home() {
                   type="checkbox"
                   checked={showPrivate}
                   onChange={(e) => setShowPrivate(e.target.checked)}
-              /> Show Private Groups
+              /> Private Groups
             </label>
           </div>
           <div className="all-groups-grid">
