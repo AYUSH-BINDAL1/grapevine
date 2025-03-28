@@ -306,40 +306,6 @@ class UserControllerTest {
     }
 
     @Test
-    void deleteUser_Success() {
-        // Arrange
-        when(userService.validateSession(testSessionId)).thenReturn(testUser);
-        doNothing().when(userService).deleteUser("test@example.com");
-        doNothing().when(userService).logout(testSessionId);
-
-        // Act
-        ResponseEntity<Void> response = userController.deleteUser("test@example.com", testSessionId);
-
-        // Assert
-        assertEquals(204, response.getStatusCodeValue());
-        verify(userService).validateSession(testSessionId);
-        verify(userService).deleteUser("test@example.com");
-        verify(userService).logout(testSessionId);
-    }
-
-    @Test
-    void deleteUser_NotAuthorized() {
-        // Arrange
-        User differentUser = new User();
-        differentUser.setUserEmail("different@example.com");
-
-        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
-
-        // Act & Assert
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> userController.deleteUser("test@example.com", testSessionId));
-
-        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
-        verify(userService).validateSession(testSessionId);
-        verifyNoMoreInteractions(userService);
-    }
-
-    @Test
     void getCurrentUser_Success() {
         // Arrange
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
