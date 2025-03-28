@@ -1,23 +1,7 @@
-/* Modern, clean profile page styling with a revised layout */
-
-:root {
-  --primary-color: #8ebd89;
-  --primary-hover: #7aa875;
-  --secondary-color: #ae92c6;
-  --text-dark: #333333;
-  --text-medium: #555555;
-  --text-light: #888888;
-  --background-light: #f5f5f5;
-  --white: #ffffff;
-  --danger: #f44336;
-  --danger-hover: #d32f2f;
-  --shadow-light: 0 2px 10px rgba(0, 0, 0, 0.05);
-  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --border-radius-sm: 6px;
-  --border-radius-md: 10px;
-  --border-radius-lg: 20px;
-  --border-radius-full: 50%;
-}
+/* Profile Page Styles */
+/* This CSS file styles the profile page, including the sidebar, 
+profile card, description card, action buttons, and availability panel. 
+It also includes responsive design for different screen sizes. */
 
 .profile-page {
   background-color: var(--background-light);

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -26,17 +27,24 @@ public class EventService {
     private final GroupRepository groupRepository;
 
     public List<Event> getAllEvents() {
-        return eventRepository.findAll();
+        List<Event> events = eventRepository.findAll();
+        // Sort events by time - upcoming events first
+        events.sort(Comparator.comparing(Event::getEventTime,
+                Comparator.nullsLast(Comparator.naturalOrder())));
+        return events;
     }
+
 
     public List<ShortEvent> getAllShortEvents() {
         List<Event> events = eventRepository.findAll();
-        List<ShortEvent> shortEvents = new ArrayList<>();
+        // Sort events by time - upcoming events first
+        events.sort(Comparator.comparing(Event::getEventTime,
+                Comparator.nullsLast(Comparator.naturalOrder())));
 
+        List<ShortEvent> shortEvents = new ArrayList<>();
         for (Event event : events) {
             shortEvents.add(new ShortEvent(event.getEventId(), event.getName()));
         }
-
         return shortEvents;
     }
 
@@ -127,8 +135,8 @@ public class EventService {
             existingEvent.setIsPublic(updatedEvent.getIsPublic());
         }
 
-        if (updatedEvent.getLocation() != null) {
-            existingEvent.setLocation(updatedEvent.getLocation());
+        if (updatedEvent.getLocationId() != null) {
+            existingEvent.setLocationId(updatedEvent.getLocationId());
         }
 
         if (updatedEvent.getEventTime() != null) {

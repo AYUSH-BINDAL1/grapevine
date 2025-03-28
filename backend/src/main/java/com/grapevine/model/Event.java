@@ -39,9 +39,8 @@ public class Event {
     @Column(name = "is_public")
     private Boolean isPublic;
 
-    @ManyToOne
-    @JoinColumn(name = "location_id")
-    private Location location;
+    @Column(name = "location_id")
+    private Long locationId;
 
     @Column(name = "event_time")
     private LocalDateTime eventTime;

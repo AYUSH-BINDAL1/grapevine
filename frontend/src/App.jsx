@@ -23,6 +23,27 @@ export const searchEnabled = true;
 
 function Taskbar() {
   const navigate = useNavigate();
+
+  const handlelogout = () => {
+    const conf = confirm("Are you sure you want to log out?")
+    if (!conf) return;
+    try {
+      // eslint-disable-next-line no-unused-vars
+      const response = axios.delete(
+      'http://localhost:8080/users/logout',
+      {
+        headers: {
+        'Session-Id': localStorage.getItem('sessionId')
+        }
+      }
+      );
+    } catch (error) {
+      console.error('Error logging out:', error);
+      return;
+    }
+    localStorage.clear();
+    navigate("/");
+  }
   
   return (
       <div className="taskbar">
@@ -36,6 +57,7 @@ function Taskbar() {
             <h3 onClick={() => navigate("/courseSearch")} className="elem">SearchDemo</h3>
           )}
           <img onClick={() => navigate("/profile")} className="profile" src={profileImage} alt="Profile" />
+          <h3 onClick={handlelogout} className="elem">Logout</h3>
         </nav>
       </div>
   );
