@@ -261,6 +261,28 @@ public class UserController {
         return userService.getPreferredLocations(currentUser);
     }
 
+    @DeleteMapping("/{userEmail}")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId
+    ) {
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+
+        // Check if the user is trying to delete their own account
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own account");
+        }
+
+        // Delete the user
+        userService.deleteUser(userEmail);
+
+        // Also logout the session
+        userService.logout(sessionId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     // sample of how other endpoints would use the session
     // i.e. any request made to an endpoint that requires a user be logged in
     // must have a session id in the **header** (NOT the body)
