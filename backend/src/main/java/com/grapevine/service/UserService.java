@@ -364,4 +364,48 @@ public class UserService {
         return preferredLocations;
     }
 
+    public void deleteUser(String userEmail) {
+        // First check if the user exists
+        User user = getUserByEmail(userEmail);
+
+        // Perform any cleanup operations before deleting
+        // For example, you might want to handle the groups or events the user is part of
+
+        // Remove the user from all groups they joined but don't host
+        if (user.getJoinedGroups() != null && !user.getJoinedGroups().isEmpty()) {
+            for (Long groupId : user.getJoinedGroups()) {
+                groupRepository.findById(groupId).ifPresent(group -> {
+                    group.getParticipants().remove(userEmail);
+                    groupRepository.save(group);
+                });
+            }
+        }
+
+        // For events the user joined but doesn't host
+        if (user.getJoinedEvents() != null && !user.getJoinedEvents().isEmpty()) {
+            for (Long eventId : user.getJoinedEvents()) {
+                eventRepository.findById(eventId).ifPresent(event -> {
+                    event.getParticipants().remove(userEmail);
+                    eventRepository.save(event);
+                });
+            }
+        }
+
+        // Delete any hosted groups
+        if (user.getHostedGroups() != null && !user.getHostedGroups().isEmpty()) {
+            for (Long groupId : user.getHostedGroups()) {
+                groupRepository.deleteById(groupId);
+            }
+        }
+
+        // Delete any hosted events
+        if (user.getHostedEvents() != null && !user.getHostedEvents().isEmpty()) {
+            for (Long eventId : user.getHostedEvents()) {
+                eventRepository.deleteById(eventId);
+            }
+        }
+
+        // Finally, delete the user from the repository
+        userRepository.deleteById(userEmail);
+    }
 }
