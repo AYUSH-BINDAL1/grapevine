@@ -4,6 +4,59 @@ import axios from "axios";
 import profileImage from "../assets/temp-profile.webp";
 import "./UsrProfile.css";
 
+// Add this function at the top of your UsrProfile.jsx file
+function getMockUserData(userId) {
+  const mockUsers = {
+    '101': {
+      userEmail: 'alex.thompson@example.com',
+      name: 'Alex Thompson',
+      majors: ['Computer Science', 'Data Science'],
+      biography: "Hey there! I'm a junior studying CS with a focus on machine learning. I love hackathons, solving complex problems, and teaching others. Looking for study partners for algorithms and AI courses. I'm most productive early mornings and weekends!",
+      weeklyAvailability: '000000000000000000111100000000000000001111000000000000000011110000000000000000111100000000000000001111000000000000111111111111000000000011111111111100',
+      preferredLocations: [2, 15, 10, 25], // LWSN, HIKS, MSEE, PMU
+      friends: [
+        { id: 102, name: 'Morgan Smith', userEmail: 'morgan.smith@example.com' },
+        { id: 105, name: 'Morgan Thompson', userEmail: 'morgan.thompson@example.com' }
+      ]
+    },
+    '102': {
+      userEmail: 'morgan.smith@example.com',
+      name: 'Morgan Smith',
+      majors: ['Engineering', 'Mechanical Engineering'],
+      biography: "Engineering student with a passion for robotics and sustainable design. I'm currently working on a solar-powered water filtration project and looking for team members interested in sustainability. I prefer studying late at night and am always up for coffee and problem-solving sessions.",
+      weeklyAvailability: '000000000000001111110000000000000000111111000000000000000011111100000000000000001111110000000000000000111111000000000000000011111100000000000000111111',
+      preferredLocations: [8, 23, 7, 4], // FRNY, ME, CL50, HAMP
+      friends: [
+        { id: 101, name: 'Alex Thompson', userEmail: 'alex.thompson@example.com' },
+        { id: 103, name: 'Taylor Johnson', userEmail: 'taylor.johnson@example.com' }
+      ]
+    },
+    '103': {
+      userEmail: 'taylor.johnson@example.com',
+      name: 'Taylor Johnson',
+      majors: ['Psychology', 'Neuroscience'],
+      biography: "Psychology and neuroscience double major with a focus on cognitive development. I'm currently conducting research on memory formation and study habits. Looking for study partners for statistics and research methods courses. I'm a night owl but can accommodate morning study sessions too!",
+      weeklyAvailability: '000000000000000000000011111100000000000000000011111100000000000000000011111100000000000000001111110000000000000000111111000000000000111111000000000000',
+      preferredLocations: [5, 17, 15, 25], // RAWL, HEAV, HIKS, PMU
+      friends: [
+        { id: 102, name: 'Morgan Smith', userEmail: 'morgan.smith@example.com' },
+        { id: 109, name: 'Taylor Thompson', userEmail: 'taylor.thompson@example.com' }
+      ]
+    },
+    '104': {
+      userEmail: 'alex.johnson@example.com',
+      name: 'Alex Johnson',
+      majors: ['Computer Engineering'],
+      biography: "Passionate about hardware design and IoT. Currently building a smart home system as a side project. Looking for study partners for digital systems and computer architecture courses. I'm an early bird and do my best work in the mornings. Coffee is my fuel!",
+      weeklyAvailability: '111111000000000000000000001111110000000000000000000011111100000000000000000000111111000000000000000000001111110000000000000000001111110000000000000000',
+      preferredLocations: [2, 10, 14, 22], // LWSN, MSEE, HAAS, YONG
+      friends: []
+    }
+  };
+
+  return mockUsers[userId] || null;
+}
+
 function UsrProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -14,19 +67,27 @@ function UsrProfile() {
   const [isFriend, setIsFriend] = useState(false);
   const [compatibilityScore, setCompatibilityScore] = useState(null);
 
-  // Fetch profile data on component mount
+  // Replace your existing useEffect with this one
   useEffect(() => {
     const fetchUserProfile = async () => {
       setLoading(true);
       try {
-        const sessionId = localStorage.getItem('sessionId');
-        if (!sessionId) {
-          navigate('/');
-          return;
-        }
-
         // Get current user data from localStorage
         const currentUserJSON = localStorage.getItem('userData');
+        
+        // For demo purposes, create a mock current user if none exists
+        const mockCurrentUser = {
+          userEmail: 'current.user@example.com',
+          name: 'Current User',
+          majors: ['Computer Science', 'Mathematics'],
+          weeklyAvailability: '000000001111110000000000000000111111000000000000000011111100000000000000001111110000000000000000111111000000000000001111110000000000000000111111',
+          preferredLocations: [1, 2, 15, 25], // WALC, LWSN, HIKS, PMU
+          friends: [
+            { id: 101, name: 'Alex Thompson', userEmail: 'alex.thompson@example.com' },
+            { id: 103, name: 'Taylor Johnson', userEmail: 'taylor.johnson@example.com' }
+          ]
+        };
+        
         if (currentUserJSON) {
           const parsedUser = JSON.parse(currentUserJSON);
           setCurrentUserData(parsedUser);
@@ -36,23 +97,46 @@ function UsrProfile() {
             friend => friend.id === userId || friend.userEmail === userId
           );
           setIsFriend(isAlreadyFriend);
+        } else {
+          // Use mock current user for demo
+          setCurrentUserData(mockCurrentUser);
+          setIsFriend(mockCurrentUser.friends.some(
+            friend => friend.id == userId || friend.userEmail == userId
+          ));
         }
 
-        // Fetch the user profile data
-        const response = await axios.get(
-          `http://localhost:8080/users/${userId}`,
-          {
-            headers: {
-              'Session-Id': sessionId
+        try {
+          // Try real API call first
+          const sessionId = localStorage.getItem('sessionId');
+          if (sessionId) {
+            const response = await axios.get(
+              `http://localhost:8080/users/${userId}`,
+              {
+                headers: {
+                  'Session-Id': sessionId
+                }
+              }
+            );
+            
+            if (response.data) {
+              setUserData(response.data);
+              calculateCompatibility(response.data);
             }
+          } else {
+            throw new Error('No session ID');
           }
-        );
-
-        if (response.data) {
-          setUserData(response.data);
-          calculateCompatibility(response.data);
-        } else {
-          setError('User not found');
+        } catch (apiError) {
+          console.log('API call failed, using mock data:', apiError);
+          
+          // Use mock data if API fails
+          const mockUser = getMockUserData(userId);
+          
+          if (mockUser) {
+            setUserData(mockUser);
+            calculateCompatibility(mockUser);
+          } else {
+            setError('User not found');
+          }
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
