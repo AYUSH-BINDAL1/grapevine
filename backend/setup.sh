@@ -63,6 +63,7 @@ redeploy_app() {
   echo -e "${GREEN}Waiting 10 seconds for Spring Boot application to initialize...${NC}"
   sleep 10
 
+
   echo -e "${GREEN}Spring Boot application redeployment completed!${NC}"
   exit 0
 }

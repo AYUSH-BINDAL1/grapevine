@@ -75,9 +75,9 @@ public class User {
     @Column(name = "joined_event_ids")
     private List<Long> joinedEvents;
 
-    //@ElementCollection
-    //@Column(name = "friend_emails")
-    //private List<String> friends;
+    @ElementCollection
+    @Column(name = "friend_emails")
+    private List<String> friends;
 
     @Column(name = "weekly_availability", length = 168)
     private String weeklyAvailability;

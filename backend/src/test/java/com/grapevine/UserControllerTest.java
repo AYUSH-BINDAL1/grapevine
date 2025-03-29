@@ -1,6 +1,7 @@
 package com.grapevine;
 
 import com.grapevine.controller.UserController;
+import com.grapevine.exception.ErrorResponse;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.exception.UserAlreadyExistsException;
 import com.grapevine.exception.UserNotFoundException;
@@ -306,40 +307,6 @@ class UserControllerTest {
     }
 
     @Test
-    void deleteUser_Success() {
-        // Arrange
-        when(userService.validateSession(testSessionId)).thenReturn(testUser);
-        doNothing().when(userService).deleteUser("test@example.com");
-        doNothing().when(userService).logout(testSessionId);
-
-        // Act
-        ResponseEntity<Void> response = userController.deleteUser("test@example.com", testSessionId);
-
-        // Assert
-        assertEquals(204, response.getStatusCodeValue());
-        verify(userService).validateSession(testSessionId);
-        verify(userService).deleteUser("test@example.com");
-        verify(userService).logout(testSessionId);
-    }
-
-    @Test
-    void deleteUser_NotAuthorized() {
-        // Arrange
-        User differentUser = new User();
-        differentUser.setUserEmail("different@example.com");
-
-        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
-
-        // Act & Assert
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> userController.deleteUser("test@example.com", testSessionId));
-
-        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
-        verify(userService).validateSession(testSessionId);
-        verifyNoMoreInteractions(userService);
-    }
-
-    @Test
     void getCurrentUser_Success() {
         // Arrange
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -351,5 +318,112 @@ class UserControllerTest {
         assertNotNull(result);
         assertEquals(testUser, result);
         verify(userService).validateSession(testSessionId);
+    }
+
+    @Test
+    void deleteUser_Success() {
+        // Arrange
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        doNothing().when(userService).deleteUser("test@example.com");
+        doNothing().when(userService).logout(testSessionId);
+
+        // Create a map with the password for deletion
+        java.util.Map<String, String> deleteRequest = new java.util.HashMap<>();
+        deleteRequest.put("password", "password");
+
+        // Act
+        ResponseEntity<?> response = userController.deleteUser("test@example.com", testSessionId, deleteRequest);
+
+        // Assert
+        assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCodeValue());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).deleteUser("test@example.com");
+        verify(userService).logout(testSessionId);
+    }
+
+    @Test
+    void deleteUser_IncorrectPassword() {
+        // Arrange
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+
+        // Create a map with incorrect password
+        java.util.Map<String, String> deleteRequest = new java.util.HashMap<>();
+        deleteRequest.put("password", "wrongpassword");
+
+        // Act
+        ResponseEntity<?> response = userController.deleteUser("test@example.com", testSessionId, deleteRequest);
+
+        // Assert
+        assertEquals(HttpStatus.UNAUTHORIZED.value(), response.getStatusCodeValue());
+        ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+        assertEquals("Incorrect password", errorResponse.getMessage());
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).deleteUser(anyString());
+        verify(userService, never()).logout(anyString());
+    }
+
+    @Test
+    void deleteUser_MissingPassword() {
+        // Arrange
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+
+        // Create an empty map without password
+        java.util.Map<String, String> deleteRequest = new java.util.HashMap<>();
+
+        // Act
+        ResponseEntity<?> response = userController.deleteUser("test@example.com", testSessionId, deleteRequest);
+
+        // Assert
+        assertEquals(HttpStatus.UNAUTHORIZED.value(), response.getStatusCodeValue());
+        ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+        assertEquals("Incorrect password", errorResponse.getMessage());
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).deleteUser(anyString());
+        verify(userService, never()).logout(anyString());
+    }
+
+    @Test
+    void deleteUser_NotAuthorized() {
+        // Arrange
+        User differentUser = new User();
+        differentUser.setUserEmail("different@example.com");
+        differentUser.setPassword("password");
+
+        when(userService.validateSession(testSessionId)).thenReturn(differentUser);
+
+        java.util.Map<String, String> deleteRequest = new java.util.HashMap<>();
+        deleteRequest.put("password", "password");
+
+        // Act
+        ResponseEntity<?> response = userController.deleteUser("test@example.com", testSessionId, deleteRequest);
+
+        // Assert
+        assertEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCodeValue());
+        ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+        assertEquals("You can only delete your own account", errorResponse.getMessage());
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).deleteUser(anyString());
+        verify(userService, never()).logout(anyString());
+    }
+
+    @Test
+    void deleteUser_UnexpectedError() {
+        // Arrange
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        doThrow(new RuntimeException("Database error")).when(userService).deleteUser("test@example.com");
+
+        java.util.Map<String, String> deleteRequest = new java.util.HashMap<>();
+        deleteRequest.put("password", "password");
+
+        // Act
+        ResponseEntity<?> response = userController.deleteUser("test@example.com", testSessionId, deleteRequest);
+
+        // Assert
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCodeValue());
+        ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+        assertEquals("An unexpected error occurred", errorResponse.getMessage());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).deleteUser("test@example.com");
+        verify(userService, never()).logout(anyString());
     }
 }
