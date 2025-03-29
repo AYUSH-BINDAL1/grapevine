@@ -40,6 +40,8 @@ function Profile() {
       const parsedData = JSON.parse(storedUserData);
       setUserData(parsedData);
       setEditedDescription(parsedData.biography || "");
+      
+      // Store the majors array directly
       setEditedProfileData({
         name: parsedData.name || "",
         userEmail: parsedData.userEmail || "",
@@ -182,12 +184,71 @@ function Profile() {
     setIsEditingProfile(true);
   };
 
-  const handleDeleteProfile = () => {
-    //TODO: Implement delete profile functionality
+  const handleDeleteProfile = async () => {
+    // ToDO: fix
     const confirmDelete = window.confirm("Are you sure you want to delete your profile?");
 
     if (!confirmDelete) {
       return; // User canceled the action
+    }
+
+    const password = prompt("Please enter your password to confirm deletion:");
+    if (!password) {
+      alert("Profile deletion canceled.");
+      return;
+    }
+
+    if (!userData) {
+      alert("Error: User data not available. Please refresh the page and try again.");
+      return;
+    }
+    
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      
+      if (!sessionId) {
+        alert("You must be logged in to delete your account");
+        return;
+      }
+      
+      const response = await axios.delete(
+        `http://localhost:8080/users/${userData.userEmail}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          },
+          data: {
+            password: password
+          }
+        }
+      );
+      
+      if (response.status === 200) {
+        // Clear user data from localStorage
+        localStorage.removeItem('userData');
+        localStorage.removeItem('sessionId');
+        
+        alert("Your account has been successfully deleted. You will now be redirected to the login page.");
+        
+        // Redirect to login page (assuming you're using React Router)
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      
+      // Provide specific error messages
+      if (error.response) {
+        if (error.response.status === 401) {
+          alert("Incorrect password. Account deletion canceled.");
+        } else if (error.response.status === 404) {
+          alert("Account not found. You may have already deleted this account.");
+        } else {
+          alert(`Failed to delete profile: ${error.response.data.message || 'Unknown error'}`);
+        }
+      } else {
+        alert("Failed to connect to the server. Please try again later.");
+      }
     }
   };
 
@@ -470,9 +531,20 @@ function Profile() {
             >
               Remove Availability
             </button>
-            
+
             <div className="availability-preview">
               <h4>Current Availability:</h4>
+
+              <div className="time-indicators-container">
+                <div className="time-indicators-spacer"></div>
+                <div className="time-indicators">
+                  {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
+                    <div key={hour} className="time-indicator">
+                      <span>{hour}:00</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <div className="availability-visual">
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
                   <div key={day} className="day-row">

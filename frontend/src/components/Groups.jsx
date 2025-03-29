@@ -77,6 +77,7 @@ function Groups() {
       }
       setLoading(false);
     }, 500);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleBackClick = () => {
