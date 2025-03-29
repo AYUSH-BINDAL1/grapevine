@@ -12,39 +12,39 @@ function CreateEvent() {
         maxUsers: '',
         isPublic: false,
         groupId: '',
-        location: ''
+        locationId: ''
     });
 
     const [groups, setGroups] = useState([]);
     const navigate = useNavigate();
 
     const hardcodedLocations = [
-        "WALC",
-        "LWSN",
-        "PMUC",
-        "HAMP",
-        "RAWL",
-        "CHAS",
-        "CL50",
-        "FRNY",
-        "KRAN",
-        "MSEE",
-        "MATH",
-        "PHYS",
-        "POTR",
-        "HAAS",
-        "HIKS",
-        "BRWN",
-        "HEAV",
-        "BRNG",
-        "SC",
-        "WTHR",
-        "UNIV",
-        "YONG",
-        "ME",
-        "ELLT",
-        "PMU",
-        "STEW"
+        { id: 1, shortName: "WALC" },
+        { id: 2, shortName: "LWSN" },
+        { id: 3, shortName: "PMUC" },
+        { id: 4, shortName: "HAMP" },
+        { id: 5, shortName: "RAWL" },
+        { id: 6, shortName: "CHAS" },
+        { id: 7, shortName: "CL50" },
+        { id: 8, shortName: "FRNY" },
+        { id: 9, shortName: "KRAN" },
+        { id: 10, shortName: "MSEE" },
+        { id: 11, shortName: "MATH" },
+        { id: 12, shortName: "PHYS" },
+        { id: 13, shortName: "POTR" },
+        { id: 14, shortName: "HAAS" },
+        { id: 15, shortName: "HIKS" },
+        { id: 16, shortName: "BRWN" },
+        { id: 17, shortName: "HEAV" },
+        { id: 18, shortName: "BRNG" },
+        { id: 19, shortName: "SC" },
+        { id: 20, shortName: "WTHR" },
+        { id: 21, shortName: "UNIV" },
+        { id: 22, shortName: "YONG" },
+        { id: 23, shortName: "ME" },
+        { id: 24, shortName: "ELLT" },
+        { id: 25, shortName: "PMU" },
+        { id: 26, shortName: "STEW" }
     ];
 
     // Fetch user's hosted groups
@@ -91,12 +91,17 @@ function CreateEvent() {
                 .toISOString()
                 .slice(0, 19);
 
+            const locationId = parseInt(formData.locationId, 10);
+            console.log("Selected locationId:", formData.locationId);
+            console.log("Parsed locationId (int):", locationId);
+
             const payload = {
                 name: formData.name,
                 description: formData.description,
                 maxUsers: parseInt(formData.maxUsers, 10),
                 isPublic: formData.isPublic,
-                eventTime: eventTime
+                eventTime: eventTime,
+                locationId: parseInt(formData.locationId, 10)
             };
 
             const url = `http://localhost:8080/events/create/${formData.groupId}`;
@@ -196,19 +201,17 @@ function CreateEvent() {
                         ))}
                     </select>
                 </div>
-
-                {/* Hardcoded Location Dropdown */}
                 <div className="form-group">
                     <select
-                        name="location"
-                        value={formData.location}
+                        name="locationId"           // key must match formData
+                        value={formData.locationId}
                         onChange={handleChange}
                         required
                     >
                         <option value="">Select Location</option>
-                        {hardcodedLocations.map((location, index) => (
-                            <option key={index} value={location}>
-                                {location}
+                        {hardcodedLocations.map((location) => (
+                            <option key={location.id} value={location.id}>
+                                {location.shortName}
                             </option>
                         ))}
                     </select>
