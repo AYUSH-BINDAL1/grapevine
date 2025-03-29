@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './Registration.css'; // Import the new CSS file
+import './Registration.css';
 import { FaEnvelope, FaLock, FaUser, FaBirthdayCake, FaExclamationCircle } from 'react-icons/fa'; // For icons
 
 function Registration() {

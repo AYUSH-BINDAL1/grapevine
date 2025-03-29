@@ -1,15 +1,16 @@
-/* Login Page Styles */
+/* Confirmation Page Styles */
 
-.login-container {
+.confirmation-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   background-color: #f5f7fa;
   background-image: linear-gradient(135deg, #f5f7fa 0%, #e4edf7 100%);
+  padding: 20px;
 }
 
-.login-form {
+.confirmation-form {
   background-color: white;
   padding: 2.5rem;
   border-radius: 12px;
@@ -17,79 +18,69 @@
   width: 100%;
   max-width: 400px;
   transition: all 0.3s ease;
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
-.login-form:hover {
+.confirmation-form:hover {
   transform: translateY(-5px);
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
 }
 
-.login-form h2 {
+.confirmation-form h2 {
   text-align: center;
   color: #333;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.8rem;
   font-size: 1.8rem;
   font-weight: 600;
   position: relative;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
-.login-form h2::after {
+.confirmation-form h2::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 60px;
+  width: 70px;
   height: 3px;
   background-color: #8ebd89;
   border-radius: 2px;
 }
 
-.form-group {
+.confirmation-group {
   margin-bottom: 1.5rem;
   position: relative;
 }
 
-.form-group input {
+.confirmation-group input {
   width: 100%;
   padding: 0.9rem;
-  padding-left: 10px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 1.2rem;
   transition: all 0.3s ease;
   box-sizing: border-box;
+  text-align: center;
+  letter-spacing: 3px;
+  font-weight: 600;
 }
 
-.login-container .form-group input {
-  text-indent: 1.5rem;
-}
-
-.form-group input:focus {
+.confirmation-group input:focus {
   border-color: #8ebd89;
   box-shadow: 0 0 0 3px rgba(142, 189, 137, 0.15);
   outline: none;
 }
 
-.form-group .input-icon {
-  position: absolute;
-  top: 50%;
-  left: 0.9rem;
-  transform: translateY(-50%);
-  color: #aaa;
-  font-size: 1.1rem;
-  pointer-events: none;
-  transition: all 0.3s ease;
+.confirmation-group input::placeholder {
+  color: #bbb;
+  letter-spacing: normal;
+  font-weight: normal;
 }
 
-.form-group input:focus + .input-icon {
-  color: #8ebd89;
-}
-
-.login-button {
+.submit-button {
   width: 100%;
-  padding: 0.9rem;
+  padding: 1rem;
   background-color: #8ebd89;
   color: white;
   border: none;
@@ -101,55 +92,19 @@
   margin-bottom: 1rem;
 }
 
-.login-button:hover {
+.submit-button:hover {
   background-color: #7aa875;
   transform: translateY(-2px);
 }
 
-.login-button:active {
+.submit-button:active {
   transform: translateY(0);
 }
 
-.register-link-button {
-  width: 100%;
-  padding: 0.9rem;
-  background-color: var(--secondary-color);
-  color: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.register-link-button:hover {
-  background-color: var(--secondary-hover);
-  color: white;
-  transform: translateY(-2px);
-}
-
-.form-divider {
-  display: flex;
-  align-items: center;
-  margin: 1.5rem 0;
-  color: #999;
-  font-size: 0.9rem;
-}
-
-.form-divider::before,
-.form-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background-color: #e0e0e0;
-}
-
-.form-divider::before {
-  margin-right: 10px;
-}
-
-.form-divider::after {
-  margin-left: 10px;
+.submit-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .error-message {
@@ -169,21 +124,29 @@
   margin-right: 6px;
 }
 
-.form-footer {
-  margin-top: 1.5rem;
-  text-align: center;
+.success-message {
+  color: #43a047;
+  margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: #666;
+  text-align: center;
+  padding: 0.5rem;
+  background-color: rgba(67, 160, 71, 0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.form-footer a {
-  color: #8ebd89;
-  text-decoration: none;
-  font-weight: 500;
+.success-message svg {
+  margin-right: 6px;
 }
 
-.form-footer a:hover {
-  text-decoration: underline;
+/* Code input format styling */
+.confirmation-group .code-format {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 0.5rem;
+  text-align: center;
 }
 
 /* Animation for form appearance */
@@ -198,14 +161,9 @@
   }
 }
 
-.login-form {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
 /* Responsive design */
 @media (max-width: 480px) {
-  .login-form {
+  .confirmation-form {
     padding: 1.8rem;
-    margin: 0 20px;
   }
 }
