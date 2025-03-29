@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
@@ -29,9 +31,11 @@ function Profile() {
   });
   // Add these state variables to your component
   const [emailError, setEmailError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Load user data from localStorage
+    setIsLoading(true);
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
@@ -50,7 +54,36 @@ function Profile() {
         setAvailabilityString(parsedData.weeklyAvailability);
       }
     }
+    
+    setTimeout(() => setIsLoading(false), 500);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Allow Escape key to cancel edits
+      if (e.key === 'Escape') {
+        if (isEditingProfile) {
+          setIsEditingProfile(false);
+        } else if (isEditingDescription) {
+          setIsEditingDescription(false);
+        }
+      }
+      
+      // Allow Ctrl+S to save
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        if (isEditingProfile) {
+          handleSaveProfile();
+        } else if (isEditingDescription) {
+          handleSaveDescription();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditingProfile, isEditingDescription]);
 
   const handleAvailabilityChange = (e) => {
     setAvailability({
@@ -128,7 +161,8 @@ function Profile() {
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
         
-        alert("Availability saved successfully!");
+        //alert("Availability saved successfully!");
+        toast.success("Availability saved successfully!");
       }
     } catch (error) {
       console.error('Error saving availability:', error);
@@ -169,7 +203,8 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingDescription(false);
         
-        alert("Description saved successfully!");
+        //alert("Description saved successfully!");
+        toast.success("Description saved successfully!");
       }
     } catch (error) {
       console.error('Error saving description:', error);
@@ -323,13 +358,24 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingProfile(false);
         
-        alert("Profile information saved successfully!");
+        //alert("Profile information saved successfully!");
+        toast.success("Profile information saved successfully!");
+        
       }
     } catch (error) {
       console.error('Error saving profile information:', error);
       alert("Failed to save profile information. Please try again.");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="profile-loading">
+        <div className="spinner"></div>
+        <p>Loading your profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-page">
@@ -820,6 +866,18 @@ function Profile() {
         <option value="22:00"></option>
         <option value="23:00"></option>
       </datalist>
+
+      <ToastContainer 
+        position="bottom-left"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }

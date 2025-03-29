@@ -213,10 +213,6 @@ It also includes responsive design for different screen sizes. */
   transition: transform 0.2s;
 }
 
-.location:hover {
-  transform: translateY(-2px);
-}
-
 .location-name {
   font-size: 0.95rem;
   font-weight: 500;
