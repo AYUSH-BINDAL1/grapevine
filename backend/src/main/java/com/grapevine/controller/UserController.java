@@ -454,4 +454,17 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
+
+    @GetMapping("/{userEmail}/friends")
+    public ResponseEntity<List<User>> getUserFriends(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        userService.validateSession(sessionId);
+
+        // Return the list of friends
+        List<User> friends = userService.getUserFriends(userEmail);
+        return ResponseEntity.ok(friends);
+    }
 }

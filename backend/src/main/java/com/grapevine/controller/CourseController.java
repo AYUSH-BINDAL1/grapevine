@@ -78,7 +78,6 @@ public class CourseController {
             @RequestParam String query,
             @RequestHeader(name = "Session-Id", required = true) String sessionId
     ) {
-        // Validate session and check if user is an instructor
         User currentUser = userService.validateSession(sessionId);
 
         return courseService.searchShortCourses(query);
