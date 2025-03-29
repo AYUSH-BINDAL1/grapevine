@@ -700,3 +700,187 @@ It also includes responsive design for different screen sizes. */
 .view-students-button:hover {
   background-color: #9a7db1;
 }
+
+/* Modal Overlay and Base Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 450px;
+  animation: slideIn 0.4s ease;
+}
+
+/* Delete Modal Specific Styling */
+.delete-modal {
+  border-top: 4px solid #ff5e5e;
+}
+
+.delete-modal h3 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+}
+
+.delete-modal p {
+  margin-bottom: 1.5rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.delete-modal input[type="password"] {
+  width: 80%;
+  padding: 12px 15px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.delete-modal input[type="password"]:focus {
+  border-color: #ff5e5e;
+  box-shadow: 0 0 0 3px rgba(255, 94, 94, 0.15);
+  outline: none;
+}
+
+.delete-modal input[type="password"]::placeholder {
+  color: #aaa;
+}
+
+/* Modal Buttons */
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 1rem;
+}
+
+.cancel-button {
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #e5e5e5;
+}
+
+.delete-button {
+  padding: 10px 20px;
+  background-color: #ff5e5e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-button:hover {
+  background-color: #e54949;
+  transform: translateY(-1px);
+}
+
+.delete-button:active {
+  transform: translateY(0);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { 
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Adding a fade-out animation for body */
+.fade-out {
+  animation: fadeOut 2s forwards;
+  pointer-events: none;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Password visibility toggle (optional enhancement) */
+.password-field-container {
+  position: relative;
+  width: 100%;
+}
+
+.toggle-password-visibility {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #777;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.toggle-password-visibility:hover {
+  color: #333;
+}
+
+/* Media query for better mobile experience */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 1.2rem;
+    width: 95%;
+  }
+  
+  .modal-buttons {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  
+  .cancel-button, .delete-button {
+    width: 100%;
+    padding: 12px;
+  }
+}

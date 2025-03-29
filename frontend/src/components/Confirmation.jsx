@@ -36,7 +36,7 @@ function Confirmation() {
       });
 
       if (response.status === 200) {
-        navigate('/login');
+        navigate('/');
       }
     } catch (error) {
       console.error('Error:', error);
