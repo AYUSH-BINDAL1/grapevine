@@ -39,26 +39,12 @@ public class CourseService {
         return courseRepository.findShortCourseByCourseKey(courseKey);
     }
 
-    public List<Course> searchCoursesByRegex(String query) {
-        // escape special regex characters to treat the input as a literal string
-        String escapedQuery = Pattern.quote(query);
-        // create case-insensitive regex pattern
-        Pattern pattern = Pattern.compile(".*" + escapedQuery + ".*", Pattern.CASE_INSENSITIVE);
-
-        return courseRepository.findAll().stream()
-                .filter(course -> pattern.matcher(course.getCourseKey()).matches())
-                .collect(Collectors.toList());
+    public List<Course> searchCourses(String query) {
+        return courseRepository.searchCourses(query);
     }
 
-    public List<CourseRepository.ShortCourse> searchShortCoursesByRegex(String query) {
-        String escapedQuery = Pattern.quote(query);
-
-        Pattern pattern = Pattern.compile(".*" + escapedQuery + ".*", Pattern.CASE_INSENSITIVE);
-
-        return getAllShortCourses().stream()
-                .filter(course -> pattern.matcher(course.getCourseKey()).matches() ||
-                        (course.getTitle() != null && pattern.matcher(course.getTitle()).matches()))
-                .collect(Collectors.toList());
+    public List<CourseRepository.ShortCourse> searchShortCourses(String query) {
+        return courseRepository.searchShortCourses(query);
     }
 
     @PostConstruct
