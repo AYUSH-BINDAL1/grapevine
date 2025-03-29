@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -259,6 +260,41 @@ public class UserController {
 
         // Return all preferred locations for the user
         return userService.getPreferredLocations(currentUser);
+    }
+
+    @DeleteMapping("/{userEmail}")
+    public ResponseEntity<?> deleteUser(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestBody Map<String, String> deleteRequest
+    ) {
+        try {
+            // Validate session
+            User currentUser = userService.validateSession(sessionId);
+
+            // Check if the user is trying to delete their own account
+            if (!currentUser.getUserEmail().equals(userEmail)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own account");
+            }
+
+            // Verify password before proceeding with deletion
+            String password = deleteRequest.get("password");
+            if (password == null || !password.equals(currentUser.getPassword())) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Incorrect password");
+            }
+
+            // Delete the user
+            userService.deleteUser(userEmail);
+
+            // Also logout the session
+            userService.logout(sessionId);
+
+            return ResponseEntity.noContent().build();
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(e.getStatusCode().value(), e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected error occurred"));
+        }
     }
 
     // sample of how other endpoints would use the session
