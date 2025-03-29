@@ -83,28 +83,19 @@ public class User {
     @Column(name = "weekly_availability", length = 168)
     private String weeklyAvailability;
 
-    // Initialize with all slots unavailable
-    {
-        StringBuilder sb = new StringBuilder();
-        for (int day = 0; day < 7; day++) {
-            for (int hour = 0; hour < 24; hour++) {
-                sb.append('0');
-            }
-        }
-        weeklyAvailability = sb.toString();
-    }
-
     @ElementCollection
     @Column(name = "location_ids")
     private List<Long> preferredLocations;
 
     public enum Role {
         STUDENT,
-        INSTRUCTOR
+        INSTRUCTOR,
+        GTA,
+        UTA
     }
 
     @Column(name = "role")
-    private Role role = Role.STUDENT;
+    private Role role;
 
     // Add to User.java
     @ElementCollection

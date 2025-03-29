@@ -268,10 +268,9 @@ public class UserController {
             @RequestHeader(name = "Session-Id", required = true) String sessionId,
             @RequestBody Map<String, String> deleteRequest
     ) {
+        // validate session
+        User currentUser = userService.validateSession(sessionId);
         try {
-            // Validate session
-            User currentUser = userService.validateSession(sessionId);
-
             // Check if the user is trying to delete their own account
             if (!currentUser.getUserEmail().equals(userEmail)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own account");
