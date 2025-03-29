@@ -175,3 +175,13 @@ button:focus-visible {
 .sign-in-button:hover {
   background-color: #8ebd89; /* Updated hover color */
 }
+
+:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Adding error state styling */
+.input-error {
+  border-color: var(--danger) !important;
+} 

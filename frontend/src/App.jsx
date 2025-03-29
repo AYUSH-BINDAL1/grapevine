@@ -27,9 +27,7 @@ function Taskbar() {
     const conf = confirm("Are you sure you want to log out?")
     if (!conf) return;
     try {
-      // eslint-disable-next-line no-unused-vars
-      const response = axios.delete(
-      'http://localhost:8080/users/logout',
+      axios.delete('http://localhost:8080/users/logout',
       {
         headers: {
         'Session-Id': localStorage.getItem('sessionId')
