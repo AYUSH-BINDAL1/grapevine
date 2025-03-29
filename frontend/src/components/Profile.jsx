@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
+import { searchEnabled } from "../App";
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
@@ -11,6 +13,7 @@ const validateEmail = (email) => {
 };
 
 function Profile() {
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [availability, setAvailability] = useState({
     day: "",

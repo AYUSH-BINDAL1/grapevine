@@ -14,11 +14,12 @@ import CreateEvent from "./components/CreateEvent.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import CourseSearch from './components/CourseSearch.jsx';
 import EventDetails from "./components/EventDetails";
+import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import './App.css';
 import './components/Groups.css';
 
-const searchEnabled = true;
+export const searchEnabled = true;
 
 function Taskbar() {
   const navigate = useNavigate();
@@ -214,6 +215,7 @@ function App() {
           <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
           <Route path="/friends" element={<Friends />} /> {/* Placeholder */}
           <Route path="/courseSearch" element={<CourseSearch />} />
+          <Route path="/view-students" element={<ViewStudents />} />
           <Route path="/group/:id" element={<Groups />} />
           <Route path="/event/:eventId" element={<EventDetails />} />
           <Route path="*" element={<Nopath />} />
