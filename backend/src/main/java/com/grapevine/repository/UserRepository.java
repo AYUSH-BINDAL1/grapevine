@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, String> {
     List<User> findAllByCourses(String courseKey);
+    // Add to UserRepository.java
+    List<User> findByNameContainingIgnoreCase(String namePattern);
 }

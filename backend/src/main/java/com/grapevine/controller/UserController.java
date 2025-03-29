@@ -345,4 +345,113 @@ public class UserController {
         return userService.validateSession(sessionId);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchUsers(
+            @RequestParam String query,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        userService.validateSession(sessionId);
+        List<User> users = userService.searchUsersByName(query);
+        return ResponseEntity.ok(users);
+    }
+
+    @PostMapping("/{userEmail}/friend-requests/send")
+    public ResponseEntity<User> sendFriendRequest(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestBody Map<String, String> requestBody) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only send friend requests from your own account");
+        }
+
+        String receiverEmail = requestBody.get("receiverEmail");
+        if (receiverEmail == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receiver email is required");
+        }
+
+        try {
+            User updatedUser = userService.sendFriendRequest(userEmail, receiverEmail);
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @GetMapping("/{userEmail}/friend-requests/incoming")
+    public ResponseEntity<List<User>> getIncomingFriendRequests(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own friend requests");
+        }
+
+        List<User> incomingRequests = userService.getIncomingFriendRequests(userEmail);
+        return ResponseEntity.ok(incomingRequests);
+    }
+
+    @GetMapping("/{userEmail}/friend-requests/outgoing")
+    public ResponseEntity<List<User>> getOutgoingFriendRequests(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own friend requests");
+        }
+
+        List<User> outgoingRequests = userService.getOutgoingFriendRequests(userEmail);
+        return ResponseEntity.ok(outgoingRequests);
+    }
+
+    @PostMapping("/{userEmail}/friend-requests/accept")
+    public ResponseEntity<User> acceptFriendRequest(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestBody Map<String, String> requestBody) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only accept your own friend requests");
+        }
+
+        String requesterEmail = requestBody.get("requesterEmail");
+        if (requesterEmail == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requester email is required");
+        }
+
+        try {
+            User updatedUser = userService.acceptFriendRequest(userEmail, requesterEmail);
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @PostMapping("/{userEmail}/friend-requests/deny")
+    public ResponseEntity<User> denyFriendRequest(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestBody Map<String, String> requestBody) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only deny your own friend requests");
+        }
+
+        String requesterEmail = requestBody.get("requesterEmail");
+        if (requesterEmail == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requester email is required");
+        }
+
+        try {
+            User updatedUser = userService.denyFriendRequest(userEmail, requesterEmail);
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
 }

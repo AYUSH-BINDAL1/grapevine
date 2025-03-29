@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -105,6 +106,14 @@ public class User {
     @Column(name = "role")
     private Role role = Role.STUDENT;
 
+    // Add to User.java
+    @ElementCollection
+    @Column(name = "incoming_friend_requests")
+    private List<String> incomingFriendRequests = new ArrayList<>();
+
+    @ElementCollection
+    @Column(name = "outgoing_friend_requests")
+    private List<String> outgoingFriendRequests = new ArrayList<>();
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 
     //Additional Attributes: Account Creation Date, Last Online Date, Profile Picture

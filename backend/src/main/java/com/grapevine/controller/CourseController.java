@@ -70,7 +70,7 @@ public class CourseController {
         // Validate session and check if user is an instructor
         User currentUser = userService.validateSession(sessionId);
 
-        return courseService.searchCoursesByRegex(query);
+        return courseService.searchCourses(query);
     }
 
     @GetMapping("/search/short")
@@ -81,7 +81,7 @@ public class CourseController {
         // Validate session and check if user is an instructor
         User currentUser = userService.validateSession(sessionId);
 
-        return courseService.searchShortCoursesByRegex(query);
+        return courseService.searchShortCourses(query);
     }
 
     @GetMapping("/{courseKey}/enrolled-students")
