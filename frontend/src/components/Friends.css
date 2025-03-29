@@ -114,6 +114,7 @@ h2:hover {
 .remove-friend-btn:hover {
   opacity: 1;
   background-color: #d32f2f;
+  box-shadow: 0 1px 1px #f44336;
 }
 
 @media (hover: none) {

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
-import { searchEnabled } from "../App";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
@@ -13,7 +13,6 @@ const validateEmail = (email) => {
 };
 
 function Profile() {
-  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [availability, setAvailability] = useState({
     day: "",
@@ -32,9 +31,16 @@ function Profile() {
   });
   // Add these state variables to your component
   const [emailError, setEmailError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  // Add a state for the delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  // Add a new state variable for password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     // Load user data from localStorage
+    setIsLoading(true);
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
@@ -53,7 +59,36 @@ function Profile() {
         setAvailabilityString(parsedData.weeklyAvailability);
       }
     }
+    
+    setTimeout(() => setIsLoading(false), 500);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Allow Escape key to cancel edits
+      if (e.key === 'Escape') {
+        if (isEditingProfile) {
+          setIsEditingProfile(false);
+        } else if (isEditingDescription) {
+          setIsEditingDescription(false);
+        }
+      }
+      
+      // Allow Ctrl+S to save
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        if (isEditingProfile) {
+          handleSaveProfile();
+        } else if (isEditingDescription) {
+          handleSaveDescription();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditingProfile, isEditingDescription]);
 
   const handleAvailabilityChange = (e) => {
     setAvailability({
@@ -131,7 +166,8 @@ function Profile() {
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
         
-        alert("Availability saved successfully!");
+        //alert("Availability saved successfully!");
+        toast.success("Availability saved successfully!");
       }
     } catch (error) {
       console.error('Error saving availability:', error);
@@ -172,7 +208,8 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingDescription(false);
         
-        alert("Description saved successfully!");
+        //alert("Description saved successfully!");
+        toast.success("Description saved successfully!");
       }
     } catch (error) {
       console.error('Error saving description:', error);
@@ -184,72 +221,80 @@ function Profile() {
     setIsEditingProfile(true);
   };
 
-  const handleDeleteProfile = async () => {
-    // ToDO: fix
-    const confirmDelete = window.confirm("Are you sure you want to delete your profile?");
+  const handleDeleteProfile = () => {
+    setShowDeleteModal(true);
+  };
 
-    if (!confirmDelete) {
-      return; // User canceled the action
-    }
-
-    const password = prompt("Please enter your password to confirm deletion:");
-    if (!password) {
-      alert("Profile deletion canceled.");
+  const confirmDeleteProfile = async () => {
+    if (!deletePassword) {
+      toast.error("Please enter your password");
       return;
     }
-
-    if (!userData) {
-      alert("Error: User data not available. Please refresh the page and try again.");
+  
+    if (!userData || !userData.userEmail) {
+      toast.error("Missing user data. Please refresh and try again.");
       return;
     }
-    
+  
     try {
       const sessionId = localStorage.getItem('sessionId');
-      
       if (!sessionId) {
-        alert("You must be logged in to delete your account");
+        toast.error("Session expired. Please login again.");
+        setTimeout(() => window.location.href = '/', 2000);
         return;
       }
       
-      const response = await axios.delete(
-        `http://localhost:8080/users/${userData.userEmail}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Session-Id': sessionId
-          },
-          data: {
-            password: password
-          }
+      const response = await axios({
+        method: 'DELETE',
+        url: `http://localhost:8080/users/${userData.userEmail}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Session-Id': sessionId
+        },
+        data: {
+          password: deletePassword
         }
-      );
+      });
       
-      if (response.status === 200) {
-        // Clear user data from localStorage
-        localStorage.removeItem('userData');
-        localStorage.removeItem('sessionId');
-        
-        alert("Your account has been successfully deleted. You will now be redirected to the login page.");
-        
-        // Redirect to login page (assuming you're using React Router)
-        window.location.href = '/';
+      if (response.status >= 200 && response.status < 300) {
+        toast.success("Your account has been successfully deleted. You will be redirected to the login page.", {
+          onClose: () => { window.location.href = '/'; }
+        });
+
+        localStorage.clear();
+        document.body.classList.add('fade-out');
+        setTimeout(() => { window.location.href = '/'; }, 2000);
+      } else {
+        toast.error(`Unexpected response: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error deleting profile:', error);
+      toast.dismiss("deleting");
       
-      // Provide specific error messages
       if (error.response) {
-        if (error.response.status === 401) {
-          alert("Incorrect password. Account deletion canceled.");
-        } else if (error.response.status === 404) {
-          alert("Account not found. You may have already deleted this account.");
-        } else {
-          alert(`Failed to delete profile: ${error.response.data.message || 'Unknown error'}`);
+        switch (error.response.status) {
+          case 401:
+            toast.error("Incorrect password. Please try again.");
+            break;
+          case 403:
+            toast.error("You don't have permission to delete this account.");
+            break;
+          case 404:
+            toast.error("User not found. You may have already deleted this account.");
+            break;
+          case 500:
+            toast.error("Server error. Please try again later.");
+            break;
+          default:
+            toast.error(`Error (${error.response.status}): ${error.response.data.message || 'Unknown error'}`);
         }
+      } else if (error.request) {
+        toast.error("No response from server. Please check your connection.");
       } else {
-        alert("Failed to connect to the server. Please try again later.");
+        toast.error(`Request failed: ${error.message}`);
       }
     }
+  
+    setShowDeleteModal(false);
   };
 
   // Update the handleProfileInputChange function to validate email as the user types
@@ -326,13 +371,24 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingProfile(false);
         
-        alert("Profile information saved successfully!");
+        //alert("Profile information saved successfully!");
+        toast.success("Profile information saved successfully!");
+        
       }
     } catch (error) {
       console.error('Error saving profile information:', error);
       alert("Failed to save profile information. Please try again.");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="profile-loading">
+        <div className="spinner"></div>
+        <p>Loading your profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-page">
@@ -796,6 +852,59 @@ function Profile() {
         </div>
       )}
       
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content delete-modal">
+            <h3>Delete Account</h3>
+            <p>This action cannot be undone. Please enter your password to confirm.</p>
+            
+            <div className="password-field-container">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="Password" 
+                value={deletePassword}
+                onChange={(e) => {
+                  setDeletePassword(e.target.value);
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    confirmDeleteProfile();
+                  }
+                }}
+              />
+              <button 
+                type="button" 
+                className="toggle-password-visibility" 
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            
+            <div className="modal-buttons">
+              <button 
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletePassword('');
+                  toast.info("Delete profile cancelled.");
+                }}
+                className="cancel-button"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteProfile}
+                className="delete-button"
+                disabled={!deletePassword}
+              >
+                Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Hidden datalist for time selection */}
       <datalist id="valid-times">
         <option value="00:00"></option>
@@ -823,6 +932,18 @@ function Profile() {
         <option value="22:00"></option>
         <option value="23:00"></option>
       </datalist>
+
+      <ToastContainer 
+        position="bottom-left"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }
