@@ -297,6 +297,46 @@ public class UserController {
         }
     }
 
+    @PostMapping("/{userEmail}/courses")
+    public ResponseEntity<User> addCourse(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestBody String courseKey) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only modify your own courses");
+        }
+
+        User updatedUser = userService.addCourse(userEmail, courseKey);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @DeleteMapping("/{userEmail}/courses/{courseKey}")
+    public ResponseEntity<User> removeCourse(
+            @PathVariable String userEmail,
+            @PathVariable String courseKey,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only modify your own courses");
+        }
+
+        User updatedUser = userService.removeCourse(userEmail, courseKey);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @GetMapping("/{userEmail}/courses")
+    public ResponseEntity<List<String>> getUserCourses(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        userService.validateSession(sessionId);
+        List<String> courses = userService.getUserCourses(userEmail);
+        return ResponseEntity.ok(courses);
+    }
+
     // sample of how other endpoints would use the session
     // i.e. any request made to an endpoint that requires a user be logged in
     // must have a session id in the **header** (NOT the body)

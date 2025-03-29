@@ -426,4 +426,41 @@ public class UserService {
         }
         return preferredLocations;
     }
+
+    public User addCourse(String userEmail, String courseKey) {
+        User user = getUserByEmail(userEmail);
+
+        // Initialize the courses list if it's null
+        if (user.getCourses() == null) {
+            user.setCourses(new ArrayList<>());
+        }
+
+        // Add the course if it's not already in the list
+        if (!user.getCourses().contains(courseKey)) {
+            user.getCourses().add(courseKey);
+        }
+
+        return userRepository.save(user);
+    }
+
+    public User removeCourse(String userEmail, String courseKey) {
+        User user = getUserByEmail(userEmail);
+
+        // Remove the course if the list exists
+        if (user.getCourses() != null) {
+            user.getCourses().remove(courseKey);
+        }
+
+        return userRepository.save(user);
+    }
+
+    public List<String> getUserCourses(String userEmail) {
+        User user = getUserByEmail(userEmail);
+
+        if (user.getCourses() == null) {
+            return new ArrayList<>();
+        }
+
+        return user.getCourses();
+    }
 }
