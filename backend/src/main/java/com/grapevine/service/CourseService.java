@@ -12,13 +12,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
+// TODO: pagination for getAllCourses and getAllShortCourses
 
 @Service
 @RequiredArgsConstructor
 public class CourseService {
     private final CourseRepository courseRepository;
+
+    // get courses
+
 
     public List<Course> getAllCourses() { // sorted by subject + course number
         return courseRepository.findAll(
@@ -31,20 +34,34 @@ public class CourseService {
         return courseRepository.findById(courseKey);
     }
 
+    // get short courses
+
     public List<CourseRepository.ShortCourse> getAllShortCourses() {
         return courseRepository.findAllShortCourses();
     }
 
     public Optional<CourseRepository.ShortCourse> getShortCourse(String courseKey) {
-        return courseRepository.findShortCourseByCourseKey(courseKey);
+        List<CourseRepository.ShortCourse> results = courseRepository.searchShortCourses(courseKey);
+        // Find the exact match rather than returning all search results
+        return results.stream()
+                .filter(course -> course.getCourseKey().equals(courseKey))
+                .findFirst();
     }
 
+    // search
+
     public List<Course> searchCourses(String query) {
-        return courseRepository.searchCourses(query);
+        List<Course> courses = courseRepository.searchCourses(query);
+        // Sort the courses by courseKey
+        courses.sort(Comparator.comparing(Course::getCourseKey));
+        return courses;
     }
 
     public List<CourseRepository.ShortCourse> searchShortCourses(String query) {
-        return courseRepository.searchShortCourses(query);
+        List<CourseRepository.ShortCourse> courses = courseRepository.searchShortCourses(query);
+        // Sort the courses by courseKey
+        courses.sort(Comparator.comparing(CourseRepository.ShortCourse::getCourseKey));
+        return courses;
     }
 
     @PostConstruct
