@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useRef, useEffect, useState } from 'react';
 import axios from 'axios';
 import Registration from './components/Registration';
@@ -23,41 +23,110 @@ export const searchEnabled = true;
 
 function Taskbar() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  // Function to determine if a route is active
+  const isActive = (path) => {
+    if (path === '/home') return location.pathname === '/home' || location.pathname.startsWith('/group/');
+    return location.pathname.startsWith(path);
+  };
 
-  const handlelogout = () => {
-    const conf = confirm("Are you sure you want to log out?")
+  const handlelogout = async () => {
+    const conf = window.confirm("Are you sure you want to log out?");
     if (!conf) return;
+    
     try {
-      axios.delete('http://localhost:8080/users/logout',
-      {
-        headers: {
-        'Session-Id': localStorage.getItem('sessionId')
-        }
+      setIsLoggingOut(true); // Show loading state
+      
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        // If no session ID, just do client-side logout
+        localStorage.clear();
+        navigate("/");
+        return;
       }
-      );
+      
+      // Attempt server-side logout
+      await axios.delete('http://localhost:8080/users/logout', {
+        headers: {
+          'Session-Id': sessionId
+        }
+      });
+      
+      // Success! Clear local storage and navigate
+      localStorage.clear();
+      navigate("/");
     } catch (error) {
       console.error('Error logging out:', error);
-      return;
+      
+      // Even if server logout fails, still clear client side data
+      localStorage.clear();
+      
+      // Show error but still navigate to login
+      alert("There was an issue logging out from the server, but you've been logged out locally.");
+      navigate("/");
+    } finally {
+      setIsLoggingOut(false); // Reset loading state
     }
-    localStorage.clear();
-    navigate("/");
-  }
+  };
   
   return (
-      <div className="taskbar">
-        <nav className="taskbar-elem">
-          <h3 onClick={() => navigate("/home")} className="elem">Groups</h3>
-          <h3 onClick={() => navigate("/events")} className="elem">Events</h3>
-          <h3 onClick={() => navigate("/forum")} className="elem">Forum</h3>
-          <h3 onClick={() => navigate("/messages")} className="elem">Messages</h3>
-          <h3 onClick={() => navigate("/friends")} className="elem">Friends</h3>
-          {searchEnabled && (
-            <h3 onClick={() => navigate("/courseSearch")} className="elem">SearchDemo</h3>
-          )}
-          <img onClick={() => navigate("/profile")} className="profile" src={profileImage} alt="Profile" />
-          <h3 onClick={handlelogout} className="elem">Logout</h3>
-        </nav>
-      </div>
+    <div className="taskbar">
+      <nav className="taskbar-elem">
+        <h3 
+          onClick={() => navigate("/home")} 
+          className={`elem ${isActive('/home') ? 'active' : ''}`}
+        >
+          Groups
+        </h3>
+        <h3 
+          onClick={() => navigate("/events")} 
+          className={`elem ${isActive('/events') ? 'active' : ''}`}
+        >
+          Events
+        </h3>
+        <h3 
+          onClick={() => navigate("/forum")} 
+          className={`elem ${isActive('/forum') ? 'active' : ''}`}
+        >
+          Forum
+        </h3>
+        <h3 
+          onClick={() => navigate("/messages")} 
+          className={`elem ${isActive('/messages') ? 'active' : ''}`}
+        >
+          Messages
+        </h3>
+        <h3 
+          onClick={() => navigate("/friends")} 
+          className={`elem ${isActive('/friends') ? 'active' : ''}`}
+        >
+          Friends
+        </h3>
+        {searchEnabled && (
+          <h3 
+            onClick={() => navigate("/courseSearch")} 
+            className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}
+          >
+            SearchDemo
+          </h3>
+        )}
+        <img 
+          onClick={() => navigate("/profile")} 
+          className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
+          src={profileImage} 
+          alt="Profile" 
+        />
+        <h3 
+          onClick={isLoggingOut ? null : handlelogout} 
+          className={`elem logout ${isLoggingOut ? 'disabled' : ''}`}
+          style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}
+        >
+          {isLoggingOut ? 'Logging out...' : 'Logout'}
+        </h3>
+      </nav>
+    </div>
   );
 }
 
@@ -200,6 +269,7 @@ function App() {
         <Route path="/registration" element={<Registration />} />
         <Route path="/confirmation" element={<Confirmation />} />
         <Route path="/user/:userId" element={<UsrProfile />} />
+        <Route path="*" element={<Nopath />} />
         
         {/* Protected routes with taskbar */}
         <Route element={<Layout />}>
@@ -215,7 +285,6 @@ function App() {
           <Route path="/view-students" element={<ViewStudents />} />
           <Route path="/group/:id" element={<Groups />} />
           <Route path="/event/:eventId" element={<EventDetails />} />
-          <Route path="*" element={<Nopath />} />
         </Route>
       </Routes>
     </Router>
