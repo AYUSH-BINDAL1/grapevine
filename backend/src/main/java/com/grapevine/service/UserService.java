@@ -138,18 +138,81 @@ public class UserService {
         if (updatedUser.getCourses() != null) {
             existingUser.setCourses(updatedUser.getCourses());
         }
-        if (updatedUser.getWeeklyAvailability() != null) {
-            existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
-        }
         if (updatedUser.getPreferredLocations() != null) {
             existingUser.setPreferredLocations(updatedUser.getPreferredLocations());
         }
-        if (updatedUser.getRole() != null) {
+
+        /*
+        Weird Put Request body validation issue:
+
+        Whenever you have attributes that are initialized for a model (User.java in this case),
+        the PutMapping for that model will overwrite these attributes to the defaults when the request
+        body doesn't contain them. The following is an ugly workaround for the weeklyAvailability and
+        role attributes. Any other models that have a PutMapping in their controller and has initialized
+        attributes will have the same issue. Bad practice for now but we prolly won't get around to
+        refactoring all our PutMappings for a cleaner method
+         */
+        StringBuilder defaultAvail = new StringBuilder();
+        for (int day = 0; day < 7; day++) {
+            for (int hour = 0; hour < 24; hour++) {
+                defaultAvail.append('0');
+            }
+        }
+        if (updatedUser.getWeeklyAvailability() != null &&
+                !updatedUser.getWeeklyAvailability().equals(defaultAvail.toString())) {
+            existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
+        }
+        if (updatedUser.getRole() != null &&
+                updatedUser.getRole() != User.Role.STUDENT) {
             existingUser.setRole(updatedUser.getRole());
         }
-        //Password should be handled separately with proper validation and encryption
-        //Role changes might require special authorization
+
         return userRepository.save(existingUser);
+    }
+
+    public void deleteUser(String userEmail) {
+        // First check if the user exists
+        User user = getUserByEmail(userEmail);
+
+        // Perform any cleanup operations before deleting
+        // For example, you might want to handle the groups or events the user is part of
+
+        // Remove the user from all groups they joined but don't host
+        if (user.getJoinedGroups() != null && !user.getJoinedGroups().isEmpty()) {
+            for (Long groupId : user.getJoinedGroups()) {
+                groupRepository.findById(groupId).ifPresent(group -> {
+                    group.getParticipants().remove(userEmail);
+                    groupRepository.save(group);
+                });
+            }
+        }
+
+        // For events the user joined but doesn't host
+        if (user.getJoinedEvents() != null && !user.getJoinedEvents().isEmpty()) {
+            for (Long eventId : user.getJoinedEvents()) {
+                eventRepository.findById(eventId).ifPresent(event -> {
+                    event.getParticipants().remove(userEmail);
+                    eventRepository.save(event);
+                });
+            }
+        }
+
+        // Delete any hosted groups
+        if (user.getHostedGroups() != null && !user.getHostedGroups().isEmpty()) {
+            for (Long groupId : user.getHostedGroups()) {
+                groupRepository.deleteById(groupId);
+            }
+        }
+
+        // Delete any hosted events
+        if (user.getHostedEvents() != null && !user.getHostedEvents().isEmpty()) {
+            for (Long eventId : user.getHostedEvents()) {
+                eventRepository.deleteById(eventId);
+            }
+        }
+
+        // Finally, delete the user from the repository
+        userRepository.deleteById(userEmail);
     }
 
     public List<Group> getAllGroups(String userEmail) {
@@ -364,4 +427,40 @@ public class UserService {
         return preferredLocations;
     }
 
+    public User addCourse(String userEmail, String courseKey) {
+        User user = getUserByEmail(userEmail);
+
+        // Initialize the courses list if it's null
+        if (user.getCourses() == null) {
+            user.setCourses(new ArrayList<>());
+        }
+
+        // Add the course if it's not already in the list
+        if (!user.getCourses().contains(courseKey)) {
+            user.getCourses().add(courseKey);
+        }
+
+        return userRepository.save(user);
+    }
+
+    public User removeCourse(String userEmail, String courseKey) {
+        User user = getUserByEmail(userEmail);
+
+        // Remove the course if the list exists
+        if (user.getCourses() != null) {
+            user.getCourses().remove(courseKey);
+        }
+
+        return userRepository.save(user);
+    }
+
+    public List<String> getUserCourses(String userEmail) {
+        User user = getUserByEmail(userEmail);
+
+        if (user.getCourses() == null) {
+            return new ArrayList<>();
+        }
+
+        return user.getCourses();
+    }
 }

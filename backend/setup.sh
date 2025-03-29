@@ -59,14 +59,12 @@ redeploy_app() {
   # Restart just the backend container
   docker compose up -d --build backend
 
-  # Wait for the application to be ready
-  echo -e "${GREEN}Waiting for Spring Boot application to restart...${NC}"
-  while ! curl -s $BACKEND_URL/users/register >/dev/null 2>&1; do
-    echo "Waiting for application to become available..."
-    sleep 2
-  done
+  # Fixed delay instead of checking readiness
+  echo -e "${GREEN}Waiting 10 seconds for Spring Boot application to initialize...${NC}"
+  sleep 10
 
-  echo -e "${GREEN}Spring Boot application redeployed successfully!${NC}"
+
+  echo -e "${GREEN}Spring Boot application redeployment completed!${NC}"
   exit 0
 }
 

@@ -2,6 +2,7 @@ package com.grapevine.controller;
 
 import com.grapevine.exception.GroupNotFoundException;
 import com.grapevine.model.Event;
+import com.grapevine.model.EventFilter;
 import com.grapevine.model.ShortEvent;
 import com.grapevine.model.User;
 import com.grapevine.service.EventService;
@@ -26,8 +27,25 @@ public class EventController {
     }
 
     @GetMapping("/all-short")
-    public List<ShortEvent> getAllShortEvents(@RequestHeader(name = "Session-Id", required = true) String sessionId) {
-        return eventService.getAllShortEvents();
+    public List<ShortEvent> getAllShortEvents(
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer minUsers,
+            @RequestParam(required = false) Integer maxUsers,
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime,
+            @RequestParam(required = false) Long locationId,
+            @RequestParam(required = false) Boolean isPublic,
+            @RequestParam(required = false) Boolean includePastEvents,
+            @RequestParam(required = false) Boolean onlyFullEvents) {
+
+        userService.validateSession(sessionId);
+
+        EventFilter filter = new EventFilter(
+                search, minUsers, maxUsers, startTime, endTime,
+                locationId, isPublic, includePastEvents, onlyFullEvents);
+
+        return eventService.getAllShortEvents(filter);
     }
 
     @GetMapping("/{eventId}")

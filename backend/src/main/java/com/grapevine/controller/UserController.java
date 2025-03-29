@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -259,6 +260,81 @@ public class UserController {
 
         // Return all preferred locations for the user
         return userService.getPreferredLocations(currentUser);
+    }
+
+    @DeleteMapping("/{userEmail}")
+    public ResponseEntity<?> deleteUser(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestBody Map<String, String> deleteRequest
+    ) {
+        try {
+            // Validate session
+            User currentUser = userService.validateSession(sessionId);
+
+            // Check if the user is trying to delete their own account
+            if (!currentUser.getUserEmail().equals(userEmail)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own account");
+            }
+
+            // Verify password before proceeding with deletion
+            String password = deleteRequest.get("password");
+            if (password == null || !password.equals(currentUser.getPassword())) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Incorrect password");
+            }
+
+            // Delete the user
+            userService.deleteUser(userEmail);
+
+            // Also logout the session
+            userService.logout(sessionId);
+
+            return ResponseEntity.noContent().build();
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(e.getStatusCode().value(), e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected error occurred"));
+        }
+    }
+
+    @PostMapping("/{userEmail}/courses")
+    public ResponseEntity<User> addCourse(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestBody String courseKey) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only modify your own courses");
+        }
+
+        User updatedUser = userService.addCourse(userEmail, courseKey);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @DeleteMapping("/{userEmail}/courses/{courseKey}")
+    public ResponseEntity<User> removeCourse(
+            @PathVariable String userEmail,
+            @PathVariable String courseKey,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only modify your own courses");
+        }
+
+        User updatedUser = userService.removeCourse(userEmail, courseKey);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @GetMapping("/{userEmail}/courses")
+    public ResponseEntity<List<String>> getUserCourses(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        userService.validateSession(sessionId);
+        List<String> courses = userService.getUserCourses(userEmail);
+        return ResponseEntity.ok(courses);
     }
 
     // sample of how other endpoints would use the session

@@ -5,6 +5,7 @@ import com.grapevine.exception.EventNotFoundException;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.exception.UnauthorizedException;
 import com.grapevine.model.Event;
+import com.grapevine.model.EventFilter;
 import com.grapevine.model.ShortEvent;
 import com.grapevine.model.User;
 import com.grapevine.service.EventService;
@@ -84,10 +85,15 @@ public class EventControllerTest {
         ShortEvent event1 = new ShortEvent(1L, "Event 1");
         ShortEvent event2 = new ShortEvent(2L, "Event 2");
 
-        when(eventService.getAllShortEvents()).thenReturn(Arrays.asList(event1, event2));
+        // Create a filter with all null parameters (default filter)
+        EventFilter filter = new EventFilter(null, null, null, null, null, null, null, null, null);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.getAllShortEvents(any(EventFilter.class))).thenReturn(Arrays.asList(event1, event2));
 
         // Act
-        List<ShortEvent> result = eventController.getAllShortEvents(testSessionId);
+        List<ShortEvent> result = eventController.getAllShortEvents(
+                testSessionId, null, null, null, null, null, null, null, null, null);
 
         // Assert
         assertNotNull(result);
@@ -96,9 +102,9 @@ public class EventControllerTest {
         assertEquals("Event 1", result.get(0).getName());
         assertEquals(2L, result.get(1).getEventId());
         assertEquals("Event 2", result.get(1).getName());
-        verify(eventService).getAllShortEvents();
-        // Note: Session validation is not required for getAllShortEvents
-        verifyNoInteractions(userService);
+
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).getAllShortEvents(any(EventFilter.class));
     }
 
     @Test

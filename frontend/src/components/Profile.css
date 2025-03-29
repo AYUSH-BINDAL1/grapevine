@@ -599,7 +599,7 @@ It also includes responsive design for different screen sizes. */
 
 /* Error styling */
 .input-error {
-  border-color: var(--danger) !important;
+  border-color: #ff3860 !important;
 }
 
 .error-message {
@@ -681,4 +681,22 @@ It also includes responsive design for different screen sizes. */
     width: 80px;
     font-size: 0.8rem;
   }
+}
+
+.view-students-button {
+  position: absolute;
+  top: 80px;
+  right: 150px;
+  background-color: #ae92c6;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.view-students-button:hover {
+  background-color: #9a7db1;
 }
