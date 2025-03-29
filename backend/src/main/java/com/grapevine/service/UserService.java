@@ -581,4 +581,17 @@ public class UserService {
 
         return receivers;
     }
+
+    public List<User> getUserFriends(String userEmail) {
+        User user = getUserByEmail(userEmail);
+        List<User> friends = new ArrayList<>();
+
+        if (user.getFriends() != null && !user.getFriends().isEmpty()) {
+            for (String friendEmail : user.getFriends()) {
+                userRepository.findById(friendEmail).ifPresent(friends::add);
+            }
+        }
+
+        return friends;
+    }
 }
