@@ -44,6 +44,23 @@ public class UserService {
         if (verificationToken == null || !verificationToken.getUserEmail().equals(user.getUserEmail())) {
             throw new InvalidVerificationTokenException("Invalid verification token");
         }
+
+        // Initialize default values here instead of in the model
+        if (user.getWeeklyAvailability() == null) {
+            StringBuilder sb = new StringBuilder();
+            for (int day = 0; day < 7; day++) {
+                for (int hour = 0; hour < 24; hour++) {
+                    sb.append('0');
+                }
+            }
+            user.setWeeklyAvailability(sb.toString());
+        }
+
+        // Set default role to STUDENT if not specified
+        if (user.getRole() == null) {
+            user.setRole(User.Role.STUDENT);
+        }
+
         tokenRepository.delete(verificationToken);
         return userRepository.save(user);
     }
@@ -118,6 +135,7 @@ public class UserService {
 
     public User updateUser(String userEmail, User updatedUser) {
         User existingUser = getUserByEmail(userEmail);
+        User.Role role = existingUser.getRole();
 
         // Update the fields that can be modified
         if (updatedUser.getName() != null) {
@@ -141,6 +159,15 @@ public class UserService {
         if (updatedUser.getPreferredLocations() != null) {
             existingUser.setPreferredLocations(updatedUser.getPreferredLocations());
         }
+        if (updatedUser.getWeeklyAvailability() != null) {
+            existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
+        }
+        if (updatedUser.getRole() != null) {
+            existingUser.setRole(updatedUser.getRole());
+        }
+
+        // Update the user in the repository
+        return userRepository.save(existingUser);
 
         /*
         Weird Put Request body validation issue:
@@ -152,22 +179,7 @@ public class UserService {
         attributes will have the same issue. Bad practice for now but we prolly won't get around to
         refactoring all our PutMappings for a cleaner method
          */
-        StringBuilder defaultAvail = new StringBuilder();
-        for (int day = 0; day < 7; day++) {
-            for (int hour = 0; hour < 24; hour++) {
-                defaultAvail.append('0');
-            }
-        }
-        if (updatedUser.getWeeklyAvailability() != null &&
-                !updatedUser.getWeeklyAvailability().equals(defaultAvail.toString())) {
-            existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
-        }
-        if (updatedUser.getRole() != null &&
-                updatedUser.getRole() != User.Role.STUDENT) {
-            existingUser.setRole(updatedUser.getRole());
-        }
 
-        return userRepository.save(existingUser);
     }
 
     public void deleteUser(String userEmail) {
@@ -462,5 +474,136 @@ public class UserService {
         }
 
         return user.getCourses();
+    }
+
+    // Add to UserService.java
+    public List<User> searchUsersByName(String query) {
+        return userRepository.findByNameContainingIgnoreCase(query);
+    }
+
+    public User sendFriendRequest(String senderEmail, String receiverEmail) {
+        if (senderEmail.equals(receiverEmail)) {
+            throw new IllegalArgumentException("Cannot send friend request to yourself");
+        }
+
+        User sender = getUserByEmail(senderEmail);
+        User receiver = getUserByEmail(receiverEmail);
+
+        // Check if they are already friends
+        if (sender.getFriends() != null && sender.getFriends().contains(receiverEmail)) {
+            throw new IllegalStateException("You are already friends with this user");
+        }
+
+        // Check if a request is already pending
+        if (sender.getOutgoingFriendRequests() != null &&
+                sender.getOutgoingFriendRequests().contains(receiverEmail)) {
+            throw new IllegalStateException("Friend request already sent");
+        }
+
+        // Initialize lists if null
+        if (sender.getOutgoingFriendRequests() == null) {
+            sender.setOutgoingFriendRequests(new ArrayList<>());
+        }
+        if (receiver.getIncomingFriendRequests() == null) {
+            receiver.setIncomingFriendRequests(new ArrayList<>());
+        }
+
+        // Add to outgoing requests for sender
+        sender.getOutgoingFriendRequests().add(receiverEmail);
+
+        // Add to incoming requests for receiver
+        receiver.getIncomingFriendRequests().add(senderEmail);
+
+        userRepository.save(receiver);
+        return userRepository.save(sender);
+    }
+
+    public User acceptFriendRequest(String userEmail, String requesterEmail) {
+        User user = getUserByEmail(userEmail);
+        User requester = getUserByEmail(requesterEmail);
+
+        // Check if there is a pending request
+        if (user.getIncomingFriendRequests() == null ||
+                !user.getIncomingFriendRequests().contains(requesterEmail)) {
+            throw new IllegalStateException("No friend request from this user");
+        }
+
+        // Initialize friends lists if needed
+        if (user.getFriends() == null) {
+            user.setFriends(new ArrayList<>());
+        }
+        if (requester.getFriends() == null) {
+            requester.setFriends(new ArrayList<>());
+        }
+
+        // Add each other as friends
+        user.getFriends().add(requesterEmail);
+        requester.getFriends().add(userEmail);
+
+        // Remove from request lists
+        user.getIncomingFriendRequests().remove(requesterEmail);
+        requester.getOutgoingFriendRequests().remove(userEmail);
+
+        userRepository.save(requester);
+        return userRepository.save(user);
+    }
+
+    public User denyFriendRequest(String userEmail, String requesterEmail) {
+        User user = getUserByEmail(userEmail);
+        User requester = getUserByEmail(requesterEmail);
+
+        // Check if there is a pending request
+        if (user.getIncomingFriendRequests() == null ||
+                !user.getIncomingFriendRequests().contains(requesterEmail)) {
+            throw new IllegalStateException("No friend request from this user");
+        }
+
+        // Remove from request lists
+        user.getIncomingFriendRequests().remove(requesterEmail);
+        if (requester.getOutgoingFriendRequests() != null) {
+            requester.getOutgoingFriendRequests().remove(userEmail);
+        }
+
+        userRepository.save(requester);
+        return userRepository.save(user);
+    }
+
+    public List<User> getIncomingFriendRequests(String userEmail) {
+        User user = getUserByEmail(userEmail);
+        List<User> requesters = new ArrayList<>();
+
+        if (user.getIncomingFriendRequests() != null) {
+            for (String requesterEmail : user.getIncomingFriendRequests()) {
+                userRepository.findById(requesterEmail).ifPresent(requesters::add);
+            }
+        }
+
+        return requesters;
+    }
+
+    public List<User> getOutgoingFriendRequests(String userEmail) {
+        User user = getUserByEmail(userEmail);
+        List<User> receivers = new ArrayList<>();
+
+        if (user.getOutgoingFriendRequests() != null) {
+            for (String receiverEmail : user.getOutgoingFriendRequests()) {
+                userRepository.findById(receiverEmail).ifPresent(receivers::add);
+            }
+        }
+
+        return receivers;
+    }
+
+    public List<User> getUserFriends(String userEmail) {
+        User user = getUserByEmail(userEmail);
+        List<User> friends = new ArrayList<>();
+
+        if (user.getFriends() != null && !user.getFriends().isEmpty()) {
+            for (String friendEmail : user.getFriends()) {
+                userRepository.findById(friendEmail).ifPresent(friends::add);
+            }
+        }
+
+        return friends;
     }
 }
