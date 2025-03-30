@@ -455,6 +455,14 @@ function Profile() {
             <p className="description-details">{userData?.biography || "No description available"}</p>
           )}
         </div>
+        {searchEnabled && (
+          <button 
+            className="view-students-button"
+            onClick={() => navigate('/view-students')}
+          >
+            View Students
+          </button>
+        )}
       </div>
       
       <div className="profile-content">

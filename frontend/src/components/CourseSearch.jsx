@@ -1,37 +1,147 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { searchEnabled } from '../App';
 import './CourseSearch.css';
 
 function CourseSearch() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [userCourses, setUserCourses] = useState([]);
+  const [error, setError] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const navigate = useNavigate();
 
-  // Placeholder courses
-  const placeholderCourses = [
-    { id: 1, name: 'CS 18000 - Problem Solving and Object-Oriented Programming' },
-    { id: 2, name: 'CS 24000 - Programming in C' },
-    { id: 3, name: 'CS 25100 - Data Structures and Algorithms' },
-    { id: 4, name: 'CS 30700 - Software Engineering' },
-    { id: 5, name: 'CS 35200 - Compilers: Principles and Practice' }
-  ];
+  useEffect(() => {
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      const parsedData = JSON.parse(userData);
+      if (parsedData.userEmail) {
+        setUserEmail(parsedData.userEmail);
+      }
+    }
+  }, []);
 
-  const handleSearch = (e) => {
+  // Fetch user's courses when email is available
+  useEffect(() => {
+    const fetchUserCourses = async () => {
+      if (!userEmail) return;
+
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        setError('Session expired. Please login again.');
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `http://localhost:8080/users/${userEmail}`,
+          { headers: { 'Session-Id': sessionId } }
+        );
+        setUserCourses(response.data.courses || []);
+      } catch (error) {
+        console.error('Error fetching user courses:', error);
+      }
+    };
+
+    fetchUserCourses();
+  }, [userEmail]);
+
+  const handleSearch = async (e) => {
     e.preventDefault();
-    // Future implementation: API call to search courses
-    console.log('Searching for:', searchQuery);
+    const sessionId = localStorage.getItem('sessionId');
+    
+    if (!sessionId) {
+      setError('Session expired. Please login again.');
+      return;
+    }
+
+    try {
+      const response = await axios.get(`http://localhost:8080/courses/search/short?query=${searchQuery}`, {
+        headers: {
+          'Session-Id': sessionId
+        }
+      });
+      setCourses(response.data);
+    } catch (error) {
+      console.error('Error searching courses:', error);
+      setError('Failed to search courses. Please try again.');
+    }
   };
 
   const handleInputChange = (e) => {
-    setSearchQuery(e.target.value);
+    setSearchQuery(e.target.value.toUpperCase());
+    setError('');
   };
 
   const handleCourseClick = (course) => {
-    setSelectedCourse(course);
+    setSelectedCourse({
+      ...course,
+      isEnrolled: userCourses.includes(course.courseKey)
+    });
   };
 
-  const handleAddCourse = () => {
-    // Future implementation: API call to add course
-    console.log('Adding course:', selectedCourse);
-    setSelectedCourse(null);
+  const handleAddCourse = async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    
+    if (!sessionId || !userEmail) {
+      setError('Session expired. Please login again.');
+      return;
+    }
+  
+    try {
+      const courseCode = selectedCourse.courseKey;
+      
+      await axios.put(
+        `http://localhost:8080/users/${userEmail}`,
+        {
+          courses: [courseCode]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          }
+        }
+      );
+      
+      setUserCourses([...userCourses, courseCode]);
+      alert(`Successfully added ${courseCode} to your courses!`);
+      setSelectedCourse(null);
+    } catch (error) {
+      console.error('Error adding course:', error);
+      setError('Failed to add course. Please try again.');
+    }
+  };
+
+  const handleRemoveCourse = async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    
+    if (!sessionId || !userEmail) {
+      setError('Session expired. Please login again.');
+      return;
+    }
+
+    try {
+      const courseCode = selectedCourse.courseKey;
+      
+      await axios.delete(
+        `http://localhost:8080/users/${userEmail}/courses/${courseCode}`,
+        {
+          headers: {
+            'Session-Id': sessionId
+          }
+        }
+      );
+
+      setUserCourses(userCourses.filter(code => code !== courseCode));
+      alert(`Successfully removed ${courseCode} from your courses!`);
+      setSelectedCourse(null);
+    } catch (error) {
+      console.error('Error removing course:', error);
+      setError('Failed to remove course. Please try again.');
+    }
   };
 
   return (
@@ -46,27 +156,29 @@ function CourseSearch() {
             onChange={handleInputChange}
             placeholder="Enter course code..."
             className="search-input"
-            pattern="[A-Z0-9]+"
-            title="Please enter only capital letters and numbers"
+            pattern="[A-Za-z0-9 ]+"
+            title="Please enter letters, numbers, and spaces only"
             required
           />
+          {error && <div className="error-message">{error}</div>}
         </div>
         <button type="submit" className="search-button">Search</button>
       </form>
 
       <div className="course-list">
-        {placeholderCourses.length === 0 ? (
+        {courses.length === 0 ? (
           <div className="no-courses-message">
             There aren't any courses that match your search.
           </div>
         ) : (
-          placeholderCourses.map(course => (
+          courses.map(course => (
             <div 
-              key={course.id}
-              className="course-bar"
+              key={course.courseKey}
+              className={`course-bar ${userCourses.includes(course.courseKey) ? 'enrolled' : ''}`}
               onClick={() => handleCourseClick(course)}
             >
-              {course.name}
+              {course.courseKey} - {course.title}
+              {userCourses.includes(course.courseKey) && <span className="enrolled-badge">Enrolled</span>}
             </div>
           ))
         )}
@@ -75,10 +187,19 @@ function CourseSearch() {
       {selectedCourse && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>Add Course</h3>
-            <p>Would you like to add {selectedCourse.name} to your courses?</p>
+            <h3>{selectedCourse.isEnrolled ? 'Remove Course' : 'Add Course'}</h3>
+            <p>
+              {selectedCourse.isEnrolled 
+                ? `Would you like to remove ${selectedCourse.courseKey} - ${selectedCourse.title} from your courses?`
+                : `Would you like to add ${selectedCourse.courseKey} - ${selectedCourse.title} to your courses?`}
+            </p>
             <div className="modal-buttons">
-              <button onClick={handleAddCourse} className="modal-button confirm">Yes</button>
+              <button 
+                onClick={selectedCourse.isEnrolled ? handleRemoveCourse : handleAddCourse} 
+                className={`modal-button ${selectedCourse.isEnrolled ? 'delete' : 'confirm'}`}
+              >
+                Yes
+              </button>
               <button onClick={() => setSelectedCourse(null)} className="modal-button cancel">No</button>
             </div>
           </div>
