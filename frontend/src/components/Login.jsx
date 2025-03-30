@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './Login.css';
+import { FaEnvelope, FaLock, FaExclamationCircle } from 'react-icons/fa';
 
 function Login() {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -18,6 +21,8 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
     try {
       const response = await axios.post('http://localhost:8080/users/login', formData, {
         headers: {
@@ -36,14 +41,22 @@ function Login() {
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Login failed.');
+      setError(error.response?.data?.message || 'Login failed. Please check your credentials.');
     }
   };
 
   return (
-    <div className="registration-container">
-      <form onSubmit={handleSubmit} className="registration-form">
+    <div className="login-container">
+      <form onSubmit={handleSubmit} className="login-form">
         <h2>Login</h2>
+        
+        {error && (
+          <div className="error-message">
+            <FaExclamationCircle />
+            {error}
+          </div>
+        )}
+        
         <div className="form-group">
           <input
             type="email"
@@ -53,7 +66,9 @@ function Login() {
             placeholder="Email"
             required
           />
+          <FaEnvelope className="input-icon" />
         </div>
+        
         <div className="form-group">
           <input
             type="password"
@@ -63,12 +78,21 @@ function Login() {
             placeholder="Password"
             required
           />
+          <FaLock className="input-icon" />
         </div>
-        <button type="submit" className="register-button">
+        
+        <button type="submit" className="login-button">
           Login
         </button>
-        <button type="button" className="sign-in-button" onClick={() => navigate('/Registration')}>
-          Register
+        
+        <div className="form-divider">or</div>
+        
+        <button 
+          type="button" 
+          className="register-link-button" 
+          onClick={() => navigate('/Registration')}
+        >
+          Create New Account
         </button>
       </form>
     </div>

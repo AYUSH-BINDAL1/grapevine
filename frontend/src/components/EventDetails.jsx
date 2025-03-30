@@ -6,7 +6,20 @@ import './EventDetails.css';
 function EventDetails() {
     const { eventId } = useParams();
     const [eventData, setEventData] = useState(null);
+    const [groupName, setGroupName] = useState('');
     const navigate = useNavigate();
+
+    const hardcodedLocations = [
+        { id: 1, shortName: "WALC" }, { id: 2, shortName: "LWSN" }, { id: 3, shortName: "PMUC" },
+        { id: 4, shortName: "HAMP" }, { id: 5, shortName: "RAWL" }, { id: 6, shortName: "CHAS" },
+        { id: 7, shortName: "CL50" }, { id: 8, shortName: "FRNY" }, { id: 9, shortName: "KRAN" },
+        { id: 10, shortName: "MSEE" }, { id: 11, shortName: "MATH" }, { id: 12, shortName: "PHYS" },
+        { id: 13, shortName: "POTR" }, { id: 14, shortName: "HAAS" }, { id: 15, shortName: "HIKS" },
+        { id: 16, shortName: "BRWN" }, { id: 17, shortName: "HEAV" }, { id: 18, shortName: "BRNG" },
+        { id: 19, shortName: "SC" }, { id: 20, shortName: "WTHR" }, { id: 21, shortName: "UNIV" },
+        { id: 22, shortName: "YONG" }, { id: 23, shortName: "ME" }, { id: 24, shortName: "ELLT" },
+        { id: 25, shortName: "PMU" }, { id: 26, shortName: "STEW" }
+    ];
 
     useEffect(() => {
         const fetchEventDetails = async () => {
@@ -23,6 +36,14 @@ function EventDetails() {
                 });
 
                 setEventData(response.data);
+
+                if (response.data.groupId) {
+                    const groupResponse = await axios.get(`http://localhost:8080/groups/${response.data.groupId}`, {
+                        headers: { "Session-Id": sessionId },
+                    });
+                    setGroupName(groupResponse.data.name);
+                }
+
             } catch (error) {
                 console.error("Error fetching event details:", error);
                 alert("Failed to load event details.");
@@ -43,6 +64,10 @@ function EventDetails() {
         }
     };
 
+    const locationLabel = hardcodedLocations.find(
+        (loc) => loc.id === eventData.locationId
+    )?.shortName || "Not specified";
+
     return (
         <div className="event-details-container">
             <button className="event-details-back" onClick={() => navigate("/events")}>
@@ -52,13 +77,13 @@ function EventDetails() {
             <div className="event-details-header">
                 <h1 className="event-details-title">{eventData.name}</h1>
                 <div className="event-details-meta">
-                    <div className="event-details-meta-item">📍 {eventData.location || "Not specified"}</div>
+                    <div className="event-details-meta-item">📍 {locationLabel}</div>
                     <div className="event-details-meta-item">🕒 {new Date(eventData.eventTime).toLocaleString()}</div>
                     <div className="event-details-meta-item">👥 Max Participants: {eventData.maxUsers}</div>
                     <div className="event-details-meta-item">🔒 {eventData.isPublic ? "Public" : "Private"}</div>
                     {eventData.groupId && (
                         <div className="event-details-meta-item event-details-link" onClick={handleGroupRedirect}>
-                            🔗 Go to Group
+                            🔗 {groupName || "View Group"}
                         </div>
                     )}
                 </div>

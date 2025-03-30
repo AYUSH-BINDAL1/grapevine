@@ -147,6 +147,7 @@ function UsrProfile() {
     };
 
     fetchUserProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, navigate]);
 
   // Calculate compatibility between current user and profile user
