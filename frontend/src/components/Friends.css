@@ -507,3 +507,48 @@ h2:hover {
   }
 }
 
+/* Add to Friends.css */
+.friends-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.refresh-button {
+  background-color: var(--primary-color);
+  border: 1px solid #e0e0e0;
+  color: black;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background-color: var(--secondary-color);
+  transform: rotate(30deg);
+}
+
+.refresh-button:active {
+  transform: rotate(180deg);
+}
+
+.refresh-icon {
+  font-size: 1.2rem;
+}
+
+/* Animation for when data is refreshing */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.refreshing .refresh-icon {
+  animation: spin 1s linear infinite;
+}
+

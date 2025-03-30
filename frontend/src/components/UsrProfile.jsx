@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import profileImage from "../assets/temp-profile.webp";
 import "./UsrProfile.css";
+//import { CSSTransition } from "react-transition-group";
 
 // Add this function at the top of your UsrProfile.jsx file
 function getMockUserData(userId) {
@@ -320,8 +321,56 @@ function UsrProfile() {
 
   if (loading) {
     return (
-      <div className="user-profile-page loading">
-        <div className="loading-spinner">Loading profile data...</div>
+      <div className="user-profile-page">
+        <button disabled className="back-button skeleton-back-button">
+          &larr; Back to Friends
+        </button>
+        
+        <div className="user-profile-header skeleton-header">
+          <div className="user-profile-image-container skeleton-image"></div>
+          <div className="user-profile-top-info">
+            <div className="user-nametag-container">
+              <div className="skeleton-text skeleton-name"></div>
+              <div className="user-tags">
+                <span className="skeleton-tag"></span>
+                <span className="skeleton-tag"></span>
+              </div>
+            </div>
+            <div className="user-actions">
+              <div className="skeleton-button"></div>
+              <div className="skeleton-button"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="skeleton-compatibility"></div>
+        
+        <div className="user-content-grid">
+          <div className="user-description-card">
+            <h3>About</h3>
+            <div className="skeleton-text skeleton-paragraph"></div>
+            <div className="skeleton-text skeleton-paragraph"></div>
+          </div>
+          
+          <div className="user-availability-card">
+            <h3>Availability</h3>
+            <div className="skeleton-availability"></div>
+          </div>
+          
+          <div className="user-locations-card">
+            <h3>Preferred Study Locations</h3>
+            <div className="skeleton-locations">
+              <div className="skeleton-location"></div>
+              <div className="skeleton-location"></div>
+              <div className="skeleton-location"></div>
+            </div>
+          </div>
+          
+          <div className="user-common-card">
+            <h3>Common Groups</h3>
+            <div className="skeleton-common-list"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -337,6 +386,31 @@ function UsrProfile() {
       </div>
     );
   }
+
+  /*{compatibilityScore && (
+    <div className="compatibility-section">
+      <h3>Compatibility</h3>
+      <div className="compatibility-score">
+        <div className="score-circle" style={{
+          background: `conic-gradient(#8ebd89 ${compatibilityScore.percentage}%, #e0e0e0 0)`
+        }}>
+          <span>{compatibilityScore.percentage}%</span>
+        </div>
+        <div className="compatibility-factors">
+          <p>Why you&apos;re compatible:</p>
+          <ul>
+            {compatibilityScore.factors.length > 0 ? (
+              compatibilityScore.factors.map((factor, index) => (
+                <li key={index}>{factor}</li>
+              ))
+            ) : (
+              <li>No compatibility factors found</li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
+  )} */
 
   // Helper function to get location names from IDs
   const getLocationName = (locationId) => {
@@ -374,44 +448,21 @@ function UsrProfile() {
           <div className="user-actions">
             {isFriend ? (
               <button className="remove-friend-button" onClick={handleRemoveFriend}>
-                Remove Friend
+                <i className="fa fa-user-times"></i> Remove Friend
               </button>
             ) : (
               <button className="add-friend-button" onClick={handleAddFriend}>
-                Add Friend
+                <i className="fa fa-user-plus"></i> Add Friend
               </button>
             )}
             <button className="message-button">
-              Send Message
+              <i className="fa fa-envelope"></i> Send Message
             </button>
           </div>
         </div>
       </div>
       
-      {compatibilityScore && (
-        <div className="compatibility-section">
-          <h3>Compatibility</h3>
-          <div className="compatibility-score">
-            <div className="score-circle" style={{
-              background: `conic-gradient(#8ebd89 ${compatibilityScore.percentage}%, #e0e0e0 0)`
-            }}>
-              <span>{compatibilityScore.percentage}%</span>
-            </div>
-            <div className="compatibility-factors">
-              <p>Why you&apos;re compatible:</p>
-              <ul>
-                {compatibilityScore.factors.length > 0 ? (
-                  compatibilityScore.factors.map((factor, index) => (
-                    <li key={index}>{factor}</li>
-                  ))
-                ) : (
-                  <li>No compatibility factors found</li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
+      
       
       <div className="user-content-grid">
         <div className="user-description-card">
@@ -463,10 +514,10 @@ function UsrProfile() {
         </div>
         
         <div className="user-common-card">
-          <h3>Common Groups</h3>
+          <h3>User&apos;s Groups</h3>
           <div className="user-common-list">
             {/* This would come from API in real implementation */}
-            <p className="no-data-message">You don&apos;t have any groups in common yet</p>
+            <p className="no-data-message">This user hasn&apos;t joined any groups yet!</p>
           </div>
         </div>
       </div>

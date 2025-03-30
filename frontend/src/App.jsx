@@ -268,7 +268,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/confirmation" element={<Confirmation />} />
-        <Route path="/user/:userId" element={<UsrProfile />} />
+        <Route path="/user/:userEmail" element={<UsrProfile />} />
         <Route path="*" element={<Nopath />} />
         
         {/* Protected routes with taskbar */}
