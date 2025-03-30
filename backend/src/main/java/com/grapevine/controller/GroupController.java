@@ -30,9 +30,20 @@ public class GroupController {
     }
 
     @GetMapping("/all-short")
-    public List<ShortGroup> getAllShortGroups(@RequestHeader(name = "Session-Id", required = true) String sessionId) {
-        //Returns all the groups in our database
-        return groupService.getAllShortGroups();
+    public List<ShortGroup> getAllShortGroups(
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestParam(required = false) Boolean isPublic) {
+
+        // Validate session
+        userService.validateSession(sessionId);
+
+        // If no filter provided, return all groups
+        if (isPublic == null) {
+            return groupService.getAllShortGroups();
+        }
+
+        // Otherwise filter by isPublic flag
+        return groupService.getShortGroupsByPublicStatus(isPublic);
     }
 
     @PostMapping("/create")
