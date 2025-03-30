@@ -39,6 +39,19 @@ public class GroupService {
         return shortGroups;
     }
 
+    public List<ShortGroup> getShortGroupsByPublicStatus(Boolean isPublic) {
+        List<Group> groups = groupRepository.findAll();
+        List<ShortGroup> filteredGroups = new ArrayList<>();
+
+        for (Group group : groups) {
+            if (group.isPublic() == isPublic) {
+                filteredGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic()));
+            }
+        }
+
+        return filteredGroups;
+    }
+
     public Group createGroup(Group group, User currentUser) {
         // Initialize lists if null
         if (group.getHosts() == null) {
