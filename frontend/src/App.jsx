@@ -54,7 +54,7 @@ function Taskbar() {
           <h3 onClick={() => navigate("/messages")} className="elem">Messages</h3>
           <h3 onClick={() => navigate("/friends")} className="elem">Friends</h3>
           {searchEnabled && (
-            <h3 onClick={() => navigate("/courseSearch")} className="elem">SearchDemo</h3>
+            <h3 onClick={() => navigate("/courseSearch")} className="elem">Search Courses</h3>
           )}
           <img onClick={() => navigate("/profile")} className="profile" src={profileImage} alt="Profile" />
           <h3 onClick={handlelogout} className="elem">Logout</h3>
