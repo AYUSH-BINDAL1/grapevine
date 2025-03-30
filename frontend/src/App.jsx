@@ -212,7 +212,9 @@ function Home() {
           <button className="scroll-arrow2 left" onClick={() => scrollLeft(scrollContainerRef)}>&lt;</button>
           <div className="scroll-container2" ref={scrollContainerRef}>
             {groups.length === 0 ? (
-                <p>You are not part of any groups.</p>
+                <div className="empty-groups-message">
+                    <p>You are not part of any groups.</p>
+                </div>
             ) : (
                 groups.map((group) => (
                     <div

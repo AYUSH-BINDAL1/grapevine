@@ -76,7 +76,9 @@ function Events() {
                             </div>
                         ))
                     ) : (
-                        <p>No events found</p>
+                        <div className="no-events-message">
+                            <p>No events found</p>
+                        </div>
                     )}
                 </div>
                 <button className="scroll-arrow2 right" onClick={scrollRight}>&gt;</button>

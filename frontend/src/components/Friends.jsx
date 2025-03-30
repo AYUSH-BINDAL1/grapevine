@@ -15,6 +15,7 @@ function Friends() {
     const [isSearching, setIsSearching] = useState(false);
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
+    // eslint-disable-next-line no-unused-vars
     const [searchHistory, setSearchHistory] = useState([]);
     const [noResultsFound, setNoResultsFound] = useState(false);
 
@@ -38,8 +39,6 @@ function Friends() {
                         'Session-Id': sessionId
                     }
                 });
-                
-                console.log('Incoming friend requests response:', response.data);
                 
                 // Format the data to match your component's structure
                 const formattedRequests = response.data.map(request => ({
@@ -128,14 +127,16 @@ function Friends() {
         
         // Clean up interval on unmount
         return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Function to handle navigation to user profile page
     const handleFriendClick = (userEmail) => {
-        navigate(`/user/${encodeURIComponent(userEmail)}`);
+        navigate(`/user/${userEmail}`);
     };
 
     // Enhanced search function with debounce
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedSearch = useCallback(
         debounce((query) => {
             if (!query.trim()) return;
@@ -169,6 +170,7 @@ function Friends() {
         
         try {
             const sessionId = localStorage.getItem('sessionId');
+            const userData = JSON.parse(localStorage.getItem('userData'));
             
             if (!sessionId) {
                 toast.error('You must be logged in to search for users');
@@ -193,12 +195,13 @@ function Friends() {
                     name: user.name || user.fullName,
                     userEmail: user.userEmail || user.email,
                     image: profileImage, // Default image until profile images are implemented
-                    major: user.major || (user.majors && user.majors[0]) || 'No major listed'
+                    major: user.major || (user.majors && user.majors[0]) || 'No major listed',
+                    isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email))
                 }));
 
                 // Filter out users already in the friends list
                 const filteredResults = formattedResults.filter(
-                    user => !friends.some(friend => friend.userEmail === user.userEmail)
+                    user => user.userEmail !== userData.userEmail
                 );
 
                 setSearchResults(filteredResults);
@@ -215,32 +218,36 @@ function Friends() {
                 
                 // Fall back to mock data for demo purposes
                 const mockUsers = [
-                    { id: 101, name: "Alex Thompson", image: profileImage, major: "Computer Science", userEmail: "alex.thompson@purdue.edu" },
-                    { id: 102, name: "Morgan Smith", image: profileImage, major: "Engineering", userEmail: "morgan.smith@purdue.edu" },
-                    { id: 103, name: "Taylor Johnson", image: profileImage, major: "Psychology", userEmail: "taylor.johnson@purdue.edu" },
-                    { id: 104, name: "Alex Johnson", image: profileImage, major: "Computer Engineering", userEmail: "alex.johnson@purdue.edu" },
-                    { id: 105, name: "Morgan Thompson", image: profileImage, major: "Mathematics", userEmail: "morgan.thompson@purdue.edu" },
-                    { id: 106, name: "Taylor Smith", image: profileImage, major: "Biology", userEmail: "taylor.smith@purdue.edu" }
+                    { name: "Alex Thompson", image: profileImage, major: "Computer Science", userEmail: "alex.thompson@purdue.edu" },
+                    { name: "Morgan Smith", image: profileImage, major: "Engineering", userEmail: "morgan.smith@purdue.edu" },
+                    { name: "Taylor Johnson", image: profileImage, major: "Psychology", userEmail: "taylor.johnson@purdue.edu" },
+                    { name: "Alex Johnson", image: profileImage, major: "Computer Engineering", userEmail: "alex.johnson@purdue.edu" },
+                    { name: "Morgan Thompson", image: profileImage, major: "Mathematics", userEmail: "morgan.thompson@purdue.edu" },
+                    { name: "Taylor Smith", image: profileImage, major: "Biology", userEmail: "taylor.smith@purdue.edu" }
                 ];
 
-                const filteredUsers = mockUsers.filter(user =>
-                    user.name.toLowerCase().includes(query.toLowerCase()) ||
-                    user.major.toLowerCase().includes(query.toLowerCase())
-                );
-
-                // Filter out users already in the friends list from mock data too
-                const filteredResults = filteredUsers.filter(
-                    user => !friends.some(friend => 
-                        friend.userEmail === user.userEmail
+                // Filter by search term and mark already friends
+                const filteredUsers = mockUsers
+                    .filter(user => 
+                        user.name.toLowerCase().includes(query.toLowerCase()) || 
+                        user.major.toLowerCase().includes(query.toLowerCase())
                     )
+                    .map(user => ({
+                        ...user,
+                        isAlreadyFriend: friends.some(friend => friend.userEmail === user.userEmail)
+                    }));
+
+                // Filter out the current user
+                const resultsWithoutSelf = filteredUsers.filter(user => 
+                    user.userEmail !== userData.userEmail
                 );
 
                 toast.warning("Using demo search results. API connection failed.");
                 setTimeout(() => {
-                    setSearchResults(filteredResults);
+                    setSearchResults(resultsWithoutSelf);
                 }, 500); // Simulate network delay
 
-                if (filteredResults.length === 0) {
+                if (resultsWithoutSelf.length === 0) {
                     setNoResultsFound(true);
                 }
             }
@@ -276,12 +283,12 @@ function Friends() {
                     }
                 });
 
-                setSearchResults(prev => prev.filter(result => result.email !== user.userEmail));
+                setSearchResults(prev => prev.filter(result => result.userEmail !== user.userEmail));
                 toast.success(`Friend request sent to ${user.name}!`);
             } catch (apiError) {
                 console.log('API send friend request failed:', apiError);
 
-                setSearchResults(prev => prev.filter(result => result.email !== user.userEmail));
+                setSearchResults(prev => prev.filter(result => result.userEmail !== user.userEmail));
                 toast.info(`Friend request sent to ${user.name}!`);
             }
         } catch (error) {
@@ -448,7 +455,7 @@ function Friends() {
         };
 
         // Show confirmation toast
-        toast.info(
+        toast.warning(
             <div>
                 <p>Are you sure you want to remove <strong>{friendName}</strong> from your friends?</p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
@@ -497,7 +504,7 @@ function Friends() {
                                     className="remove-friend-btn"
                                     onClick={(e) => {
                                         e.stopPropagation(); // Prevent navigation when clicking the button
-                                        handleRemoveFriend(user.name, user.userEmail);
+                                        handleRemoveFriend(user.userEmail, user.name, user.userEmail);
                                     }}
                                     title="Remove friend"
                                 >
@@ -588,12 +595,21 @@ function Friends() {
                                             <p>{user.major || 'No major listed'}</p>
                                         </div>
                                     </div>
-                                    <button
-                                        className="add-friend-btn"
-                                        onClick={() => handleAddFriend(user)}
-                                    >
-                                        Add Friend
-                                    </button>
+                                    {user.isAlreadyFriend ? (
+                                        <button
+                                            className="already-friend-btn"
+                                            disabled
+                                        >
+                                            Already Friends
+                                        </button>
+                                    ) : (
+                                        <button
+                                            className="add-friend-btn"
+                                            onClick={() => handleAddFriend(user)}
+                                        >
+                                            Add Friend
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
