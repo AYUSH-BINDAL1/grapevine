@@ -37,8 +37,16 @@ function Profile() {
   const [deletePassword, setDeletePassword] = useState('');
   // Add a new state variable for password visibility
   const [showPassword, setShowPassword] = useState(false);
+  const sessionId = localStorage.getItem('sessionId');
 
   useEffect(() => {
+
+    if (!sessionId) {
+      toast.error("Session expired. Please login again.");
+      setTimeout(() => window.location.href = '/', 2000);
+      return;
+    }
+
     // Load user data from localStorage
     setIsLoading(true);
     const storedUserData = localStorage.getItem('userData');
@@ -140,7 +148,6 @@ function Profile() {
     if (!userData) return;
   
     try {
-      const sessionId = localStorage.getItem('sessionId');
       
       if (!sessionId) {
         alert("You must be logged in to save availability");
@@ -183,7 +190,6 @@ function Profile() {
     if (!userData) return;
 
     try {
-      const sessionId = localStorage.getItem('sessionId');
       
       if (!sessionId) {
         alert("You must be logged in to save description");
@@ -237,7 +243,6 @@ function Profile() {
     }
   
     try {
-      const sessionId = localStorage.getItem('sessionId');
       if (!sessionId) {
         toast.error("Session expired. Please login again.");
         setTimeout(() => window.location.href = '/', 2000);
@@ -346,7 +351,6 @@ function Profile() {
     }
   
     try {
-      const sessionId = localStorage.getItem('sessionId');
       
       if (!sessionId) {
         alert("You must be logged in to save profile information");
@@ -548,8 +552,6 @@ function Profile() {
                 if (!userData) return;
               
                 try {
-                  const sessionId = localStorage.getItem('sessionId');
-                  
                   if (!sessionId) {
                     alert("You must be logged in to update availability");
                     return;

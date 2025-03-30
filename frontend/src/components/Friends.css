@@ -507,3 +507,131 @@ h2:hover {
   }
 }
 
+/* Add to Friends.css */
+.friends-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.refresh-button {
+  background-color: var(--primary-color);
+  border: 1px solid #e0e0e0;
+  color: black;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background-color: var(--secondary-color);
+  transform: rotate(30deg);
+}
+
+.refresh-button:active {
+  transform: rotate(180deg);
+}
+
+.refresh-icon {
+  font-size: 1.2rem;
+}
+
+/* Animation for when data is refreshing */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.refreshing .refresh-icon {
+  animation: spin 1s linear infinite;
+}
+
+/* Search history styling */
+.search-history {
+    margin-top: 15px;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+}
+
+.search-history h4 {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0 0 8px 0;
+}
+
+.search-history-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.search-history-item {
+    display: flex;
+    align-items: center;
+    background-color: #f5f5f5;
+    border: none;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-history-item:hover {
+    background-color: #e0e0e0;
+}
+
+.search-history-icon {
+    margin-right: 5px;
+    font-size: 0.8rem;
+}
+
+.clear-history-btn {
+    background-color: transparent;
+    border: none;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    color: #888;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-left: auto;
+}
+
+.clear-history-btn:hover {
+    color: #666;
+}
+
+/* Add this to your CSS file */
+.already-friend-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: #e0e0e0;
+    color: #757575;
+    font-size: 0.9rem;
+    cursor: not-allowed;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+}
+
+.already-friend-btn::before {
+    content: "✓";
+    margin-right: 6px;
+    font-size: 0.9rem;
+}
+
+/* Make the search result card a bit lighter when it's already a friend */
+.search-result-card:has(.already-friend-btn) {
+    background-color: #fafafa;
+}
+

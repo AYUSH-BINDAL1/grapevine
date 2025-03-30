@@ -42,4 +42,26 @@
     max-width: 90%;
 }
 
+.no-events-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 120px; /* Match the approximate height of group cards */
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+.no-events-message p {
+    margin: 0;
+    padding: 20px;
+}
+
+/* Ensure the scroll container has proper height when empty */
+.scroll-container2 {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+}
 
