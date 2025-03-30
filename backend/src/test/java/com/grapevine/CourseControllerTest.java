@@ -189,7 +189,7 @@ class CourseControllerTest {
         );
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
-        assertEquals("Only instructors can view enrolled students", exception.getReason());
+        assertEquals("Only instructors can view their enrolled students", exception.getReason());
         verify(userService).validateSession(testSessionId);
         verifyNoInteractions(userRepository);
     }

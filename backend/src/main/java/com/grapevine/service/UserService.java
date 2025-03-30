@@ -44,6 +44,23 @@ public class UserService {
         if (verificationToken == null || !verificationToken.getUserEmail().equals(user.getUserEmail())) {
             throw new InvalidVerificationTokenException("Invalid verification token");
         }
+
+        // Initialize default values here instead of in the model
+        if (user.getWeeklyAvailability() == null) {
+            StringBuilder sb = new StringBuilder();
+            for (int day = 0; day < 7; day++) {
+                for (int hour = 0; hour < 24; hour++) {
+                    sb.append('0');
+                }
+            }
+            user.setWeeklyAvailability(sb.toString());
+        }
+
+        // Set default role to STUDENT if not specified
+        if (user.getRole() == null) {
+            user.setRole(User.Role.STUDENT);
+        }
+
         tokenRepository.delete(verificationToken);
         return userRepository.save(user);
     }
@@ -118,6 +135,7 @@ public class UserService {
 
     public User updateUser(String userEmail, User updatedUser) {
         User existingUser = getUserByEmail(userEmail);
+        User.Role role = existingUser.getRole();
 
         // Update the fields that can be modified
         if (updatedUser.getName() != null) {
@@ -141,6 +159,15 @@ public class UserService {
         if (updatedUser.getPreferredLocations() != null) {
             existingUser.setPreferredLocations(updatedUser.getPreferredLocations());
         }
+        if (updatedUser.getWeeklyAvailability() != null) {
+            existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
+        }
+        if (updatedUser.getRole() != null) {
+            existingUser.setRole(updatedUser.getRole());
+        }
+
+        // Update the user in the repository
+        return userRepository.save(existingUser);
 
         /*
         Weird Put Request body validation issue:
@@ -152,22 +179,7 @@ public class UserService {
         attributes will have the same issue. Bad practice for now but we prolly won't get around to
         refactoring all our PutMappings for a cleaner method
          */
-        StringBuilder defaultAvail = new StringBuilder();
-        for (int day = 0; day < 7; day++) {
-            for (int hour = 0; hour < 24; hour++) {
-                defaultAvail.append('0');
-            }
-        }
-        if (updatedUser.getWeeklyAvailability() != null &&
-                !updatedUser.getWeeklyAvailability().equals(defaultAvail.toString())) {
-            existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
-        }
-        if (updatedUser.getRole() != null &&
-                updatedUser.getRole() != User.Role.STUDENT) {
-            existingUser.setRole(updatedUser.getRole());
-        }
 
-        return userRepository.save(existingUser);
     }
 
     public void deleteUser(String userEmail) {

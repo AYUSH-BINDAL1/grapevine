@@ -90,8 +90,8 @@ public class CourseController {
     ) {
         // validate session and check if user is an instructor
         User currentUser = userService.validateSession(sessionId);
-        if (currentUser.getRole() != User.Role.INSTRUCTOR) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only instructors can view enrolled students");
+        if (currentUser.getRole() == User.Role.STUDENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only instructors can view their enrolled students");
         }
 
         // check if course exists
