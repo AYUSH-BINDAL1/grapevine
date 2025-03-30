@@ -87,26 +87,47 @@ public class GroupControllerTest {
     }
 
     @Test
-    void getAllShortGroups_Success() {
+    void getAllShortGroups_FilterPublic() {
         // Arrange
         ShortGroup group1 = new ShortGroup(1L, "Group 1", true);
-        ShortGroup group2 = new ShortGroup(2L, "Group 2", false);
+        List<ShortGroup> publicGroups = Arrays.asList(group1);
 
-        when(groupService.getAllShortGroups()).thenReturn(Arrays.asList(group1, group2));
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(groupService.getShortGroupsByPublicStatus(true)).thenReturn(publicGroups);
 
         // Act
-        List<ShortGroup> result = groupController.getAllShortGroups(testSessionId);
+        List<ShortGroup> result = groupController.getAllShortGroups(testSessionId, true);
 
         // Assert
         assertNotNull(result);
-        assertEquals(2, result.size());
+        assertEquals(1, result.size());
         assertEquals(1L, result.get(0).getGroupId());
         assertEquals("Group 1", result.get(0).getName());
         assertTrue(result.get(0).isPublic());
-        assertEquals(2L, result.get(1).getGroupId());
-        assertEquals("Group 2", result.get(1).getName());
-        assertFalse(result.get(1).isPublic());
-        verify(groupService).getAllShortGroups();
+        verify(groupService).getShortGroupsByPublicStatus(true);
+        verify(userService).validateSession(testSessionId);
+    }
+
+    @Test
+    void getAllShortGroups_FilterPrivate() {
+        // Arrange
+        ShortGroup group2 = new ShortGroup(2L, "Group 2", false);
+        List<ShortGroup> privateGroups = Arrays.asList(group2);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(groupService.getShortGroupsByPublicStatus(false)).thenReturn(privateGroups);
+
+        // Act
+        List<ShortGroup> result = groupController.getAllShortGroups(testSessionId, false);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(2L, result.get(0).getGroupId());
+        assertEquals("Group 2", result.get(0).getName());
+        assertFalse(result.get(0).isPublic());
+        verify(groupService).getShortGroupsByPublicStatus(false);
+        verify(userService).validateSession(testSessionId);
     }
 
     @Test

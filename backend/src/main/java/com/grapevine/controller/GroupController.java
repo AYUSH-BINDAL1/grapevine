@@ -10,8 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/groups")
@@ -44,6 +44,61 @@ public class GroupController {
 
         // Otherwise filter by isPublic flag
         return groupService.getShortGroupsByPublicStatus(isPublic);
+    }
+
+    @GetMapping("/{groupId}/check-access")
+    public ResponseEntity<?> checkGroupAccess(
+            @PathVariable Long groupId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+
+        // Check access using service method
+        boolean hasAccess = groupService.checkUserHasGroupAccess(groupId, currentUser);
+
+        return ResponseEntity.ok(Map.of("hasAccess", hasAccess));
+    }
+
+    @PostMapping("/{groupId}/request-access")
+    public ResponseEntity<?> requestGroupAccess(
+            @PathVariable Long groupId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        Group group = groupService.getGroupById(groupId);
+
+        // Check if the request is valid (group is private and user isn't already a member)
+        if (group.isPublic()) {
+            return ResponseEntity.badRequest().body("Group is public and doesn't require access requests");
+        }
+
+        if (group.getParticipants().contains(currentUser.getUserEmail()) ||
+                group.getHosts().contains(currentUser.getUserEmail())) {
+            return ResponseEntity.badRequest().body("You are already a member of this group");
+        }
+
+        // Send access requests
+        groupService.sendGroupAccessRequests(groupId, currentUser);
+
+        return ResponseEntity.ok("Access request sent to group hosts");
+    }
+
+    @GetMapping("/respond-access/{requestId}/{action}/{groupId}/{userEmail}")
+    public ResponseEntity<String> respondToAccessRequest(
+            @PathVariable String requestId,
+            @PathVariable String action,
+            @PathVariable Long groupId,
+            @PathVariable String userEmail) {
+
+        try {
+            String response = groupService.processAccessResponse(requestId, action, groupId, userEmail);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred: " + e.getMessage());
+        }
     }
 
     @PostMapping("/create")

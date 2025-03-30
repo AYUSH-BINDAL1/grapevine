@@ -12,10 +12,7 @@ import com.grapevine.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +20,7 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final UserService userService;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     public List<Group> getAllGroups() {
         return groupRepository.findAll();
@@ -50,6 +48,77 @@ public class GroupService {
         }
 
         return filteredGroups;
+    }
+
+    public boolean checkUserHasGroupAccess(Long groupId, User currentUser) {
+        Group group = getGroupById(groupId);
+
+        // If group is public, or user is already a participant/host, they have access
+        return group.isPublic() ||
+                group.getParticipants().contains(currentUser.getUserEmail()) ||
+                group.getHosts().contains(currentUser.getUserEmail());
+    }
+
+    public void sendGroupAccessRequests(Long groupId, User requestingUser) {
+        Group group = getGroupById(groupId);
+
+        // Generate a unique request ID
+        String requestId = UUID.randomUUID().toString();
+
+        // Send email to all hosts
+        for (String hostEmail : group.getHosts()) {
+            // Get host user to include their name in email
+            User host = userService.getUserByEmail(hostEmail);
+
+            // Create accept/reject URLs with the request ID
+            String acceptUrl = "http://localhost:8080/groups/respond-access/" + requestId +
+                    "/accept/" + groupId + "/" + requestingUser.getUserEmail();
+            String rejectUrl = "http://localhost:8080/groups/respond-access/" + requestId +
+                    "/reject/" + groupId + "/" + requestingUser.getUserEmail();
+
+            // Send the email
+            emailService.sendVerificationEmail(hostEmail,
+                    "Access Request: " + requestingUser.getName() + " wants to join " + group.getName() +
+                            "\nAccept: " + acceptUrl + "\nDeny: " + rejectUrl);
+        }
+    }
+
+    public String processAccessResponse(String requestId, String action, Long groupId, String userEmail) {
+        Group group = getGroupById(groupId);
+        User requestingUser = userService.getUserByEmail(userEmail);
+
+        if ("accept".equalsIgnoreCase(action)) {
+            // Add user to group participants
+            if (!group.getParticipants().contains(userEmail)) {
+                group.getParticipants().add(userEmail);
+
+                // Update user's joinedGroups list
+                if (requestingUser.getJoinedGroups() == null) {
+                    requestingUser.setJoinedGroups(new ArrayList<>());
+                }
+                if (!requestingUser.getJoinedGroups().contains(groupId)) {
+                    requestingUser.getJoinedGroups().add(groupId);
+                }
+
+                // Save changes
+                groupRepository.save(group);
+                userRepository.save(requestingUser);
+
+                return "<html><body><h2>Request Accepted</h2>" +
+                        "<p>You've accepted " + requestingUser.getName() +
+                        " into the group: " + group.getName() + "</p></body></html>";
+            } else {
+                return "<html><body><h2>Already a Member</h2>" +
+                        "<p>" + requestingUser.getName() +
+                        " is already a member of the group: " + group.getName() + "</p></body></html>";
+            }
+        } else if ("reject".equalsIgnoreCase(action)) {
+            return "<html><body><h2>Request Rejected</h2>" +
+                    "<p>You've rejected " + requestingUser.getName() +
+                    "'s request to join the group: " + group.getName() + "</p></body></html>";
+        } else {
+            throw new IllegalArgumentException("Invalid action: " + action);
+        }
     }
 
     public Group createGroup(Group group, User currentUser) {
