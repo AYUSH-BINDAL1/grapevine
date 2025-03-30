@@ -76,10 +76,44 @@ public class GroupService {
             String rejectUrl = "http://localhost:8080/groups/respond-access/" + requestId +
                     "/reject/" + groupId + "/" + requestingUser.getUserEmail();
 
-            // Send the email
-            emailService.sendVerificationEmail(hostEmail,
-                    "Access Request: " + requestingUser.getName() + " wants to join " + group.getName() +
-                            "\nAccept: " + acceptUrl + "\nDeny: " + rejectUrl);
+            // Format HTML email with buttons
+            StringBuilder emailContent = new StringBuilder();
+            emailContent.append("<html><body>");
+            emailContent.append("<h2>Group Access Request</h2>");
+            emailContent.append("<p>").append(requestingUser.getName()).append(" wants to join your group: <strong>").append(group.getName()).append("</strong></p>");
+            emailContent.append("<p>Click one of the following options:</p>");
+            emailContent.append("<a href=\"").append(acceptUrl).append("\" style=\"display: inline-block; background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; margin-right: 10px; border-radius: 4px;\">Accept</a>");
+            emailContent.append("<a href=\"").append(rejectUrl).append("\" style=\"display: inline-block; background-color: #f44336; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px;\">Deny</a>");
+            emailContent.append("</body></html>");
+
+            // Send HTML email with appropriate subject line
+            // Check if EmailService has an HTML email method
+            if (emailService.getClass().getDeclaredMethods().length > 0 &&
+                    Arrays.stream(emailService.getClass().getDeclaredMethods())
+                            .anyMatch(m -> m.getName().contains("sendHtmlEmail"))) {
+                // If an HTML email method exists, use it
+                try {
+                    emailService.getClass().getMethod("sendHtmlEmail",
+                                    String.class, String.class, String.class)
+                            .invoke(emailService, hostEmail,
+                                    "Join Group Request: " + group.getName(),
+                                    emailContent.toString());
+                } catch (Exception e) {
+                    // Fallback to plain text if reflection fails
+                    emailService.sendVerificationEmail(hostEmail,
+                            "Join Group Request: " + group.getName() +
+                                    "\n\n" + requestingUser.getName() + " wants to join your group." +
+                                    "\nAccept: " + acceptUrl +
+                                    "\nDeny: " + rejectUrl);
+                }
+            } else {
+                // Fallback to regular email if no HTML method available
+                emailService.sendVerificationEmail(hostEmail,
+                        "Join Group Request: " + group.getName() +
+                                "\n\n" + requestingUser.getName() + " wants to join your group." +
+                                "\nAccept: " + acceptUrl +
+                                "\nDeny: " + rejectUrl);
+            }
         }
     }
 
