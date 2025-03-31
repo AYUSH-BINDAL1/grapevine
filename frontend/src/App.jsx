@@ -17,7 +17,6 @@ import EventDetails from "./components/EventDetails";
 import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import './App.css';
-import './components/Groups.css';
 
 export const searchEnabled = true;
 
@@ -135,6 +134,7 @@ function Home() {
   return (
       <div className="app">
         <h1>Groups</h1>
+
         <button onClick={handleCreateGroup} className="create-group-button">
           Create Group
         </button>

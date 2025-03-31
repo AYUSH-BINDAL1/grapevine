@@ -173,6 +173,8 @@ h3{
 }
 
 /* groups */
+
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -189,15 +191,16 @@ h1 {
   padding: 20px;
 }
 
+
 .scroll-wrapper2 {
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  width: 100%;
-  max-width: 12000px;
+  max-width: 100%;
   margin: 0 auto;
   overflow: hidden;
+  padding: 0 20px;
 }
 
 .scroll-container2 {
@@ -332,3 +335,6 @@ h1 {
   font-size: 22px;
   font-weight: bold;
 }
+
+
+
