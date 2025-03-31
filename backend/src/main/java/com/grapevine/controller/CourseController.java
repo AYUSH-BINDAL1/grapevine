@@ -70,7 +70,7 @@ public class CourseController {
         // Validate session and check if user is an instructor
         User currentUser = userService.validateSession(sessionId);
 
-        return courseService.searchCoursesByRegex(query);
+        return courseService.searchCourses(query);
     }
 
     @GetMapping("/search/short")
@@ -78,10 +78,9 @@ public class CourseController {
             @RequestParam String query,
             @RequestHeader(name = "Session-Id", required = true) String sessionId
     ) {
-        // Validate session and check if user is an instructor
         User currentUser = userService.validateSession(sessionId);
 
-        return courseService.searchShortCoursesByRegex(query);
+        return courseService.searchShortCourses(query);
     }
 
     @GetMapping("/{courseKey}/enrolled-students")
@@ -91,8 +90,8 @@ public class CourseController {
     ) {
         // validate session and check if user is an instructor
         User currentUser = userService.validateSession(sessionId);
-        if (currentUser.getRole() != User.Role.INSTRUCTOR) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only instructors can view enrolled students");
+        if (currentUser.getRole() == User.Role.STUDENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only instructors can view their enrolled students");
         }
 
         // check if course exists

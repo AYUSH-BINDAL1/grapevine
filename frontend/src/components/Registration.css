@@ -1,0 +1,313 @@
+/* Registration Page Styles */
+
+.registration-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  background-image: linear-gradient(135deg, #f5f7fa 0%, #e4edf7 100%);
+  padding: 20px;
+}
+
+.registration-form {
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+  transition: all 0.3s ease;
+}
+
+.registration-form:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+}
+
+.registration-form h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 1.8rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.registration-form h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background-color: #8ebd89;
+  border-radius: 2px;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.9rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  border-color: #8ebd89;
+  box-shadow: 0 0 0 3px rgba(142, 189, 137, 0.15);
+  outline: none;
+}
+
+.form-group input[type="date"] {
+  color: #555;
+  font-family: inherit;
+}
+
+.form-group input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.form-group input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.form-group .input-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.9rem;
+  transform: translateY(-50%);
+  color: #aaa;
+  font-size: 1.1rem;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus + .input-icon {
+  color: #8ebd89;
+}
+
+/* Fix for input icons with labels - adjust the top positioning */
+.form-group label + input + .input-icon {
+  top: calc(50% + 10px); /* Adjust this value based on your label height */
+}
+
+/* Style for input with icons */
+.form-group input.with-icon {
+  padding-left: 2.5rem;
+}
+
+/* Additional fix for date input icons */
+.form-group .date-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.form-group .date-input-container .input-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.9rem;
+  transform: translateY(-50%);
+  color: #aaa;
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+
+.form-group .date-input-container input {
+  padding-left: 2.5rem;
+}
+
+.register-button {
+  width: 100%;
+  padding: 1rem;
+  background-color: #8ebd89;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+}
+
+.register-button:hover {
+  background-color: #7aa875;
+  transform: translateY(-2px);
+}
+
+.register-button:active {
+  transform: translateY(0);
+}
+
+.sign-in-button {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--secondary-color);
+  color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sign-in-button:hover {
+  background-color: var(--secondary-hover);
+  color: white;
+}
+
+.form-divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.form-divider::before,
+.form-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #e0e0e0;
+}
+
+.form-divider::before {
+  margin-right: 10px;
+}
+
+.form-divider::after {
+  margin-left: 10px;
+}
+
+.error-message {
+  color: #e53935;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 0.75rem;
+  background-color: rgba(229, 57, 53, 0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-message svg {
+  margin-right: 8px;
+}
+
+.form-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.form-footer a {
+  color: #8ebd89;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Password strength indicator */
+.password-strength {
+  height: 5px;
+  margin-top: 8px;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.password-strength.weak {
+  background-color: #f44336;
+  width: 33%;
+}
+
+.password-strength.medium {
+  background-color: #ff9800;
+  width: 66%;
+}
+
+.password-strength.strong {
+  background-color: #4caf50;
+  width: 100%;
+}
+
+.password-feedback {
+  font-size: 0.8rem;
+  margin-top: 5px;
+  color: #666;
+}
+
+/* Checkbox styling */
+.form-checkbox {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.form-checkbox input {
+  margin-right: 10px;
+  margin-top: 3px;
+}
+
+.form-checkbox label {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Animation for form appearance */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.registration-form {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .registration-form {
+    padding: 1.8rem;
+  }
+}
+
+/* Birthday label */
+.birthday-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+}

@@ -462,6 +462,8 @@ h1 {
   padding: 20px 0;
   scroll-behavior: smooth;
   scrollbar-width: none; /* Firefox */
+  min-height: 120px;
+  align-items: center;
 }
 
 .scroll-container2::-webkit-scrollbar {
@@ -529,4 +531,21 @@ h1 {
 .error h2 {
   color: #666;
   margin-bottom: 20px;
+}
+
+/* Add this to your CSS file */
+.empty-groups-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 120px; /* Match the approximate height of group cards */
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.empty-groups-message p {
+  margin: 0;
+  padding: 20px;
 }
