@@ -4,6 +4,7 @@ import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from "react-router-dom";
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
@@ -38,6 +39,8 @@ function Profile() {
   // Add a new state variable for password visibility
   const [showPassword, setShowPassword] = useState(false);
   const sessionId = localStorage.getItem('sessionId');
+  const navigate = useNavigate();
+  const [searchEnabled, setSearchEnabled] = useState(false);
 
   useEffect(() => {
 
@@ -66,6 +69,8 @@ function Profile() {
       if (parsedData.weeklyAvailability) {
         setAvailabilityString(parsedData.weeklyAvailability);
       }
+
+      setSearchEnabled[parsedData.role === 'admin' || parsedData.permissions?.includes('search_students')];
     }
     
     setTimeout(() => setIsLoading(false), 500);
