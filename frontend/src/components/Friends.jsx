@@ -402,7 +402,7 @@ function Friends() {
     };
 
     // Function to remove a friend - corrected version
-    const handleRemoveFriend = async (friendId, friendName, friendEmail) => {
+    const handleRemoveFriend = async (friendName, friendEmail) => {
         // Use toast for confirmation instead of window.confirm
         const confirmRemoval = async () => {
             try {
@@ -427,7 +427,6 @@ function Friends() {
                         }
                     });
                     
-                    // Filter by userEmail instead of id
                     setFriends(prev => prev.filter(friend => friend.userEmail !== friendEmail));
                     toast.dismiss('removing-friend');
                     toast.success(`${friendName} has been removed from your friends.`);

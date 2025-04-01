@@ -17,8 +17,13 @@ import EventDetails from "./components/EventDetails";
 import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import './App.css';
+import './components/Groups.css';
 
-export const searchEnabled = true;
+export let searchEnabled = true;
+/*export const setSearchEnabled = (value) => {
+  searchEnabled = value;
+};
+*/
 
 function Taskbar() {
   const navigate = useNavigate();
@@ -58,22 +63,61 @@ function Taskbar() {
   };
 
   return (
-      <div className="taskbar">
-        <nav className="taskbar-elem">
-          <h3 onClick={() => navigate("/home")} className={`elem ${isActive('/home') ? 'active' : ''}`}>Groups</h3>
-          <h3 onClick={() => navigate("/events")} className={`elem ${isActive('/events') ? 'active' : ''}`}>Events</h3>
-          <h3 onClick={() => navigate("/forum")} className={`elem ${isActive('/forum') ? 'active' : ''}`}>Forum</h3>
-          <h3 onClick={() => navigate("/messages")} className={`elem ${isActive('/messages') ? 'active' : ''}`}>Messages</h3>
-          <h3 onClick={() => navigate("/friends")} className={`elem ${isActive('/friends') ? 'active' : ''}`}>Friends</h3>
-          {searchEnabled && (
-              <h3 onClick={() => navigate("/courseSearch")} className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}>SearchDemo</h3>
-          )}
-          <img onClick={() => navigate("/profile")} className={`profile ${isActive('/profile') ? 'active-profile' : ''}`} src={profileImage} alt="Profile" />
-          <h3 onClick={isLoggingOut ? null : handlelogout} className={`elem logout ${isLoggingOut ? 'disabled' : ''}`} style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}>
-            {isLoggingOut ? 'Logging out...' : 'Logout'}
+    <div className="taskbar">
+      <nav className="taskbar-elem">
+        <h3 
+          onClick={() => navigate("/home")} 
+          className={`elem ${isActive('/home') ? 'active' : ''}`}
+        >
+          Groups
+        </h3>
+        <h3 
+          onClick={() => navigate("/events")} 
+          className={`elem ${isActive('/events') ? 'active' : ''}`}
+        >
+          Events
+        </h3>
+        <h3 
+          onClick={() => navigate("/forum")} 
+          className={`elem ${isActive('/forum') ? 'active' : ''}`}
+        >
+          Forum
+        </h3>
+        <h3 
+          onClick={() => navigate("/messages")} 
+          className={`elem ${isActive('/messages') ? 'active' : ''}`}
+        >
+          Messages
+        </h3>
+        <h3 
+          onClick={() => navigate("/friends")} 
+          className={`elem ${isActive('/friends') ? 'active' : ''}`}
+        >
+          Friends
+        </h3>
+        {searchEnabled && (
+          <h3 
+            onClick={() => navigate("/courseSearch")} 
+            className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}
+          >
+            Courses
           </h3>
-        </nav>
-      </div>
+        )}
+        <img 
+          onClick={() => navigate("/profile")} 
+          className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
+          src={profileImage} 
+          alt="Profile" 
+        />
+        <h3 
+          onClick={isLoggingOut ? null : handlelogout} 
+          className={`elem logout ${isLoggingOut ? 'disabled' : ''}`}
+          style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}
+        >
+          {isLoggingOut ? 'Logging out...' : 'Logout'}
+        </h3>
+      </nav>
+    </div>
   );
 }
 
@@ -106,8 +150,8 @@ function Home() {
         try {
           const response = await axios.get(
               `http://localhost:8080/users/${userEmail}/all-groups-short`,
-              { headers: { 'Session-Id': sessionId } }
-          );
+              { headers: { 'Session-Id': sessionId }
+          });
           setGroups(response.data);
         } catch (error) {
           console.error('Error fetching user groups:', error);
