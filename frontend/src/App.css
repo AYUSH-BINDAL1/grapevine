@@ -1,5 +1,5 @@
 .taskbar {
-  position: fixed; /* Change from sticky to fixed */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -21,13 +21,66 @@
   margin-right: 40px;
 }
 
+/* Active route highlighting for taskbar */
+.taskbar-elem .elem {
+  position: relative;
+  transition: color 0.3s ease, font-weight 0.3s ease;
+  padding: 10px 15px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.taskbar-elem .elem.active {
+  color: #8ebd89;
+  font-weight: 600;
+  background-color: rgba(142, 189, 137, 0.1);
+  animation: highlight 0.5s ease;
+}
+
+@keyframes highlight {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.taskbar-elem .elem::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: #8ebd89;
+  transition: all 0.3s ease;
+  transform: translateX(-60%);
+}
+
+.taskbar-elem .elem.active::after {
+  width: 70%;
+}
+
+.taskbar-elem .elem:hover::after {
+  width: 40%;
+}
+
+.taskbar-elem .elem:hover {
+  transform: translateY(-2px);
+  color: #8ebd89;
+}
+
+/* Active profile highlighting */
 .profile {
   height: 40px;
   width: 40px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #8ebd89;
-  transition: transform 0.2s;
+  transition: all 0.3s ease;
+}
+
+.profile.active-profile {
+  border-color: #8ebd89;
+  box-shadow: 0 0 0 2px rgba(142, 189, 137, 0.3);
 }
 
 .elem {
@@ -43,7 +96,38 @@
 }
 
 .profile:hover {
-  transform: scale(1.1);
+  transform: scale(1.05);
+}
+
+/* Special styling for logout button */
+.taskbar-elem .elem.logout {
+  margin-left: 15px;
+  color: #ff5e5e;
+}
+
+.taskbar-elem .elem.logout:hover {
+  color: #ff3333;
+}
+
+.taskbar-elem .elem.logout::after {
+  background-color: #ff5e5e;
+}
+
+/* Add these styles to your CSS */
+.elem.logout.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Optional loading indicator animation */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.elem.logout.disabled {
+  animation: pulse 1.5s infinite;
 }
 
 .main-container2{
@@ -100,8 +184,6 @@ h3{
   width: 100px;
   background-color: rgb(198, 188, 142);
 }
-
-/* ...existing code... */
 
 .registration-container {
   display: flex;
@@ -173,14 +255,13 @@ h3{
 }
 
 /* groups */
-
-
 body {
   margin: 0;
   font-family: Arial, sans-serif;
 }
 
 h1 {
+  margin-top: 10px;
   margin-bottom: 20px;
   text-align: center;
   color: #8ebd89;
@@ -188,19 +269,27 @@ h1 {
 
 .app {
   min-height: calc(100vh - 60px);
-  padding: 20px;
+  padding: 80px 20px 20px 20px;
 }
 
+.profile-page,
+.friends-page,
+.events-page,
+.forum-page,
+.messages-page,
+.course-search-page {
+  padding-top: 80px; /* Add top padding to all main content pages */
+}
 
 .scroll-wrapper2 {
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  max-width: 100%;
+  width: 100%;
+  max-width: 12000px;
   margin: 0 auto;
   overflow: hidden;
-  padding: 0 20px;
 }
 
 .scroll-container2 {
@@ -331,10 +420,28 @@ h1 {
 
 .section-header {
   text-align: center;
-  margin: 40px 0 10px 0;
+  margin: 20px 0 10px 0;
   font-size: 22px;
   font-weight: bold;
 }
 
+.groups-container {
+  margin-top: 60px;
+}
 
-
+@media (max-width: 768px) {
+  .taskbar-elem {
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  .taskbar-elem .elem {
+    font-size: 0.9rem;
+    padding: 8px 10px;
+  }
+  
+  .profile {
+    width: 35px;
+    height: 35px;
+  }
+}

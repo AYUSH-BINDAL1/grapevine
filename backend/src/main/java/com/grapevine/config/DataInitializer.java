@@ -1,10 +1,16 @@
 package com.grapevine.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grapevine.model.Location;
 import com.grapevine.repository.LocationRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 @Configuration
 public class DataInitializer {
@@ -13,7 +19,6 @@ public class DataInitializer {
     CommandLineRunner initLocations(LocationRepository locationRepository) {
         return args -> {
             if (locationRepository.count() == 0) {
-                // Add locations only if database is empty
 
                 //Will need to be updated to be more dynamic but this works for now
                 createLocation(locationRepository, "WALC", "Wilmeth Active Learning Center", "https://www.google.com/maps/search/Wilmeth+Active+Learning+Center+Purdue+University");
@@ -55,3 +60,5 @@ public class DataInitializer {
         repository.save(location);
     }
 }
+
+

@@ -52,8 +52,13 @@ public class EventService {
                         }
                     }
 
-                    // Max users filter
-                    if (filter.getMaxUsers() != null && event.getMaxUsers() > filter.getMaxUsers()) {
+                    // Filter by min users
+                    if (filter.getMinUsers() != null && event.getHosts().size() + event.getParticipants().size() < filter.getMinUsers()) {
+                        return false;
+                    }
+
+                    // Filter by max users
+                    if (filter.getMaxUsers() != null && event.getHosts().size() + event.getParticipants().size() > filter.getMaxUsers()) {
                         return false;
                     }
 

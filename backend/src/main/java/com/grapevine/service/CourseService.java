@@ -12,13 +12,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
+// TODO: pagination for getAllCourses and getAllShortCourses
 
 @Service
 @RequiredArgsConstructor
 public class CourseService {
     private final CourseRepository courseRepository;
+
+    // get courses
+
 
     public List<Course> getAllCourses() { // sorted by subject + course number
         return courseRepository.findAll(
@@ -31,34 +34,34 @@ public class CourseService {
         return courseRepository.findById(courseKey);
     }
 
+    // get short courses
+
     public List<CourseRepository.ShortCourse> getAllShortCourses() {
         return courseRepository.findAllShortCourses();
     }
 
     public Optional<CourseRepository.ShortCourse> getShortCourse(String courseKey) {
-        return courseRepository.findShortCourseByCourseKey(courseKey);
+        List<CourseRepository.ShortCourse> results = courseRepository.searchShortCourses(courseKey);
+        // Find the exact match rather than returning all search results
+        return results.stream()
+                .filter(course -> course.getCourseKey().equals(courseKey))
+                .findFirst();
     }
 
-    public List<Course> searchCoursesByRegex(String query) {
-        // escape special regex characters to treat the input as a literal string
-        String escapedQuery = Pattern.quote(query);
-        // create case-insensitive regex pattern
-        Pattern pattern = Pattern.compile(".*" + escapedQuery + ".*", Pattern.CASE_INSENSITIVE);
+    // search
 
-        return courseRepository.findAll().stream()
-                .filter(course -> pattern.matcher(course.getCourseKey()).matches())
-                .collect(Collectors.toList());
+    public List<Course> searchCourses(String query) {
+        List<Course> courses = courseRepository.searchCourses(query);
+        // Sort the courses by courseKey
+        courses.sort(Comparator.comparing(Course::getCourseKey));
+        return courses;
     }
 
-    public List<CourseRepository.ShortCourse> searchShortCoursesByRegex(String query) {
-        String escapedQuery = Pattern.quote(query);
-
-        Pattern pattern = Pattern.compile(".*" + escapedQuery + ".*", Pattern.CASE_INSENSITIVE);
-
-        return getAllShortCourses().stream()
-                .filter(course -> pattern.matcher(course.getCourseKey()).matches() ||
-                        (course.getTitle() != null && pattern.matcher(course.getTitle()).matches()))
-                .collect(Collectors.toList());
+    public List<CourseRepository.ShortCourse> searchShortCourses(String query) {
+        List<CourseRepository.ShortCourse> courses = courseRepository.searchShortCourses(query);
+        // Sort the courses by courseKey
+        courses.sort(Comparator.comparing(CourseRepository.ShortCourse::getCourseKey));
+        return courses;
     }
 
     @PostConstruct

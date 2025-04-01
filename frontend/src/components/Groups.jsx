@@ -1,6 +1,7 @@
 import './Groups.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import profileImage from '../assets/temp-profile.webp'; // Import the profile image for review avatars
 
 function Groups() {
@@ -8,6 +9,7 @@ function Groups() {
   const { id } = useParams(); // Get group ID from URL
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [ratingData, setRatingData] = useState(null);
   const [userReview, setUserReview] = useState({
     rating: 0,
     comment: ''
@@ -69,16 +71,40 @@ function Groups() {
   };
 
   useEffect(() => {
-    // Simulate API call to fetch group data
-    setLoading(true);
-    setTimeout(() => {
-      if (id && groupsData[id]) {
-        setGroup(groupsData[id]);
+    const fetchData = async () => {
+      setLoading(true);
+      const sessionId = localStorage.getItem('sessionId');
+
+      if (!sessionId) {
+        navigate('/');
+        return;
       }
-      setLoading(false);
-    }, 500);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+
+      try {
+        // Fetch the average rating
+        const ratingResponse = await axios.get(
+          `http://localhost:8080/groups/${id}/average-rating`,
+          {
+            headers: {
+              'Session-Id': sessionId,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        setRatingData(ratingResponse.data);
+
+        // Keep existing mock data loading
+        if (id && groupsData[id]) {
+          setGroup(groupsData[id]);
+        }
+      } catch (error) {
+        console.error('Error fetching rating:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id, navigate]);
 
   const handleBackClick = () => {
     navigate('/home');
@@ -187,7 +213,13 @@ function Groups() {
             {group.reviews && group.reviews.length > 0 && (
               <div className="group-meta-item">
                 <span className="meta-icon">★</span>
-                <span>{calculateAverageRating(group.reviews)}/5.0 ({group.reviews.length} reviews)</span>
+                <span>
+                {ratingData ? (
+                  ratingData.totalReviews > 0 
+                    ? `${ratingData.averageRating.toFixed(1)}/5.0 (${ratingData.totalReviews} reviews)`
+                    : '(N/A)/5.0 (0 reviews)'
+                ) : 'Loading...'}
+              </span>
               </div>
             )}
           </div>
@@ -285,4 +317,3 @@ function Groups() {
 }
 
 export default Groups;
-
