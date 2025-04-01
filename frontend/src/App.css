@@ -281,6 +281,22 @@ h1 {
   padding-top: 80px; /* Add top padding to all main content pages */
 }
 
+.create-group-button {
+  background-color: #8ebd89;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: background-color 0.2s;
+}
+
+.create-group-button:hover {
+  background-color: #7aa875;
+}
+
 .scroll-wrapper2 {
   display: flex;
   align-items: center;
