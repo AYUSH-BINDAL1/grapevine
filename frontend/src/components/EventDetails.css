@@ -96,3 +96,84 @@
     margin-top: 10px;
     line-height: 1.6;
 }
+
+.event-details-title-input {
+    font-size: 26px;
+    font-weight: bold;
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 10px;
+}
+
+.event-details-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+}
+
+.edit-button,
+.delete-button,
+.save-button,
+.cancel-button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.edit-button { background-color: #8ebd89; color: white; }
+.edit-button:hover { background-color: #7aa875; }
+
+.save-button { background-color: #4caf50; color: white; }
+.save-button:hover { background-color: #3e8e41; }
+
+.cancel-button { background-color: #888; color: white; }
+.cancel-button:hover { background-color: #666; }
+
+.delete-button { background-color: #d9534f; color: white; }
+.delete-button:hover { background-color: #c9302c; }
+
+textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px;
+    font-size: 14px;
+}
+
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.member-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: #f4f4f4;
+}
+
+.host-member {
+    background-color: #e6f7ff;
+    border-left: 4px solid #007bff;
+}
+
+.member-name {
+    font-weight: 500;
+}
+
+.member-role {
+    font-size: 12px;
+    color: #007bff;
+    font-weight: bold;
+    padding: 2px 8px;
+    background-color: #e6f0ff;
+    border-radius: 12px;
+}
+
