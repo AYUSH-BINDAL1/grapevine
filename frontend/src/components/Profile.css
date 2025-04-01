@@ -884,3 +884,54 @@ It also includes responsive design for different screen sizes. */
     padding: 12px;
   }
 }
+
+/* Role Selection Styles */
+.role-selector {
+  background-color: var(--white);
+  border-radius: var(--border-radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-light);
+  margin-top: 20px;
+}
+
+.role-selector h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 15px;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.role-selector h3::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 40px;
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
+
+.role-select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  background-color: var(--white);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.role-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(142, 189, 137, 0.2);
+  outline: none;
+}
+
+.role-select option {
+  padding: 10px;
+}

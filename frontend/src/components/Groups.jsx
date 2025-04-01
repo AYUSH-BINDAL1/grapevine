@@ -15,6 +15,10 @@ function Groups() {
     comment: ''
   });
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [myRating, setMyRating] = useState(null);
+  const [isMember, setIsMember] = useState(false);
 
   // Mock data for the group
   const groupsData = {
@@ -74,16 +78,27 @@ function Groups() {
     const fetchData = async () => {
       setLoading(true);
       const sessionId = localStorage.getItem('sessionId');
-
-      if (!sessionId) {
+      const userData = localStorage.getItem('userData');
+  
+      if (!sessionId || !userData) {
         navigate('/');
         return;
       }
-
+  
+      // First set the mock data for the group
+      if (id && groupsData[id]) {
+        setGroup(groupsData[id]);
+      } else {
+        setLoading(false);
+        return;
+      }
+  
       try {
-        // Fetch the average rating
-        const ratingResponse = await axios.get(
-          `http://localhost:8080/groups/${id}/average-rating`,
+        const userEmail = JSON.parse(userData).userEmail;
+        
+        // Fetch group details just to check membership
+        const groupResponse = await axios.get(
+          `http://localhost:8080/groups/${id}`,
           {
             headers: {
               'Session-Id': sessionId,
@@ -91,20 +106,87 @@ function Groups() {
             }
           }
         );
-        setRatingData(ratingResponse.data);
-
-        // Keep existing mock data loading
-        if (id && groupsData[id]) {
-          setGroup(groupsData[id]);
+  
+        // Check if user is a member
+        const isUserMember = groupResponse.data.participants.includes(userEmail);
+        setIsMember(isUserMember);
+  
+        try {
+          // Always fetch average rating regardless of membership
+          const ratingResponse = await axios.get(
+            `http://localhost:8080/groups/${id}/average-rating`,
+            {
+              headers: {
+                'Session-Id': sessionId,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          setRatingData(ratingResponse.data);
+  
+          // Only fetch personal rating if user is a member
+          if (isUserMember) {
+            const myRatingResponse = await axios.get(
+              `http://localhost:8080/groups/${id}/my-rating`,
+              {
+                headers: {
+                  'Session-Id': sessionId,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            setMyRating(myRatingResponse.data.score);
+            setUserRating(myRatingResponse.data.score);
+          }
+        } catch (ratingError) {
+          console.error('Error fetching ratings:', ratingError);
+          // Set default rating data even if fetch fails
+          setRatingData({ totalReviews: 0, averageRating: 0 });
         }
       } catch (error) {
-        console.error('Error fetching rating:', error);
+        console.error('Error fetching group data:', error);
+        if (error.response?.status === 404) {
+          setMyRating(null);
+          setUserRating(0);
+        }
       } finally {
         setLoading(false);
       }
     };
+  
     fetchData();
   }, [id, navigate]);
+  
+
+  const handleDeleteRating = async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+  
+    try {
+      await axios.delete(
+        `http://localhost:8080/groups/${id}/delete-rating`,
+        {
+          headers: {
+            'Session-Id': sessionId
+          }
+        }
+      );
+  
+      // Refresh the average rating
+      const ratingResponse = await axios.get(
+        `http://localhost:8080/groups/${id}/average-rating`,
+        { headers: { 'Session-Id': sessionId } }
+      );
+      setRatingData(ratingResponse.data);
+      setMyRating(null);
+      setUserRating(0);
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+    }
+  };  
 
   const handleBackClick = () => {
     navigate('/home');
@@ -161,6 +243,45 @@ function Groups() {
     ));
   };
 
+  const handleRatingSubmit = async () => {
+      if (!userRating) return;
+      
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        navigate('/');
+        return;
+      }
+    
+      setSubmittingRating(true);
+      try {
+        // Submit the new rating
+        await axios.post(
+          `http://localhost:8080/groups/${id}/add-rating`,
+          { score: userRating },
+          {
+            headers: {
+              'Session-Id': sessionId,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        // Get updated average rating
+        const ratingResponse = await axios.get(
+          `http://localhost:8080/groups/${id}/average-rating`,
+          { headers: { 'Session-Id': sessionId } }
+        );
+        
+        // Update states
+        setRatingData(ratingResponse.data);
+        setMyRating(userRating); // Set myRating to the rating we just submitted
+      } catch (error) {
+        console.error('Error submitting rating:', error);
+      } finally {
+        setSubmittingRating(false);
+      }
+  };
+
   // Calculate the average rating for a group
   const calculateAverageRating = (reviews) => {
     if (!reviews || reviews.length === 0) return 0;
@@ -210,18 +331,49 @@ function Groups() {
               <span className="meta-icon">🕒</span>
               <span>{group.meetingTimes}</span>
             </div>
-            {group.reviews && group.reviews.length > 0 && (
-              <div className="group-meta-item">
-                <span className="meta-icon">★</span>
+            <div className="group-meta-item">
+              <span className="meta-icon">★</span>
+              <div className="rating-container">
                 <span>
-                {ratingData ? (
-                  ratingData.totalReviews > 0 
-                    ? `${ratingData.averageRating.toFixed(1)}/5.0 (${ratingData.totalReviews} reviews)`
-                    : '(N/A)/5.0 (0 reviews)'
-                ) : 'Loading...'}
-              </span>
+                  {ratingData ? (
+                    ratingData.totalReviews > 0 
+                      ? `${ratingData.averageRating.toFixed(1)}/5.0 (${ratingData.totalReviews} reviews)`
+                      : '(N/A)'
+                  ) : 'Loading...'}
+                </span>
+                {isMember && (
+                  <>
+                    <div className="rating-stars">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className={`rating-star ${star <= userRating ? 'filled' : ''}`}
+                          onClick={() => setUserRating(star)}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    {myRating ? (
+                      <button
+                        className="delete-rating-button"
+                        onClick={handleDeleteRating}
+                      >
+                        Delete Rating
+                      </button>
+                    ) : (
+                      <button
+                        className="submit-rating-button"
+                        onClick={handleRatingSubmit}
+                        disabled={!userRating || submittingRating}
+                      >
+                        {submittingRating ? 'Submitting...' : 'Rate'}
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
-            )}
+            </div>
           </div>
           <button className="join-group-button">Join Group</button>
         </div>
