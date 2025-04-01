@@ -606,4 +606,23 @@ public class UserService {
 
         return friends;
     }
+
+    public User removeFriend(String userEmail, String friendEmail) {
+        User user = getUserByEmail(userEmail);
+        User friend = getUserByEmail(friendEmail);
+
+        // Check if they are actually friends
+        if (user.getFriends() == null || !user.getFriends().contains(friendEmail)) {
+            throw new IllegalStateException("This user is not in your friends list");
+        }
+
+        // Remove from each other's friend lists
+        user.getFriends().remove(friendEmail);
+        if (friend.getFriends() != null) {
+            friend.getFriends().remove(userEmail);
+        }
+
+        userRepository.save(friend);
+        return userRepository.save(user);
+    }
 }
