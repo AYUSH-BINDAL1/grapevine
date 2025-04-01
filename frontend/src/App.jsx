@@ -24,8 +24,7 @@ function Taskbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  
-  // Function to determine if a route is active
+
   const isActive = (path) => {
     if (path === '/home') return location.pathname === '/home' || location.pathname.startsWith('/group/');
     return location.pathname.startsWith(path);
@@ -34,115 +33,64 @@ function Taskbar() {
   const handlelogout = async () => {
     const conf = window.confirm("Are you sure you want to log out?");
     if (!conf) return;
-    
+
     try {
-      setIsLoggingOut(true); // Show loading state
-      
+      setIsLoggingOut(true);
       const sessionId = localStorage.getItem('sessionId');
       if (!sessionId) {
-        // If no session ID, just do client-side logout
         localStorage.clear();
         navigate("/");
         return;
       }
-      
-      // Attempt server-side logout
       await axios.delete('http://localhost:8080/users/logout', {
-        headers: {
-          'Session-Id': sessionId
-        }
+        headers: { 'Session-Id': sessionId }
       });
-      
-      // Success! Clear local storage and navigate
       localStorage.clear();
       navigate("/");
     } catch (error) {
       console.error('Error logging out:', error);
-      
-      // Even if server logout fails, still clear client side data
       localStorage.clear();
-      
-      // Show error but still navigate to login
       alert("There was an issue logging out from the server, but you've been logged out locally.");
       navigate("/");
     } finally {
-      setIsLoggingOut(false); // Reset loading state
+      setIsLoggingOut(false);
     }
   };
-  
+
   return (
-    <div className="taskbar">
-      <nav className="taskbar-elem">
-        <h3 
-          onClick={() => navigate("/home")} 
-          className={`elem ${isActive('/home') ? 'active' : ''}`}
-        >
-          Groups
-        </h3>
-        <h3 
-          onClick={() => navigate("/events")} 
-          className={`elem ${isActive('/events') ? 'active' : ''}`}
-        >
-          Events
-        </h3>
-        <h3 
-          onClick={() => navigate("/forum")} 
-          className={`elem ${isActive('/forum') ? 'active' : ''}`}
-        >
-          Forum
-        </h3>
-        <h3 
-          onClick={() => navigate("/messages")} 
-          className={`elem ${isActive('/messages') ? 'active' : ''}`}
-        >
-          Messages
-        </h3>
-        <h3 
-          onClick={() => navigate("/friends")} 
-          className={`elem ${isActive('/friends') ? 'active' : ''}`}
-        >
-          Friends
-        </h3>
-        {searchEnabled && (
-          <h3 
-            onClick={() => navigate("/courseSearch")} 
-            className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}
-          >
-            SearchDemo
+      <div className="taskbar">
+        <nav className="taskbar-elem">
+          <h3 onClick={() => navigate("/home")} className={`elem ${isActive('/home') ? 'active' : ''}`}>Groups</h3>
+          <h3 onClick={() => navigate("/events")} className={`elem ${isActive('/events') ? 'active' : ''}`}>Events</h3>
+          <h3 onClick={() => navigate("/forum")} className={`elem ${isActive('/forum') ? 'active' : ''}`}>Forum</h3>
+          <h3 onClick={() => navigate("/messages")} className={`elem ${isActive('/messages') ? 'active' : ''}`}>Messages</h3>
+          <h3 onClick={() => navigate("/friends")} className={`elem ${isActive('/friends') ? 'active' : ''}`}>Friends</h3>
+          {searchEnabled && (
+              <h3 onClick={() => navigate("/courseSearch")} className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}>SearchDemo</h3>
+          )}
+          <img onClick={() => navigate("/profile")} className={`profile ${isActive('/profile') ? 'active-profile' : ''}`} src={profileImage} alt="Profile" />
+          <h3 onClick={isLoggingOut ? null : handlelogout} className={`elem logout ${isLoggingOut ? 'disabled' : ''}`} style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}>
+            {isLoggingOut ? 'Logging out...' : 'Logout'}
           </h3>
-        )}
-        <img 
-          onClick={() => navigate("/profile")} 
-          className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
-          src={profileImage} 
-          alt="Profile" 
-        />
-        <h3 
-          onClick={isLoggingOut ? null : handlelogout} 
-          className={`elem logout ${isLoggingOut ? 'disabled' : ''}`}
-          style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}
-        >
-          {isLoggingOut ? 'Logging out...' : 'Logout'}
-        </h3>
-      </nav>
-    </div>
+        </nav>
+      </div>
   );
 }
 
-// Layout component that includes Taskbar and renders child routes
 function Layout() {
   return (
-    <>
-      <Taskbar />
-      <Outlet /> {/* This is where child routes will be rendered */}
-    </>
+      <>
+        <Taskbar />
+        <Outlet />
+      </>
   );
 }
 
 function Home() {
   const [groups, setGroups] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
-  const [showPrivate, setShowPrivate] = useState(false);
+  const [groupFilter, setGroupFilter] = useState("all"); // "all", "public", "private"
+  const [filteredGroups, setFilteredGroups] = useState([]);
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
 
@@ -173,6 +121,7 @@ function Home() {
             headers: { 'Session-Id': sessionId }
           });
           setAllGroups(allRes.data);
+          setFilteredGroups(allRes.data); // default shows all groups
         } catch (error) {
           console.error('Error fetching all groups:', error);
         }
@@ -200,6 +149,16 @@ function Home() {
     ref.current.scrollBy({ left: 300, behavior: 'smooth' });
   };
 
+  const applyGroupFilter = () => {
+    let result = allGroups;
+    if (groupFilter === "public") {
+      result = allGroups.filter(group => group.public === true);
+    } else if (groupFilter === "private") {
+      result = allGroups.filter(group => group.public === false);
+    }
+    setFilteredGroups(result);
+  };
+
   return (
       <div className="app">
         <h1>Groups</h1>
@@ -213,15 +172,11 @@ function Home() {
           <div className="scroll-container2" ref={scrollContainerRef}>
             {groups.length === 0 ? (
                 <div className="empty-groups-message">
-                    <p>You are not part of any groups.</p>
+                  <p>You are not part of any groups.</p>
                 </div>
             ) : (
                 groups.map((group) => (
-                    <div
-                        key={group.groupId}
-                        className="group-card"
-                        onClick={() => handleGroupClick(group.groupId)}
-                    >
+                    <div key={group.groupId} className="group-card" onClick={() => handleGroupClick(group.groupId)}>
                       <h3>{group.name}</h3>
                     </div>
                 ))
@@ -234,25 +189,28 @@ function Home() {
         <div className="all-groups-layout">
           <div className="filters-panel">
             <h3>Filters</h3>
-            <label>
-              <input
-                  type="checkbox"
-                  checked={showPrivate}
-                  onChange={(e) => setShowPrivate(e.target.checked)}
-              /> Private Groups
-            </label>
+            <label htmlFor="groupFilter">Filter by:</label>
+            <select
+                id="groupFilter"
+                value={groupFilter}
+                onChange={(e) => setGroupFilter(e.target.value)}
+            >
+              <option value="all">All Groups</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+            <button className="search-button" onClick={applyGroupFilter}>
+              Search
+            </button>
           </div>
           <div className="all-groups-grid">
-            {allGroups.length === 0 ? (
+            {filteredGroups.length === 0 ? (
                 <p>No groups found.</p>
             ) : (
-                allGroups.map((group) => (
-                    <div
-                        key={group.groupId}
-                        className="group-card"
-                        onClick={() => handleGroupClick(group.groupId)}
-                    >
+                filteredGroups.map((group) => (
+                    <div key={group.groupId} className="group-card" onClick={() => handleGroupClick(group.groupId)}>
                       <h3>{group.name}</h3>
+                      <p>{group.description}</p>
                     </div>
                 ))
             )}
@@ -264,32 +222,29 @@ function Home() {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public routes without taskbar */}
-        <Route path="/" element={<Login />} />
-        <Route path="/registration" element={<Registration />} />
-        <Route path="/confirmation" element={<Confirmation />} />
-        <Route path="/user/:userEmail" element={<UsrProfile />} />
-        <Route path="*" element={<Nopath />} />
-        
-        {/* Protected routes with taskbar */}
-        <Route element={<Layout />}>
-          <Route path="/home" element={<Home />} />
-          <Route path="/create-group" element={<CreateGroup />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/create-event" element={<CreateEvent />} />
-          <Route path="/forum" element={<Nopath />} /> {/* Placeholder */}
-          <Route path="/messages" element={<Nopath />} /> {/* Placeholder */}
-          <Route path="/friends" element={<Friends />} /> {/* Placeholder */}
-          <Route path="/courseSearch" element={<CourseSearch />} />
-          <Route path="/view-students" element={<ViewStudents />} />
-          <Route path="/group/:id" element={<Groups />} />
-          <Route path="/event/:eventId" element={<EventDetails />} />
-        </Route>
-      </Routes>
-    </Router>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/registration" element={<Registration />} />
+          <Route path="/confirmation" element={<Confirmation />} />
+          <Route path="/user/:userEmail" element={<UsrProfile />} />
+          <Route path="*" element={<Nopath />} />
+          <Route element={<Layout />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/create-group" element={<CreateGroup />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/create-event" element={<CreateEvent />} />
+            <Route path="/forum" element={<Nopath />} />
+            <Route path="/messages" element={<Nopath />} />
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/courseSearch" element={<CourseSearch />} />
+            <Route path="/view-students" element={<ViewStudents />} />
+            <Route path="/group/:id" element={<Groups />} />
+            <Route path="/event/:eventId" element={<EventDetails />} />
+          </Route>
+        </Routes>
+      </Router>
   );
 }
 
