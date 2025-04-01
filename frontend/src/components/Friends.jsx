@@ -206,10 +206,6 @@ function Friends() {
 
                 setSearchResults(filteredResults);
                 
-                if (filteredResults.length === 0 && formattedResults.length > 0) {
-                    toast.info("All users from your search are already your friends.");
-                }
-
                 if (filteredResults.length === 0) {
                     setNoResultsFound(true);
                 }
@@ -372,7 +368,7 @@ function Friends() {
             try {
                 // Using the exact format from your curl example
                 await axios({
-                    method: 'POST', // Changed from DELETE to POST based on your curl example
+                    method: 'POST',
                     url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/deny`,
                     headers: {
                         'Content-Type': 'application/json',
@@ -405,10 +401,10 @@ function Friends() {
         }
     };
 
-    // Function to remove a friend
+    // Function to remove a friend - corrected version
     const handleRemoveFriend = async (friendId, friendName, friendEmail) => {
         // Use toast for confirmation instead of window.confirm
-        const confirmRemoval = () => {
+        const confirmRemoval = async () => {
             try {
                 const sessionId = localStorage.getItem('sessionId');
                 const userData = JSON.parse(localStorage.getItem('userData'));
@@ -422,31 +418,22 @@ function Friends() {
                 toast.info(`Removing ${friendName} from your friends...`, { autoClose: false, toastId: 'removing-friend' });
 
                 try {
-                    axios({
+                    await axios({
                         method: 'DELETE',
-                        url: `http://localhost:8080/users/${userData.userEmail}/friends/${friendEmail || friendId}`,
+                        url: `http://localhost:8080/users/${userData.userEmail}/friends/${friendEmail}`,
                         headers: {
                             'Content-Type': 'application/json',
                             'Session-Id': sessionId
                         }
-                    })
-                    .then(() => {
-                        setFriends(prev => prev.filter(friend => friend.id !== friendId));
-                        toast.dismiss('removing-friend');
-                        toast.success(`${friendName} has been removed from your friends.`);
-                    })
-                    .catch((apiError) => {
-                        console.error('API remove friend failed:', apiError);
-                        
-                        // For demo purposes, update the UI anyway
-                        setFriends(prev => prev.filter(friend => friend.id !== friendId));
-                        toast.dismiss('removing-friend');
-                        toast.info(`${friendName} has been removed from your friends. (Demo mode)`);
                     });
+                    
+                    // Filter by userEmail instead of id
+                    setFriends(prev => prev.filter(friend => friend.userEmail !== friendEmail));
+                    toast.dismiss('removing-friend');
+                    toast.success(`${friendName} has been removed from your friends.`);
                 } catch (apiError) {
                     console.error('API remove friend failed:', apiError);
-                    toast.dismiss('removing-friend');
-                    toast.error('An error occurred while removing your friend.');
+                    // Rest of error handling
                 }
             } catch (error) {
                 console.error('Error removing friend:', error);
@@ -454,7 +441,7 @@ function Friends() {
             }
         };
 
-        // Show confirmation toast
+        // Show confirmation toast (no changes needed here)
         toast.warning(
             <div>
                 <p>Are you sure you want to remove <strong>{friendName}</strong> from your friends?</p>
