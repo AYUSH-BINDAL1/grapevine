@@ -466,4 +466,23 @@ public class UserController {
         List<User> friends = userService.getUserFriends(userEmail);
         return ResponseEntity.ok(friends);
     }
+
+    @DeleteMapping("/{userEmail}/friends/{friendEmail}")
+    public ResponseEntity<User> removeFriend(
+            @PathVariable String userEmail,
+            @PathVariable String friendEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only modify your own friends list");
+        }
+
+        try {
+            User updatedUser = userService.removeFriend(userEmail, friendEmail);
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
 }
