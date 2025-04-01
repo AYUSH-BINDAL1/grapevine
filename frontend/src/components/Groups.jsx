@@ -32,6 +32,10 @@ function Groups() {
     isHost: false,
     isMember: false
   });
+  const [userRating, setUserRating] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [myRating, setMyRating] = useState(null);
+  const [isMember, setIsMember] = useState(false);
 
   // Mock data for the group
   const groupsData = {
@@ -94,8 +98,8 @@ function Groups() {
     const sessionId = localStorage.getItem('sessionId');
     const userData = JSON.parse(localStorage.getItem('userData'));
     const userEmail = userData?.userEmail;
-
-    if (!sessionId) {
+  
+    if (!sessionId || !userData) {
       navigate('/');
       return;
     }
@@ -285,6 +289,8 @@ function Groups() {
     
     // Enhanced error inspection
     if (error.response) {
+          setMyRating(null);
+          setUserRating(0);
       console.log('Server responded with status:', error.response.status);
       console.log('Response data:', error.response.data);
     } else if (error.request) {
@@ -342,6 +348,37 @@ function Groups() {
   useEffect(() => {
     console.log('accessDenied state changed:', accessDenied);
   }, [accessDenied]);
+  
+
+  const handleDeleteRating = async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+  
+    try {
+      await axios.delete(
+        `http://localhost:8080/groups/${id}/delete-rating`,
+        {
+          headers: {
+            'Session-Id': sessionId
+          }
+        }
+      );
+  
+      // Refresh the average rating
+      const ratingResponse = await axios.get(
+        `http://localhost:8080/groups/${id}/average-rating`,
+        { headers: { 'Session-Id': sessionId } }
+      );
+      setRatingData(ratingResponse.data);
+      setMyRating(null);
+      setUserRating(0);
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+    }
+  };  
 
   const handleBackClick = () => {
     navigate('/home');
@@ -396,6 +433,45 @@ function Groups() {
         ★
       </span>
     ));
+  };
+
+  const handleRatingSubmit = async () => {
+      if (!userRating) return;
+      
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        navigate('/');
+        return;
+      }
+    
+      setSubmittingRating(true);
+      try {
+        // Submit the new rating
+        await axios.post(
+          `http://localhost:8080/groups/${id}/add-rating`,
+          { score: userRating },
+          {
+            headers: {
+              'Session-Id': sessionId,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        // Get updated average rating
+        const ratingResponse = await axios.get(
+          `http://localhost:8080/groups/${id}/average-rating`,
+          { headers: { 'Session-Id': sessionId } }
+        );
+        
+        // Update states
+        setRatingData(ratingResponse.data);
+        setMyRating(userRating); // Set myRating to the rating we just submitted
+      } catch (error) {
+        console.error('Error submitting rating:', error);
+      } finally {
+        setSubmittingRating(false);
+      }
   };
 
   // Calculate the average rating for a group
@@ -580,18 +656,49 @@ function Groups() {
               <span className="meta-icon">🕒</span>
               <span>{group.meetingTimes}</span>
             </div>
-            {group.reviews && group.reviews.length > 0 && (
-              <div className="group-meta-item">
-                <span className="meta-icon">★</span>
+            <div className="group-meta-item">
+              <span className="meta-icon">★</span>
+              <div className="rating-container">
                 <span>
-                {ratingData ? (
-                  ratingData.totalReviews > 0 
-                    ? `${ratingData.averageRating.toFixed(1)}/5.0 (${ratingData.totalReviews} reviews)`
-                    : '(N/A)/5.0 (0 reviews)'
-                ) : 'Loading...'}
-              </span>
+                  {ratingData ? (
+                    ratingData.totalReviews > 0 
+                      ? `${ratingData.averageRating.toFixed(1)}/5.0 (${ratingData.totalReviews} reviews)`
+                      : '(N/A)'
+                  ) : 'Loading...'}
+                </span>
+                {isMember && (
+                  <>
+                    <div className="rating-stars">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className={`rating-star ${star <= userRating ? 'filled' : ''}`}
+                          onClick={() => setUserRating(star)}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    {myRating ? (
+                      <button
+                        className="delete-rating-button"
+                        onClick={handleDeleteRating}
+                      >
+                        Delete Rating
+                      </button>
+                    ) : (
+                      <button
+                        className="submit-rating-button"
+                        onClick={handleRatingSubmit}
+                        disabled={!userRating || submittingRating}
+                      >
+                        {submittingRating ? 'Submitting...' : 'Rate'}
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
-            )}
+            </div>
           </div>
           
           {/* Only show join button if user is not already a host or member */}

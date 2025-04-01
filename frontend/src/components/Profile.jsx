@@ -5,6 +5,7 @@ import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from "react-router-dom";
+import { searchEnabled } from '../App';
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
@@ -41,18 +42,19 @@ function Profile() {
   const sessionId = localStorage.getItem('sessionId');
   const navigate = useNavigate();
   const [searchEnabled, setSearchEnabled] = useState(false);
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
-
     if (!sessionId) {
       toast.error("Session expired. Please login again.");
       setTimeout(() => window.location.href = '/', 2000);
       return;
     }
-
+  
     // Load user data from localStorage
     setIsLoading(true);
     const storedUserData = localStorage.getItem('userData');
+    
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
       setUserData(parsedData);
@@ -69,12 +71,37 @@ function Profile() {
       if (parsedData.weeklyAvailability) {
         setAvailabilityString(parsedData.weeklyAvailability);
       }
-
-      setSearchEnabled[parsedData.role === 'admin' || parsedData.permissions?.includes('search_students')];
+  
+      // Fetch current role from backend
+      const fetchUserRole = async () => {
+        try {
+          const response = await axios.get(
+            `http://localhost:8080/users/${parsedData.userEmail}`,
+            { headers: { 'Session-Id': sessionId } }
+          );
+          
+          const role = response.data.role || 'Student';
+          setUserRole(role);
+          
+          // Update searchEnabled based on role
+          const isTeachingRole = ['INSTRUCTOR', 'GTA', 'UTA'].includes(role);
+          setSearchEnabled(isTeachingRole);
+          
+          // Update global searchEnabled variable
+          window.searchEnabled = isTeachingRole;
+          
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+          toast.error('Failed to fetch user role');
+        }
+      };
+  
+      fetchUserRole();
     }
     
     setTimeout(() => setIsLoading(false), 500);
   }, []);
+  
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -102,6 +129,45 @@ function Profile() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditingProfile, isEditingDescription]);
+
+  const handleRoleChange = async (event) => {
+    const newRole = event.target.value;
+    
+    try {
+      const response = await axios.put(
+        `http://localhost:8080/users/${userData.userEmail}`,
+        { role: newRole },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          }
+        }
+      );
+  
+      if (response.status === 200) {
+        setUserRole(newRole);
+        
+        // Update searchEnabled based on new role
+        const isTeachingRole = ['INSTRUCTOR', 'GTA', 'UTA'].includes(newRole);
+        setSearchEnabled(isTeachingRole);
+        
+        // Update global searchEnabled variable
+        window.searchEnabled = isTeachingRole;
+        
+        // Update localStorage
+        const updatedUserData = { ...userData, role: newRole };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+        
+        toast.success('Role updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Failed to update role. Please try again.');
+    }
+  };
+  
 
   const handleAvailabilityChange = (e) => {
     setAvailability({
@@ -459,6 +525,19 @@ function Profile() {
           ) : (
             <p className="description-details">{userData?.biography || "No description available"}</p>
           )}
+        </div>
+        <div className="role-selector">
+          <h3>Role</h3>
+          <select 
+            className="role-select"
+            value={userRole}
+            onChange={handleRoleChange}
+          >
+            <option value="Student">Student</option>
+            <option value="INSTRUCTOR">Instructor</option>
+            <option value="GTA">Graduate Teaching Assistant</option>
+            <option value="UTA">Undergraduate Teaching Assistant</option>
+          </select>
         </div>
         {searchEnabled && (
           <button 

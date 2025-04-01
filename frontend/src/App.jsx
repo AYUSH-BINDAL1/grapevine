@@ -19,7 +19,11 @@ import UsrProfile from './components/UsrProfile';
 import './App.css';
 import './components/Groups.css';
 
-export const searchEnabled = true;
+export let searchEnabled = true;
+/*export const setSearchEnabled = (value) => {
+  searchEnabled = value;
+};
+*/
 
 function Taskbar() {
   const navigate = useNavigate();
@@ -109,7 +113,7 @@ function Taskbar() {
             onClick={() => navigate("/courseSearch")} 
             className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}
           >
-            SearchDemo
+            Courses
           </h3>
         )}
         <img 
