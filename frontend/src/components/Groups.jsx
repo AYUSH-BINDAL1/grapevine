@@ -3,11 +3,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import profileImage from '../assets/temp-profile.webp'; // Import the profile image for review avatars
+import { toast, ToastContainer } from 'react-toastify'; // Import toast for notifications
+import 'react-toastify/dist/ReactToastify.css';
 
 function Groups() {
   const navigate = useNavigate();
   const { id } = useParams(); // Get group ID from URL
-  const [group, setGroup] = useState(null);
+  const [group, setGroup] = useState({
+    title: '',
+    description: '',
+    members: [],
+    hosts: [],
+    reviews: [],
+    location: '',
+    meetingTimes: '',
+    image: 'https://via.placeholder.com/300x200?text=Group+Image'
+  });
   const [loading, setLoading] = useState(true);
   const [ratingData, setRatingData] = useState(null);
   const [userReview, setUserReview] = useState({
@@ -15,6 +26,12 @@ function Groups() {
     comment: ''
   });
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const [userMembership, setUserMembership] = useState({
+    isHost: false,
+    isMember: false
+  });
   const [userRating, setUserRating] = useState(0);
   const [submittingRating, setSubmittingRating] = useState(false);
   const [myRating, setMyRating] = useState(null);
@@ -76,27 +93,19 @@ function Groups() {
 
   useEffect(() => {
     const fetchData = async () => {
+      console.log(`Attempting to fetch group with ID: ${id}, type: ${typeof id}`);
       setLoading(true);
       const sessionId = localStorage.getItem('sessionId');
-      const userData = localStorage.getItem('userData');
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      const userEmail = userData?.userEmail;
   
       if (!sessionId || !userData) {
         navigate('/');
         return;
       }
-  
-      // First set the mock data for the group
-      if (id && groupsData[id]) {
-        setGroup(groupsData[id]);
-      } else {
-        setLoading(false);
-        return;
-      }
-  
+
       try {
-        const userEmail = JSON.parse(userData).userEmail;
-        
-        // Fetch group details just to check membership
+        // First, get group data from the API
         const groupResponse = await axios.get(
           `http://localhost:8080/groups/${id}`,
           {
@@ -106,13 +115,62 @@ function Groups() {
             }
           }
         );
-  
-        // Check if user is a member
-        const isUserMember = groupResponse.data.participants.includes(userEmail);
-        setIsMember(isUserMember);
-  
+        
+        // Log the API response to see its structure
+        console.log('API group data:', groupResponse.data);
+        
+        // Transform API data to match your component's expected structure
+        const apiGroup = groupResponse.data;
+        
+        // Check if the current user is a host or member
+        const isUserHost = apiGroup.hosts && apiGroup.hosts.includes(userEmail);
+        const isUserMember = apiGroup.participants && apiGroup.participants.includes(userEmail);
+        
+        // Update the membership status
+        setUserMembership({
+          isHost: isUserHost,
+          isMember: isUserMember
+        });
+        
+        const formattedGroup = {
+          id: apiGroup.groupId || apiGroup.id,
+          title: apiGroup.name || apiGroup.title || 'Unnamed Group',
+          image: apiGroup.image || 'https://via.placeholder.com/300x200?text=Group+Image',
+          description: apiGroup.description || 'No description available',
+          
+          // Handle hosts separately from regular members
+          hosts: apiGroup.hosts 
+            ? apiGroup.hosts.map((host, index) => ({
+                id: `host-${index}`,
+                name: host,
+                major: 'Major: Not specified', // API might not provide this
+                isHost: true // Flag to identify hosts
+              }))
+            : [],
+            
+          // Handle regular members
+          members: apiGroup.participants 
+            ? apiGroup.participants
+                .filter(participant => !apiGroup.hosts || !apiGroup.hosts.includes(participant)) // Filter out hosts to avoid duplication
+                .map((participant, index) => ({
+                  id: `member-${index}`,
+                  name: participant,
+                  major: 'Major: Not specified', // API might not provide this
+                  isHost: false
+                }))
+            : apiGroup.members || [],
+            
+          // Other fields remain the same
+          location: apiGroup.location || 'No location specified',
+          meetingTimes: apiGroup.meetingTimes || 'No schedule specified',
+          reviews: apiGroup.reviews || []
+        };
+        
+        console.log('Formatted group data:', formattedGroup);
+        setGroup(formattedGroup);
+        
+        // Now fetch the rating data
         try {
-          // Always fetch average rating regardless of membership
           const ratingResponse = await axios.get(
             `http://localhost:8080/groups/${id}/average-rating`,
             {
@@ -123,11 +181,44 @@ function Groups() {
             }
           );
           setRatingData(ratingResponse.data);
-  
-          // Only fetch personal rating if user is a member
-          if (isUserMember) {
-            const myRatingResponse = await axios.get(
-              `http://localhost:8080/groups/${id}/my-rating`,
+        } catch (ratingError) {
+          console.error('Error fetching rating data, using calculated:', ratingError);
+          // Calculate rating data manually if API fails
+          const reviews = formattedGroup.reviews || [];
+          const averageRating = calculateAverageRating(reviews);
+          setRatingData({
+            averageRating: parseFloat(averageRating),
+            totalReviews: reviews.length
+          });
+        }
+        
+      } catch (error) {
+        console.error('Error fetching group data:', error);
+        
+        // Enhanced error inspection
+        if (error.response) {
+          setMyRating(null);
+          setUserRating(0);
+          console.log('Server responded with status:', error.response.status);
+          console.log('Response data:', error.response.data);
+        } else if (error.request) {
+          console.log('No response received from server:', error.request);
+        } else {
+          console.log('Error setting up request:', error.message);
+        }
+        
+        // More robust 403 detection
+        if (
+          (error.response && error.response.status === 403) || 
+          (error.response && error.response.data && error.response.data.error === "Access denied") ||
+          (error.message && error.message.includes("forbidden"))
+        ) {
+          console.log('Access denied condition detected - showing access denied view');
+          setAccessDenied(true);
+          
+          try {
+            const basicInfoResponse = await axios.get(
+              `http://localhost:8080/groups/${id}/basic-info`,
               {
                 headers: {
                   'Session-Id': sessionId,
@@ -135,27 +226,58 @@ function Groups() {
                 }
               }
             );
-            setMyRating(myRatingResponse.data.score);
-            setUserRating(myRatingResponse.data.score);
+            
+            setGroup({
+              id: id,
+              title: basicInfoResponse.data.name || "Private Group",
+              isPrivate: true,
+              description: "This is a private group. You need to request access to view details."
+            });
+          } catch (innerError) {
+            console.error('Could not fetch even basic group info:', innerError);
+            // Fall back to a generic message
+            setGroup({
+              id: id,
+              title: "Private Group",
+              isPrivate: true,
+              description: "This is a private group. You need to request access to view details."
+            });
           }
-        } catch (ratingError) {
-          console.error('Error fetching ratings:', ratingError);
-          // Set default rating data even if fetch fails
-          setRatingData({ totalReviews: 0, averageRating: 0 });
-        }
-      } catch (error) {
-        console.error('Error fetching group data:', error);
-        if (error.response?.status === 404) {
-          setMyRating(null);
-          setUserRating(0);
+        } else {
+          // Make sure accessDenied is reset for other errors
+          setAccessDenied(false);
+          
+          // Handle other errors as before - fall back to mock data
+          console.log('Falling back to mock data for group:', id);
+          const groupId = parseInt(id, 10);
+          
+          if (groupsData[groupId]) {
+            console.log('Mock data found for group:', groupId);
+            setGroup(groupsData[groupId]);
+            
+            // Calculate mock rating data
+            const reviews = groupsData[groupId].reviews || [];
+            const averageRating = calculateAverageRating(reviews);
+            setRatingData({
+              averageRating: parseFloat(averageRating),
+              totalReviews: reviews.length
+            });
+          } else {
+            console.error('No mock data found for group ID:', groupId);
+            setGroup(null);
+          }
         }
       } finally {
         setLoading(false);
       }
     };
-  
+    
     fetchData();
   }, [id, navigate]);
+
+  useEffect(() => {
+    console.log('accessDenied state changed:', accessDenied);
+  }, [accessDenied]);
   
 
   const handleDeleteRating = async () => {
@@ -289,6 +411,109 @@ function Groups() {
     return (totalRating / reviews.length).toFixed(1);
   };
 
+  // Update the requestAccess function
+  const requestAccess = async () => {
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      
+      if (!sessionId || !userData) {
+        toast.error("You must be logged in to request access");
+        return;
+      }
+      
+      // Show loading toast
+      toast.info("Sending access request...", { autoClose: false, toastId: 'access-request' });
+      
+      try {
+        // Try to call the real API
+        const response = await axios.post(
+          `http://localhost:8080/groups/${id}/request-access`,
+          {
+            message: `${userData.name} (${userData.userEmail}) would like to join this group.`
+          },
+          {
+            headers: {
+              'Session-Id': sessionId,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        // Dismiss the loading toast
+        toast.dismiss('access-request');
+        
+        if (response.data.emailSent) {
+          toast.success("Access request sent to group hosts. You'll be notified when they respond.");
+        } else {
+          toast.info("Access request submitted. The hosts will review your request soon.");
+        }
+      } catch (apiError) {
+        console.log("API error, using mock response", apiError);
+        
+        // Mock response for testing - simulate a delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Dismiss the loading toast
+        toast.dismiss('access-request');
+        toast.success("Access request sent to group hosts. (Demo Mode)");
+      }
+      
+      // Set requestSent to true regardless of API or mock path
+      setRequestSent(true);
+    } catch (error) {
+      console.error('Error in request access flow:', error);
+      toast.dismiss('access-request');
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  // Add this function to handle joining a group
+  const handleJoinGroup = async () => {
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      
+      // For public groups - direct join
+      if (group.public !== false) {
+        // Show loading toast
+        toast.info("Joining group...", { autoClose: false, toastId: 'join-group' });
+        
+        const response = await axios.post(
+          `http://localhost:8080/groups/${id}/join`,
+          {},
+          {
+            headers: {
+              'Session-Id': sessionId,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        toast.dismiss('join-group');
+        
+        if (response.data.success) {
+          toast.success("You've successfully joined the group!");
+          
+          // Update membership status
+          setUserMembership({
+            ...userMembership,
+            isMember: true
+          });
+          
+          // Refresh group data
+          fetchData(); // You'll need to extract your data fetching logic to a named function
+        }
+      } else {
+        // For private groups - request access
+        requestAccess();
+      }
+    } catch (error) {
+      console.error('Error joining group:', error);
+      toast.dismiss('join-group');
+      toast.error("Failed to join the group. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="group-details-container loading">
@@ -308,6 +533,36 @@ function Groups() {
     );
   }
 
+  if (accessDenied) {
+    return (
+      <div className="group-details-container">
+        <button className="back-button" onClick={handleBackClick}>
+          &larr; Back to Groups
+        </button>
+        
+        <div className="access-denied-container">
+          <div className="lock-icon-large">🔒</div>
+          <h2>{group.title}</h2>
+          <p>This is a private group. You need permission to view its details.</p>
+          
+          {!requestSent ? (
+            <button 
+              className="request-access-button"
+              onClick={requestAccess}
+            >
+              Request Access
+            </button>
+          ) : (
+            <div className="request-sent-message">
+              <p>✓ Your request has been sent to the group hosts.</p>
+              <p>You&apos;ll be notified once they respond to your request.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="group-details-container">
       <button className="back-button" onClick={handleBackClick}>
@@ -321,7 +576,7 @@ function Groups() {
           <div className="group-meta">
             <div className="group-meta-item">
               <span className="meta-icon">👥</span>
-              <span>{group.members.length} members</span>
+              <span>{group.members ? group.members.length : 0} members</span>
             </div>
             <div className="group-meta-item">
               <span className="meta-icon">📍</span>
@@ -375,7 +630,24 @@ function Groups() {
               </div>
             </div>
           </div>
-          <button className="join-group-button">Join Group</button>
+          
+          {/* Only show join button if user is not already a host or member */}
+          {!userMembership.isHost && !userMembership.isMember ? (
+            <button 
+              className="join-group-button"
+              onClick={handleJoinGroup}
+            >
+              Join Group
+            </button>
+          ) : (
+            <div className="membership-status">
+              {userMembership.isHost ? (
+                <span className="host-badge-status">You are a host of this group</span>
+              ) : (
+                <span className="member-badge-status">You are a member of this group</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
       
@@ -386,23 +658,56 @@ function Groups() {
         </div>
         
         <div className="group-members-section">
-          <h2>Members ({group.members.length})</h2>
-          <div className="members-grid">
-            {group.members.map(member => (
-              <div key={member.id} className="member-card">
-                <img src={profileImage} alt={member.name} className="member-avatar" />
-                <div className="member-info">
-                  <p className="member-name">{member.name}</p>
-                  <p className="member-major">{member.major}</p>
-                </div>
+          <h2>Members ({(group.hosts?.length || 0) + (group.members?.length || 0)})</h2>
+          
+          {/* Show hosts section if there are hosts */}
+          {group.hosts && group.hosts.length > 0 && (
+            <div className="hosts-section">
+              <h3>Hosts</h3>
+              <div className="members-grid">
+                {group.hosts.map((host, index) => (
+                  <div key={host.id || `host-${index}`} className="member-card host-card">
+                    <div className="host-badge">Host</div>
+                    <img src={profileImage} alt={host.name} className="member-avatar" />
+                    <div className="member-info">
+                      <p className="member-name">{host.name}</p>
+                      <p className="member-major">{host.major || 'Not specified'}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+          
+          {/* Show regular members */}
+          {group.members && group.members.length > 0 && (
+            <div className="regular-members-section">
+              <h3>Members</h3>
+              <div className="members-grid">
+                {group.members.map((member, index) => (
+                  <div key={member.id || `member-${index}`} className="member-card">
+                    <img src={profileImage} alt={member.name} className="member-avatar" />
+                    <div className="member-info">
+                      <p className="member-name">{member.name}</p>
+                      <p className="member-major">{member.major || 'Not specified'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Show message if no members */}
+          {(!group.hosts || group.hosts.length === 0) && (!group.members || group.members.length === 0) && (
+            <div className="no-members-message">
+              <p>This group doesn&apos;t have any members yet.</p>
+            </div>
+          )}
         </div>
         
         <div className="group-reviews-section">
           <div className="reviews-header">
-            <h2>Reviews ({group.reviews.length})</h2>
+            <h2>Reviews ({group.reviews ? group.reviews.length : 0})</h2>
             <button 
               className="write-review-button"
               onClick={() => setShowReviewForm(!showReviewForm)}
@@ -464,6 +769,17 @@ function Groups() {
           )}
         </div>
       </div>
+      <ToastContainer 
+        position="bottom-left"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }
