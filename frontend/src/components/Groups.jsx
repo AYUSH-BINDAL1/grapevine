@@ -91,88 +91,40 @@ function Groups() {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      console.log(`Attempting to fetch group with ID: ${id}, type: ${typeof id}`);
-      setLoading(true);
-      const sessionId = localStorage.getItem('sessionId');
-      const userData = JSON.parse(localStorage.getItem('userData'));
-      const userEmail = userData?.userEmail;
+  // Update your fetchData function to include the access check API
+  const fetchData = async () => {
+    console.log(`Attempting to fetch group with ID: ${id}, type: ${typeof id}`);
+    setLoading(true);
+    const sessionId = localStorage.getItem('sessionId');
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const userEmail = userData?.userEmail;
   
-      if (!sessionId || !userData) {
-        navigate('/');
-        return;
-      }
+    if (!sessionId || !userData) {
+      navigate('/');
+      return;
+    }
 
-      try {
-        // First, get group data from the API
-        const groupResponse = await axios.get(
-          `http://localhost:8080/groups/${id}`,
-          {
-            headers: {
-              'Session-Id': sessionId,
-              'Content-Type': 'application/json'
-            }
+    // First check if the user has access to the group
+    try {
+      // Check access using the dedicated endpoint
+      const accessResponse = await axios.get(
+        `http://localhost:8080/groups/${id}/check-access`,
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'application/json'
           }
-        );
-        
-        // Log the API response to see its structure
-        console.log('API group data:', groupResponse.data);
-        
-        // Transform API data to match your component's expected structure
-        const apiGroup = groupResponse.data;
-        
-        // Check if the current user is a host or member
-        const isUserHost = apiGroup.hosts && apiGroup.hosts.includes(userEmail);
-        const isUserMember = apiGroup.participants && apiGroup.participants.includes(userEmail);
-        
-        // Update the membership status
-        setUserMembership({
-          isHost: isUserHost,
-          isMember: isUserMember
-        });
-        
-        const formattedGroup = {
-          id: apiGroup.groupId || apiGroup.id,
-          title: apiGroup.name || apiGroup.title || 'Unnamed Group',
-          image: apiGroup.image || 'https://via.placeholder.com/300x200?text=Group+Image',
-          description: apiGroup.description || 'No description available',
-          
-          // Handle hosts separately from regular members
-          hosts: apiGroup.hosts 
-            ? apiGroup.hosts.map((host, index) => ({
-                id: `host-${index}`,
-                name: host,
-                major: 'Major: Not specified', // API might not provide this
-                isHost: true // Flag to identify hosts
-              }))
-            : [],
-            
-          // Handle regular members
-          members: apiGroup.participants 
-            ? apiGroup.participants
-                .filter(participant => !apiGroup.hosts || !apiGroup.hosts.includes(participant)) // Filter out hosts to avoid duplication
-                .map((participant, index) => ({
-                  id: `member-${index}`,
-                  name: participant,
-                  major: 'Major: Not specified', // API might not provide this
-                  isHost: false
-                }))
-            : apiGroup.members || [],
-            
-          // Other fields remain the same
-          location: apiGroup.location || 'No location specified',
-          meetingTimes: apiGroup.meetingTimes || 'No schedule specified',
-          reviews: apiGroup.reviews || []
-        };
-        
-        console.log('Formatted group data:', formattedGroup);
-        setGroup(formattedGroup);
-        
-        // Now fetch the rating data
+        }
+      );
+      
+      console.log('Access check response:', accessResponse.data);
+      
+      // If access is granted, proceed with getting the full group data
+      if (accessResponse.data.hasAccess) {
         try {
-          const ratingResponse = await axios.get(
-            `http://localhost:8080/groups/${id}/average-rating`,
+          // Your existing code to get group data
+          const groupResponse = await axios.get(
+            `http://localhost:8080/groups/${id}`,
             {
               headers: {
                 'Session-Id': sessionId,
@@ -180,45 +132,64 @@ function Groups() {
               }
             }
           );
-          setRatingData(ratingResponse.data);
-        } catch (ratingError) {
-          console.error('Error fetching rating data, using calculated:', ratingError);
-          // Calculate rating data manually if API fails
-          const reviews = formattedGroup.reviews || [];
-          const averageRating = calculateAverageRating(reviews);
-          setRatingData({
-            averageRating: parseFloat(averageRating),
-            totalReviews: reviews.length
-          });
-        }
-        
-      } catch (error) {
-        console.error('Error fetching group data:', error);
-        
-        // Enhanced error inspection
-        if (error.response) {
-          setMyRating(null);
-          setUserRating(0);
-          console.log('Server responded with status:', error.response.status);
-          console.log('Response data:', error.response.data);
-        } else if (error.request) {
-          console.log('No response received from server:', error.request);
-        } else {
-          console.log('Error setting up request:', error.message);
-        }
-        
-        // More robust 403 detection
-        if (
-          (error.response && error.response.status === 403) || 
-          (error.response && error.response.data && error.response.data.error === "Access denied") ||
-          (error.message && error.message.includes("forbidden"))
-        ) {
-          console.log('Access denied condition detected - showing access denied view');
-          setAccessDenied(true);
           
+          // Rest of your existing group data processing...
+          console.log('API group data:', groupResponse.data);
+          
+          // Transform API data to match your component's expected structure
+          const apiGroup = groupResponse.data;
+          
+          // Check if the current user is a host or member
+          const isUserHost = apiGroup.hosts && apiGroup.hosts.includes(userEmail);
+          const isUserMember = apiGroup.participants && apiGroup.participants.includes(userEmail);
+          
+          // Update the membership status
+          setUserMembership({
+            isHost: isUserHost,
+            isMember: isUserMember
+          });
+          
+          const formattedGroup = {
+            id: apiGroup.groupId || apiGroup.id,
+            title: apiGroup.name || apiGroup.title || 'Unnamed Group',
+            image: apiGroup.image || 'https://via.placeholder.com/300x200?text=Group+Image',
+            description: apiGroup.description || 'No description available',
+            
+            // Handle hosts separately from regular members
+            hosts: apiGroup.hosts 
+              ? apiGroup.hosts.map((host, index) => ({
+                  id: `host-${index}`,
+                  name: host,
+                  major: 'Major: Not specified', // API might not provide this
+                  isHost: true // Flag to identify hosts
+                }))
+              : [],
+              
+            // Handle regular members
+            members: apiGroup.participants 
+              ? apiGroup.participants
+                  .filter(participant => !apiGroup.hosts || !apiGroup.hosts.includes(participant)) // Filter out hosts to avoid duplication
+                  .map((participant, index) => ({
+                    id: `member-${index}`,
+                    name: participant,
+                    major: 'Major: Not specified', // API might not provide this
+                    isHost: false
+                  }))
+              : apiGroup.members || [],
+              
+            // Other fields remain the same
+            location: apiGroup.location || 'No location specified',
+            meetingTimes: apiGroup.meetingTimes || 'No schedule specified',
+            reviews: apiGroup.reviews || []
+          };
+          
+          console.log('Formatted group data:', formattedGroup);
+          setGroup(formattedGroup);
+          
+          // Now fetch the rating data
           try {
-            const basicInfoResponse = await axios.get(
-              `http://localhost:8080/groups/${id}/basic-info`,
+            const ratingResponse = await axios.get(
+              `http://localhost:8080/groups/${id}/average-rating`,
               {
                 headers: {
                   'Session-Id': sessionId,
@@ -226,52 +197,151 @@ function Groups() {
                 }
               }
             );
-            
-            setGroup({
-              id: id,
-              title: basicInfoResponse.data.name || "Private Group",
-              isPrivate: true,
-              description: "This is a private group. You need to request access to view details."
-            });
-          } catch (innerError) {
-            console.error('Could not fetch even basic group info:', innerError);
-            // Fall back to a generic message
-            setGroup({
-              id: id,
-              title: "Private Group",
-              isPrivate: true,
-              description: "This is a private group. You need to request access to view details."
-            });
-          }
-        } else {
-          // Make sure accessDenied is reset for other errors
-          setAccessDenied(false);
-          
-          // Handle other errors as before - fall back to mock data
-          console.log('Falling back to mock data for group:', id);
-          const groupId = parseInt(id, 10);
-          
-          if (groupsData[groupId]) {
-            console.log('Mock data found for group:', groupId);
-            setGroup(groupsData[groupId]);
-            
-            // Calculate mock rating data
-            const reviews = groupsData[groupId].reviews || [];
+            setRatingData(ratingResponse.data);
+          } catch (ratingError) {
+            console.error('Error fetching rating data, using calculated:', ratingError);
+            // Calculate rating data manually if API fails
+            const reviews = formattedGroup.reviews || [];
             const averageRating = calculateAverageRating(reviews);
             setRatingData({
               averageRating: parseFloat(averageRating),
               totalReviews: reviews.length
             });
-          } else {
-            console.error('No mock data found for group ID:', groupId);
-            setGroup(null);
           }
+          
+        } catch (groupError) {
+          console.error('Error fetching group data after access check:', groupError);
+          // Fall back to mock data if needed
+          fallbackToMockData(id);
         }
-      } finally {
-        setLoading(false);
+      } else {
+        // User does not have access - show access denied view
+        console.log('Access denied by check-access API');
+        setAccessDenied(true);
+        
+        // Get basic info for the group
+        try {
+          const basicInfoResponse = await axios.get(
+            `http://localhost:8080/groups/${id}/basic-info`,
+            {
+              headers: {
+                'Session-Id': sessionId,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          setGroup({
+            id: id,
+            title: basicInfoResponse.data.name || "Private Group",
+            isPrivate: true,
+            description: "This is a private group. You need to request access to view details."
+          });
+        } catch (basicInfoError) {
+          console.error('Could not fetch basic group info:', basicInfoError);
+          setGroup({
+            id: id,
+            title: "Private Group",
+            isPrivate: true,
+            description: "This is a private group. You need to request access to view details."
+          });
+        }
       }
-    };
+    } catch (accessCheckError) {
+      console.error('Error checking access:', accessCheckError);
+      
+      // If the access check fails, fall back to the previous method
+      if (accessCheckError.response && accessCheckError.response.status === 403) {
+        console.log('Access denied via error response');
+        setAccessDenied(true);
+        
+        // Rest of your existing 403 handling...
+        
+      } else {
+        // Try to get the group data anyway, in case the access check API is just not implemented
+        try {
+          // Your existing code to get group data
+          const groupResponse = await axios.get(
+            `http://localhost:8080/groups/${id}`,
+            {
+              headers: {
+                'Session-Id': sessionId,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          // Process the response as before...
+          
+        } catch (fallbackError) {
+          // Handle this error with your existing error handling...
+          handleGroupFetchError(fallbackError);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper function to handle errors from group data fetch
+  const handleGroupFetchError = (error) => {
+    console.error('Error fetching group data:', error);
     
+    // Enhanced error inspection
+    if (error.response) {
+          setMyRating(null);
+          setUserRating(0);
+      console.log('Server responded with status:', error.response.status);
+      console.log('Response data:', error.response.data);
+    } else if (error.request) {
+      console.log('No response received from server:', error.request);
+    } else {
+      console.log('Error setting up request:', error.message);
+    }
+    
+    // More robust 403 detection
+    if (
+      (error.response && error.response.status === 403) || 
+      (error.response && error.response.data && error.response.data.error === "Access denied") ||
+      (error.message && error.message.includes("forbidden"))
+    ) {
+      console.log('Access denied condition detected - showing access denied view');
+      setAccessDenied(true);
+      
+      // Your existing access denied handling...
+      
+    } else {
+      // Make sure accessDenied is reset for other errors
+      setAccessDenied(false);
+      
+      // Fall back to mock data
+      fallbackToMockData(id);
+    }
+  };
+
+  // Helper function to use mock data
+  const fallbackToMockData = (groupId) => {
+    console.log('Falling back to mock data for group:', groupId);
+    const numericId = parseInt(groupId, 10);
+    
+    if (groupsData[numericId]) {
+      console.log('Mock data found for group:', numericId);
+      setGroup(groupsData[numericId]);
+      
+      // Calculate mock rating data
+      const reviews = groupsData[numericId].reviews || [];
+      const averageRating = calculateAverageRating(reviews);
+      setRatingData({
+        averageRating: parseFloat(averageRating),
+        totalReviews: reviews.length
+      });
+    } else {
+      console.error('No mock data found for group ID:', numericId);
+      setGroup(null);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [id, navigate]);
 
