@@ -148,6 +148,9 @@ public class GroupService {
         // Add current user as host only
         group.getHosts().add(currentUser.getUserEmail());
 
+        // Set isPublic explicitly (handling the default if not specified)
+        group.setPublic(group.isPublic());
+
         // Initialize rating
         //Rating rating = new Rating();
         //group.setRating(rating);
