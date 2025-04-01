@@ -143,7 +143,7 @@ function Layout() {
 function Home() {
   const [groups, setGroups] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
-  const [showPrivate, setShowPrivate] = useState(false);
+  const [showPrivateGroups, setShowPrivateGroups] = useState(false); // Renamed from showPrivate
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
 
@@ -158,8 +158,8 @@ function Home() {
         try {
           const response = await axios.get(
               `http://localhost:8080/users/${userEmail}/all-groups-short`,
-              { headers: { 'Session-Id': sessionId } }
-          );
+              { headers: { 'Session-Id': sessionId }
+          });
           setGroups(response.data);
         } catch (error) {
           console.error('Error fetching user groups:', error);
@@ -184,6 +184,17 @@ function Home() {
     };
     fetchGroups();
   }, [navigate]);
+
+  useEffect(() => {
+    console.log('Groups data:', groups);
+    console.log('All groups data:', allGroups);
+    
+    // Log how many private groups are hidden when filter is off
+    if (!showPrivateGroups) {
+      const privateGroups = allGroups.filter(group => group.public === false);
+      console.log(`Hiding ${privateGroups.length} private groups in All Groups view`);
+    }
+  }, [groups, allGroups, showPrivateGroups]);
 
   const handleCreateGroup = () => {
     navigate('/create-group');
@@ -223,6 +234,12 @@ function Home() {
                         onClick={() => handleGroupClick(group.groupId)}
                     >
                       <h3>{group.name}</h3>
+                      {group.public === false && (
+                        <div className="private-group-indicator">
+                          <span className="lock-icon">🔒</span>
+                          <span className="private-text">Private</span>
+                        </div>
+                      )}
                     </div>
                 ))
             )}
@@ -234,26 +251,41 @@ function Home() {
         <div className="all-groups-layout">
           <div className="filters-panel">
             <h3>Filters</h3>
-            <label>
+            <label className="filter-checkbox">
               <input
-                  type="checkbox"
-                  checked={showPrivate}
-                  onChange={(e) => setShowPrivate(e.target.checked)}
-              /> Private Groups
+                type="checkbox"
+                checked={showPrivateGroups}
+                onChange={(e) => setShowPrivateGroups(e.target.checked)}
+              />
+              <span>Show Private Groups</span>
+              <small className="filter-description">
+                By default, only public groups are visible. Check this to also show private groups.
+              </small>
             </label>
           </div>
           <div className="all-groups-grid">
             {allGroups.length === 0 ? (
+              <div className="empty-groups-message">
                 <p>No groups found.</p>
+              </div>
             ) : (
-                allGroups.map((group) => (
-                    <div
-                        key={group.groupId}
-                        className="group-card"
-                        onClick={() => handleGroupClick(group.groupId)}
-                    >
-                      <h3>{group.name}</h3>
-                    </div>
+              // Filter the displayed groups based on the showPrivateGroups state
+              allGroups
+                .filter(group => showPrivateGroups || group.public !== false)
+                .map((group) => (
+                  <div
+                    key={group.groupId}
+                    className="group-card"
+                    onClick={() => handleGroupClick(group.groupId)}
+                  >
+                    <h3>{group.name}</h3>
+                    {group.public === false && (
+                      <div className="private-group-indicator">
+                        <span className="lock-icon">🔒</span>
+                        <span className="private-text">Private</span>
+                      </div>
+                    )}
+                  </div>
                 ))
             )}
           </div>
