@@ -16,7 +16,7 @@ function UsrProfile() {
   const [isFriend, setIsFriend] = useState(false);
   const [compatibilityScore, setCompatibilityScore] = useState(null);
 
-  // Replace your current useEffect function with this one
+  // Update the fetchUserProfile function to properly get the friends list
   useEffect(() => {
     const fetchUserProfile = async () => {
       setLoading(true);
@@ -31,40 +31,71 @@ function UsrProfile() {
           return;
         }
         
-        // For demo purposes, create a mock current user if none exists
-        const mockCurrentUser = {
-          userEmail: 'current.user@purdue.edu',
-          name: 'Current User',
-          majors: ['Computer Science', 'Mathematics'],
-          weeklyAvailability: '000000001111110000000000000000111111000000000000000011111100000000000000001111110000000000000000111111000000000000001111110000000000000000111111',
-          preferredLocations: [1, 2, 15, 25], // WALC, LWSN, HIKS, PMU
-          friends: [
-            { userEmail: 'alex.thompson@purdue.edu', name: 'Alex Thompson' },
-            { userEmail: 'taylor.johnson@purdue.edu', name: 'Taylor Johnson' }
-          ]
-        };
-        
-        // Determine if we're using email or ID for the user parameter
-        
+        // Parse current user data from localStorage
+        let currentUser = null;
         if (currentUserJSON) {
-          const parsedUser = JSON.parse(currentUserJSON);
-          setCurrentUserData(parsedUser);
-          
-          // Check if this user is already a friend
-          const isAlreadyFriend = parsedUser.friends?.some(
-            friend => friend.userEmail === userEmail
-          );
-          setIsFriend(isAlreadyFriend);
+          currentUser = JSON.parse(currentUserJSON);
+          setCurrentUserData(currentUser);
         } else {
-          // Use mock current user for demo
+          // Your existing mock user code...
+          const mockCurrentUser = {
+            userEmail: 'current.user@purdue.edu',
+            name: 'Current User',
+            majors: ['Computer Science', 'Mathematics'],
+            weeklyAvailability: '000000001111110000000000000000111111000000000000000011111100000000000000001111110000000000000000111111000000000000001111110000000000000000111111',
+            preferredLocations: [1, 2, 15, 25], // WALC, LWSN, HIKS, PMU
+            friends: [
+              { userEmail: 'alex.thompson@purdue.edu', name: 'Alex Thompson' },
+              { userEmail: 'taylor.johnson@purdue.edu', name: 'Taylor Johnson' }
+            ]
+          };
           setCurrentUserData(mockCurrentUser);
-          setIsFriend(mockCurrentUser.friends.some(
-            friend => friend.userEmail === userEmail
-          ));
         }
 
+        // Now fetch the current user's friends list using the correct API
+        if (currentUser) {
+          try {
+            console.log(`Fetching friends list for ${currentUser.userEmail}...`);
+            const friendsResponse = await axios({
+              method: 'GET',
+              url: `http://localhost:8080/users/${currentUser.userEmail}/friends`,
+              headers: {
+                'Session-Id': sessionId
+              }
+            });
+            
+            console.log('Friends list API response:', friendsResponse.data);
+            
+            if (friendsResponse.data) {
+              // Update the currentUserData with the actual friends list from API
+              setCurrentUserData(prevData => ({
+                ...prevData,
+                friends: friendsResponse.data
+              }));
+              
+              // Check if the profile user is in the friends list
+              const friendsList = friendsResponse.data || [];
+              const isAlreadyFriend = friendsList.some(
+                friend => friend.userEmail === userEmail || friend.email === userEmail
+              );
+              console.log(`Is ${userEmail} in friends list from API? ${isAlreadyFriend}`);
+              setIsFriend(isAlreadyFriend);
+            }
+          } catch (friendsError) {
+            console.error('Error fetching friends list:', friendsError);
+            
+            // Display an empty friends list until we can get it from the API
+            if (!currentUser.friends) {
+              setCurrentUserData(prevData => ({
+                ...prevData,
+                friends: []
+              }));
+            }
+          }
+        }
+
+        // Your existing code to fetch the profile user's data...
         try {
-          // Using the API format provided in the curl example
           const response = await axios({
             method: 'GET',
             url: `http://localhost:8080/users/${userEmail}`,
@@ -76,7 +107,6 @@ function UsrProfile() {
           if (response.data) {
             console.log('User profile API response:', response.data);
             
-            // Format the API response to match your expected data structure
             const formattedUserData = {
               userEmail: response.data.email || response.data.userEmail,
               name: response.data.name || response.data.fullName,
@@ -84,7 +114,6 @@ function UsrProfile() {
               biography: response.data.biography || response.data.bio || response.data.description,
               weeklyAvailability: response.data.weeklyAvailability,
               preferredLocations: response.data.preferredLocations || [],
-              // Any other fields you expect
             };
             
             setUserData(formattedUserData);
@@ -94,10 +123,9 @@ function UsrProfile() {
           }
         } catch (apiError) {
           console.log('API call failed, using mock data:', apiError);
-          
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('Error in fetchUserProfile:', error);
         setError('Failed to load user profile. Please try again.');
       } finally {
         setLoading(false);
@@ -105,17 +133,68 @@ function UsrProfile() {
     };
 
     fetchUserProfile();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userEmail, navigate]);
 
-  // Calculate compatibility between current user and profile user
+  // Create a separate useEffect for the friend status check
+  useEffect(() => {
+    if (!currentUserData || !userEmail) return;
+    
+    const checkFriendStatus = async () => {
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) return;
+      
+      try {
+        const currentUserEmail = currentUserData.userEmail;
+        console.log(`[FRIEND CHECK] Checking if ${currentUserEmail} and ${userEmail} are friends...`);
+        
+        const friendStatusResponse = await axios({
+          method: 'GET',
+          url: `http://localhost:8080/users/${currentUserEmail}/friends/check/${userEmail}`,
+          headers: {
+            'Session-Id': sessionId
+          }
+        });
+        
+        console.log('[FRIEND CHECK] API response:', friendStatusResponse.data);
+        
+        if (friendStatusResponse.data) {
+          console.log('[FRIEND CHECK] Setting isFriend to:', friendStatusResponse.data.isFriend);
+          setIsFriend(!!friendStatusResponse.data.isFriend);
+        }
+      } catch (error) {
+        console.error('[FRIEND CHECK] API error:', error);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[FRIEND CHECK] Using mock data for development');
+          
+          const mockFriendStatuses = {
+            'user1@purdue.edu': true,
+            'user2@purdue.edu': false,
+            'user3@purdue.edu': false,
+          };
+          
+          if (userEmail in mockFriendStatuses) {
+            const mockStatus = mockFriendStatuses[userEmail];
+            console.log(`[FRIEND CHECK] Using mock status for ${userEmail}: ${mockStatus}`);
+            setIsFriend(mockStatus);
+          } else {
+            const randomStatus = Math.random() > 0.5;
+            console.log(`[FRIEND CHECK] Using random status for ${userEmail}: ${randomStatus}`);
+            setIsFriend(randomStatus);
+          }
+        }
+      }
+    };
+    
+    checkFriendStatus();
+  }, [currentUserData, userEmail]);
+
   const calculateCompatibility = (profileData) => {
     if (!currentUserData) return;
 
     let score = 0;
     const factors = [];
 
-    // Check for shared majors (high weight)
     const currentMajors = currentUserData.majors || [];
     const profileMajors = profileData.majors || [];
     
@@ -128,7 +207,6 @@ function UsrProfile() {
       factors.push(`Same major: +40%`);
     }
 
-    // Check for matching availability (medium-high weight)
     if (currentUserData.weeklyAvailability && profileData.weeklyAvailability) {
       const currentAvail = currentUserData.weeklyAvailability;
       const profileAvail = profileData.weeklyAvailability;
@@ -147,7 +225,6 @@ function UsrProfile() {
       }
     }
 
-    // Check for shared preferred locations (medium weight)
     const currentLocations = currentUserData.preferredLocations || [];
     const profileLocations = profileData.preferredLocations || [];
     
@@ -161,7 +238,6 @@ function UsrProfile() {
       factors.push(`${sharedLocations.length} shared study locations: +${locationScore}%`);
     }
 
-    // Calculate final compatibility percentage
     const compatibilityResult = {
       percentage: Math.min(100, score),
       factors: factors
@@ -170,7 +246,6 @@ function UsrProfile() {
     setCompatibilityScore(compatibilityResult);
   };
 
-  // Update handleAddFriend function
   const handleAddFriend = async () => {
     if (!currentUserData || !userData) return;
 
@@ -181,7 +256,6 @@ function UsrProfile() {
         return;
       }
 
-      // Using the same format as in Friends.jsx
       await axios({
         method: 'POST',
         url: `http://localhost:8080/users/${currentUserData.userEmail}/friend-requests/send`,
@@ -194,28 +268,20 @@ function UsrProfile() {
         }
       });
 
-      // Update UI optimistically
       setIsFriend(true);
-      
-      // Use modern feedback mechanism instead of alert
-      // If you have toast already set up:
-      // toast.success(`Friend request sent to ${userData.name}!`);
       alert(`Friend request sent to ${userData.name}!`);
       
     } catch (error) {
       console.error('Error adding friend:', error);
-      
-      // For demonstration purposes, update the UI anyway
       setIsFriend(true);
       alert(`Friend request sent to ${userData.name}! (Demo mode)`);
     }
   };
 
-  // Update handleRemoveFriend function
+  // Update the handleRemoveFriend function with improved UX
   const handleRemoveFriend = async () => {
     if (!currentUserData || !userData) return;
 
-    // Confirm before removing
     if (!window.confirm(`Are you sure you want to remove ${userData.name} from your friends?`)) {
       return;
     }
@@ -227,7 +293,10 @@ function UsrProfile() {
         return;
       }
 
-      // Using the same format as in Friends.jsx
+      // Show "Removing..." text or animation
+      // You could use this if you had a state for the button text
+      // setRemoveButtonText("Removing...");
+      
       await axios({
         method: 'DELETE',
         url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
@@ -237,18 +306,67 @@ function UsrProfile() {
         }
       });
 
-      // Update UI
+      console.log(`Friend ${userData.name} successfully removed`);
+      
+      // Set local state
       setIsFriend(false);
       
-      // Use modern feedback mechanism instead of alert
-      // toast.success(`${userData.name} has been removed from your friends.`);
+      // Also update the currentUserData
+      setCurrentUserData(prevData => {
+        if (!prevData || !prevData.friends) return prevData;
+        
+        const updatedFriends = prevData.friends.filter(
+          friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
+        );
+        
+        console.log('Updated friends list after removal:', updatedFriends);
+        return {
+          ...prevData,
+          friends: updatedFriends
+        };
+      });
+      
+      // Also update localStorage userData if it exists
+      try {
+        const storedUserData = JSON.parse(localStorage.getItem('userData'));
+        if (storedUserData && Array.isArray(storedUserData.friends)) {
+          const updatedFriends = storedUserData.friends.filter(
+            friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
+          );
+          
+          const updatedUserData = {
+            ...storedUserData,
+            friends: updatedFriends
+          };
+          
+          localStorage.setItem('userData', JSON.stringify(updatedUserData));
+          console.log('Updated localStorage userData');
+        }
+      } catch (localStorageError) {
+        console.error('Error updating localStorage:', localStorageError);
+      }
+      
       alert(`${userData.name} has been removed from your friends.`);
       
     } catch (error) {
       console.error('Error removing friend:', error);
       
-      // For demonstration purposes, update the UI anyway
+      // For demo mode, still update UI
       setIsFriend(false);
+      
+      // Update currentUserData in demo mode too
+      setCurrentUserData(prevData => {
+        if (!prevData || !prevData.friends) return prevData;
+        
+        const updatedFriends = prevData.friends.filter(
+          friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
+        );
+        return {
+          ...prevData,
+          friends: updatedFriends
+        };
+      });
+      
       alert(`${userData.name} has been removed from your friends. (Demo mode)`);
     }
   };
@@ -325,32 +443,6 @@ function UsrProfile() {
     );
   }
 
-  /*{compatibilityScore && (
-    <div className="compatibility-section">
-      <h3>Compatibility</h3>
-      <div className="compatibility-score">
-        <div className="score-circle" style={{
-          background: `conic-gradient(#8ebd89 ${compatibilityScore.percentage}%, #e0e0e0 0)`
-        }}>
-          <span>{compatibilityScore.percentage}%</span>
-        </div>
-        <div className="compatibility-factors">
-          <p>Why you&apos;re compatible:</p>
-          <ul>
-            {compatibilityScore.factors.length > 0 ? (
-              compatibilityScore.factors.map((factor, index) => (
-                <li key={index}>{factor}</li>
-              ))
-            ) : (
-              <li>No compatibility factors found</li>
-            )}
-          </ul>
-        </div>
-      </div>
-    </div>
-  )} */
-
-  // Helper function to get location names from IDs
   const getLocationName = (locationId) => {
     const locationNames = {
       1: "WALC", 2: "LWSN", 3: "PMUC", 4: "HAMP", 5: "RAWL",
@@ -384,10 +476,17 @@ function UsrProfile() {
           </div>
           
           <div className="user-actions">
+            {console.log('isFriend state in render:', isFriend)}
+            
             {isFriend ? (
-              <button className="remove-friend-button" onClick={handleRemoveFriend}>
-                <i className="fa fa-user-times"></i> Remove Friend
-              </button>
+              <>
+                <button className="already-friends-button" disabled>
+                  <i className="fa fa-check"></i> Already Friends
+                </button>
+                <button className="remove-friend-button" onClick={handleRemoveFriend}>
+                  <i className="fa fa-user-times"></i> Remove Friend
+                </button>
+              </>
             ) : (
               <button className="add-friend-button" onClick={handleAddFriend}>
                 <i className="fa fa-user-plus"></i> Add Friend
@@ -399,8 +498,6 @@ function UsrProfile() {
           </div>
         </div>
       </div>
-      
-      
       
       <div className="user-content-grid">
         <div className="user-description-card">
@@ -454,7 +551,6 @@ function UsrProfile() {
         <div className="user-common-card">
           <h3>User&apos;s Groups</h3>
           <div className="user-common-list">
-            {/* This would come from API in real implementation */}
             <p className="no-data-message">This user hasn&apos;t joined any groups yet!</p>
           </div>
         </div>
