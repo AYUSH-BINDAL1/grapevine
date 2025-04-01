@@ -76,44 +76,25 @@ public class GroupService {
             String rejectUrl = "http://localhost:8080/groups/respond-access/" + requestId +
                     "/reject/" + groupId + "/" + requestingUser.getUserEmail();
 
-            // Format HTML email with buttons
-            StringBuilder emailContent = new StringBuilder();
-            emailContent.append("<html><body>");
-            emailContent.append("<h2>Group Access Request</h2>");
-            emailContent.append("<p>").append(requestingUser.getName()).append(" wants to join your group: <strong>").append(group.getName()).append("</strong></p>");
-            emailContent.append("<p>Click one of the following options:</p>");
-            emailContent.append("<a href=\"").append(acceptUrl).append("\" style=\"display: inline-block; background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; margin-right: 10px; border-radius: 4px;\">Accept</a>");
-            emailContent.append("<a href=\"").append(rejectUrl).append("\" style=\"display: inline-block; background-color: #f44336; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px;\">Deny</a>");
-            emailContent.append("</body></html>");
+            // Create HTML message with styled buttons using table layout (more email-client friendly)
+            String htmlMessage =
+                    "<html><body>" +
+                            "<h2>Group Access Request</h2>" +
+                            "<p>" + requestingUser.getName() + " wants to join your group: <strong>" + group.getName() + "</strong></p>" +
+                            "<p>Click one of the following options:</p>" +
+                            "<table border='0' cellpadding='0' cellspacing='0'><tr>" +
+                            "<td><a href='" + acceptUrl + "' style='background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; display: inline-block; border-radius: 4px;'>Accept</a></td>" +
+                            "<td width='10'>&nbsp;</td>" +
+                            "<td><a href='" + rejectUrl + "' style='background-color: #f44336; color: white; padding: 10px 15px; text-decoration: none; display: inline-block; border-radius: 4px;'>Deny</a></td>" +
+                            "</tr></table>" +
+                            "</body></html>";
 
-            // Send HTML email with appropriate subject line
-            // Check if EmailService has an HTML email method
-            if (emailService.getClass().getDeclaredMethods().length > 0 &&
-                    Arrays.stream(emailService.getClass().getDeclaredMethods())
-                            .anyMatch(m -> m.getName().contains("sendHtmlEmail"))) {
-                // If an HTML email method exists, use it
-                try {
-                    emailService.getClass().getMethod("sendHtmlEmail",
-                                    String.class, String.class, String.class)
-                            .invoke(emailService, hostEmail,
-                                    "Join Group Request: " + group.getName(),
-                                    emailContent.toString());
-                } catch (Exception e) {
-                    // Fallback to plain text if reflection fails
-                    emailService.sendVerificationEmail(hostEmail,
-                            "Join Group Request: " + group.getName() +
-                                    "\n\n" + requestingUser.getName() + " wants to join your group." +
-                                    "\nAccept: " + acceptUrl +
-                                    "\nDeny: " + rejectUrl);
-                }
-            } else {
-                // Fallback to regular email if no HTML method available
-                emailService.sendVerificationEmail(hostEmail,
-                        "Join Group Request: " + group.getName() +
-                                "\n\n" + requestingUser.getName() + " wants to join your group." +
-                                "\nAccept: " + acceptUrl +
-                                "\nDeny: " + rejectUrl);
-            }
+            // Use the new HTML email method
+            emailService.sendHtmlEmail(
+                    hostEmail,
+                    "Join Group Request: " + group.getName(),
+                    htmlMessage
+            );
         }
     }
 
@@ -361,44 +342,6 @@ public class GroupService {
 
     //TODO: Needs to be fixed
     /*
-    public List<Group> searchGroups(String keyword) {
-        return groupRepository.searchByKeyword(keyword);
-    }
-
-    public Group updateGroup(Long groupId, Group updatedGroup, String sessionId) {
-        User currentUser = userService.validateSession(sessionId);
-        Group existingGroup = getGroupById(groupId);
-
-        // Verify the current user is a host
-        if (!existingGroup.getHosts().contains(currentUser)) {
-            throw new InvalidSessionException("Only hosts can update the group");
-        }
-
-        // Update fields
-        if (updatedGroup.getName() != null) {
-            existingGroup.setName(updatedGroup.getName());
-        }
-        if (updatedGroup.getDescription() != null) {
-            existingGroup.setDescription(updatedGroup.getDescription());
-        }
-        if (updatedGroup.getMaxUsers() != null) {
-            existingGroup.setMaxUsers(updatedGroup.getMaxUsers());
-        }
-
-        return groupRepository.save(existingGroup);
-    }
-
-    public void deleteGroup(Long groupId, String sessionId) {
-        User currentUser = userService.validateSession(sessionId);
-        Group group = getGroupById(groupId);
-
-        // Verify the current user is a host
-        if (!group.getHosts().contains(currentUser)) {
-            throw new InvalidSessionException("Only hosts can delete the group");
-        }
-
-        groupRepository.deleteById(groupId);
-    }
 
     public Group joinGroup(Long groupId, String sessionId) {
         User currentUser = userService.validateSession(sessionId);
