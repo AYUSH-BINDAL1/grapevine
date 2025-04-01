@@ -91,6 +91,7 @@ function Home() {
   const [allGroups, setAllGroups] = useState([]);
   const [groupFilter, setGroupFilter] = useState("all"); // "all", "public", "private"
   const [filteredGroups, setFilteredGroups] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
 
@@ -121,7 +122,7 @@ function Home() {
             headers: { 'Session-Id': sessionId }
           });
           setAllGroups(allRes.data);
-          setFilteredGroups(allRes.data); // default shows all groups
+          setFilteredGroups(allRes.data);
         } catch (error) {
           console.error('Error fetching all groups:', error);
         }
@@ -152,9 +153,14 @@ function Home() {
   const applyGroupFilter = () => {
     let result = allGroups;
     if (groupFilter === "public") {
-      result = allGroups.filter(group => group.public === true);
+      result = result.filter(group => group.public === true);
     } else if (groupFilter === "private") {
-      result = allGroups.filter(group => group.public === false);
+      result = result.filter(group => group.public === false);
+    }
+    if (searchQuery.trim() !== "") {
+      result = result.filter(group =>
+          group.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
     setFilteredGroups(result);
   };
@@ -176,7 +182,11 @@ function Home() {
                 </div>
             ) : (
                 groups.map((group) => (
-                    <div key={group.groupId} className="group-card" onClick={() => handleGroupClick(group.groupId)}>
+                    <div
+                        key={group.groupId}
+                        className="group-card"
+                        onClick={() => handleGroupClick(group.groupId)}
+                    >
                       <h3>{group.name}</h3>
                     </div>
                 ))
@@ -188,7 +198,18 @@ function Home() {
         <h2 className="section-header">All Groups</h2>
         <div className="all-groups-layout">
           <div className="filters-panel">
-            <h3>Filters</h3>
+            <input
+                type="text"
+                placeholder="Search groups..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyGroupFilter();
+                  }
+                }}
+            />
             <label htmlFor="groupFilter">Filter by:</label>
             <select
                 id="groupFilter"
@@ -199,16 +220,17 @@ function Home() {
               <option value="public">Public</option>
               <option value="private">Private</option>
             </select>
-            <button className="search-button" onClick={applyGroupFilter}>
-              Search
-            </button>
           </div>
           <div className="all-groups-grid">
             {filteredGroups.length === 0 ? (
                 <p>No groups found.</p>
             ) : (
                 filteredGroups.map((group) => (
-                    <div key={group.groupId} className="group-card" onClick={() => handleGroupClick(group.groupId)}>
+                    <div
+                        key={group.groupId}
+                        className="group-card"
+                        onClick={() => handleGroupClick(group.groupId)}
+                    >
                       <h3>{group.name}</h3>
                       <p>{group.description}</p>
                     </div>
