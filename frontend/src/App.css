@@ -333,6 +333,7 @@ h1 {
 }
 
 .group-card {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -434,6 +435,10 @@ h1 {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
+.all-groups-grid .group-card p {
+  margin-top: 8px;
+}
+
 .section-header {
   text-align: center;
   margin: 20px 0 10px 0;
@@ -443,6 +448,28 @@ h1 {
 
 .groups-container {
   margin-top: 60px;
+}
+
+/* Add these styles for the private group indicator */
+.private-group-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 5px;
+  display: inline-flex;
+  font-size: 12px;
+}
+
+.lock-icon {
+  font-size: 12px;
+}
+
+.private-text {
+  color: #555;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {
