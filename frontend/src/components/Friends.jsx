@@ -445,14 +445,6 @@ function Friends() {
                         toast.info(`${friendName} was already removed from your friends.`);
                     } else if (apiError.response?.status === 403) {
                         toast.error("You don't have permission to remove this friend.");
-                    } else {
-                        // For other errors in development, still update UI for demo
-                        if (process.env.NODE_ENV === 'development') {
-                            setFriends(prev => prev.filter(friend => friend.userEmail !== friendEmail));
-                            toast.info(`${friendName} has been removed from your friends. (Demo mode)`);
-                        } else {
-                            toast.error(`Failed to remove ${friendName}. Please try again.`);
-                        }
                     }
                     
                     // Always dismiss the loading toast
