@@ -8,7 +8,10 @@ import lombok.ToString;
 import java.util.List;
 
 @Entity
-@Table(name = "courses")
+@Table(name = "courses", indexes = {
+        @Index(name = "idx_course_key", columnList = "course_key"),
+        @Index(name = "idx_course_title", columnList = "title")
+})
 @Getter
 @Setter
 @ToString

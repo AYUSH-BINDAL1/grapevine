@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
-import { searchEnabled } from "../App";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from "react-router-dom";
+import { searchEnabled } from '../App';
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
@@ -13,7 +15,6 @@ const validateEmail = (email) => {
 };
 
 function Profile() {
-  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [availability, setAvailability] = useState({
     day: "",
@@ -32,14 +33,34 @@ function Profile() {
   });
   // Add these state variables to your component
   const [emailError, setEmailError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  // Add a state for the delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  // Add a new state variable for password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const sessionId = localStorage.getItem('sessionId');
+  const navigate = useNavigate();
+  const [searchEnabled, setSearchEnabled] = useState(false);
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
+    if (!sessionId) {
+      toast.error("Session expired. Please login again.");
+      setTimeout(() => window.location.href = '/', 2000);
+      return;
+    }
+  
     // Load user data from localStorage
+    setIsLoading(true);
     const storedUserData = localStorage.getItem('userData');
+    
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
       setUserData(parsedData);
       setEditedDescription(parsedData.biography || "");
+      
+      // Store the majors array directly
       setEditedProfileData({
         name: parsedData.name || "",
         userEmail: parsedData.userEmail || "",
@@ -50,8 +71,103 @@ function Profile() {
       if (parsedData.weeklyAvailability) {
         setAvailabilityString(parsedData.weeklyAvailability);
       }
+  
+      // Fetch current role from backend
+      const fetchUserRole = async () => {
+        try {
+          const response = await axios.get(
+            `http://localhost:8080/users/${parsedData.userEmail}`,
+            { headers: { 'Session-Id': sessionId } }
+          );
+          
+          const role = response.data.role || 'Student';
+          setUserRole(role);
+          
+          // Update searchEnabled based on role
+          const isTeachingRole = ['INSTRUCTOR', 'GTA', 'UTA'].includes(role);
+          setSearchEnabled(isTeachingRole);
+          
+          // Update global searchEnabled variable
+          window.searchEnabled = isTeachingRole;
+          
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+          toast.error('Failed to fetch user role');
+        }
+      };
+  
+      fetchUserRole();
     }
+    
+    setTimeout(() => setIsLoading(false), 500);
   }, []);
+  
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Allow Escape key to cancel edits
+      if (e.key === 'Escape') {
+        if (isEditingProfile) {
+          setIsEditingProfile(false);
+        } else if (isEditingDescription) {
+          setIsEditingDescription(false);
+        }
+      }
+      
+      // Allow Ctrl+S to save
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        if (isEditingProfile) {
+          handleSaveProfile();
+        } else if (isEditingDescription) {
+          handleSaveDescription();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditingProfile, isEditingDescription]);
+
+  const handleRoleChange = async (event) => {
+    const newRole = event.target.value;
+    
+    try {
+      const response = await axios.put(
+        `http://localhost:8080/users/${userData.userEmail}`,
+        { role: newRole },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          }
+        }
+      );
+  
+      if (response.status === 200) {
+        setUserRole(newRole);
+        
+        // Update searchEnabled based on new role
+        const isTeachingRole = ['INSTRUCTOR', 'GTA', 'UTA'].includes(newRole);
+        setSearchEnabled(isTeachingRole);
+        
+        // Update global searchEnabled variable
+        window.searchEnabled = isTeachingRole;
+        
+        // Update localStorage
+        const updatedUserData = { ...userData, role: newRole };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+        
+        toast.success('Role updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Failed to update role. Please try again.');
+    }
+  };
+  
 
   const handleAvailabilityChange = (e) => {
     setAvailability({
@@ -103,7 +219,6 @@ function Profile() {
     if (!userData) return;
   
     try {
-      const sessionId = localStorage.getItem('sessionId');
       
       if (!sessionId) {
         alert("You must be logged in to save availability");
@@ -129,7 +244,8 @@ function Profile() {
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
         
-        alert("Availability saved successfully!");
+        //alert("Availability saved successfully!");
+        toast.success("Availability saved successfully!");
       }
     } catch (error) {
       console.error('Error saving availability:', error);
@@ -145,7 +261,6 @@ function Profile() {
     if (!userData) return;
 
     try {
-      const sessionId = localStorage.getItem('sessionId');
       
       if (!sessionId) {
         alert("You must be logged in to save description");
@@ -170,7 +285,8 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingDescription(false);
         
-        alert("Description saved successfully!");
+        //alert("Description saved successfully!");
+        toast.success("Description saved successfully!");
       }
     } catch (error) {
       console.error('Error saving description:', error);
@@ -183,12 +299,78 @@ function Profile() {
   };
 
   const handleDeleteProfile = () => {
-    //TODO: Implement delete profile functionality
-    const confirmDelete = window.confirm("Are you sure you want to delete your profile?");
+    setShowDeleteModal(true);
+  };
 
-    if (!confirmDelete) {
-      return; // User canceled the action
+  const confirmDeleteProfile = async () => {
+    if (!deletePassword) {
+      toast.error("Please enter your password");
+      return;
     }
+  
+    if (!userData || !userData.userEmail) {
+      toast.error("Missing user data. Please refresh and try again.");
+      return;
+    }
+  
+    try {
+      if (!sessionId) {
+        toast.error("Session expired. Please login again.");
+        setTimeout(() => window.location.href = '/', 2000);
+        return;
+      }
+      
+      const response = await axios({
+        method: 'DELETE',
+        url: `http://localhost:8080/users/${userData.userEmail}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Session-Id': sessionId
+        },
+        data: {
+          password: deletePassword
+        }
+      });
+      
+      if (response.status >= 200 && response.status < 300) {
+        toast.success("Your account has been successfully deleted. You will be redirected to the login page.", {
+          onClose: () => { window.location.href = '/'; }
+        });
+
+        localStorage.clear();
+        document.body.classList.add('fade-out');
+        setTimeout(() => { window.location.href = '/'; }, 2000);
+      } else {
+        toast.error(`Unexpected response: ${response.status}`);
+      }
+    } catch (error) {
+      toast.dismiss("deleting");
+      
+      if (error.response) {
+        switch (error.response.status) {
+          case 401:
+            toast.error("Incorrect password. Please try again.");
+            break;
+          case 403:
+            toast.error("You don't have permission to delete this account.");
+            break;
+          case 404:
+            toast.error("User not found. You may have already deleted this account.");
+            break;
+          case 500:
+            toast.error("Server error. Please try again later.");
+            break;
+          default:
+            toast.error(`Error (${error.response.status}): ${error.response.data.message || 'Unknown error'}`);
+        }
+      } else if (error.request) {
+        toast.error("No response from server. Please check your connection.");
+      } else {
+        toast.error(`Request failed: ${error.message}`);
+      }
+    }
+  
+    setShowDeleteModal(false);
   };
 
   // Update the handleProfileInputChange function to validate email as the user types
@@ -240,7 +422,6 @@ function Profile() {
     }
   
     try {
-      const sessionId = localStorage.getItem('sessionId');
       
       if (!sessionId) {
         alert("You must be logged in to save profile information");
@@ -265,13 +446,24 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingProfile(false);
         
-        alert("Profile information saved successfully!");
+        //alert("Profile information saved successfully!");
+        toast.success("Profile information saved successfully!");
+        
       }
     } catch (error) {
       console.error('Error saving profile information:', error);
       alert("Failed to save profile information. Please try again.");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="profile-loading">
+        <div className="spinner"></div>
+        <p>Loading your profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-page">
@@ -334,6 +526,27 @@ function Profile() {
             <p className="description-details">{userData?.biography || "No description available"}</p>
           )}
         </div>
+        <div className="role-selector">
+          <h3>Role</h3>
+          <select 
+            className="role-select"
+            value={userRole}
+            onChange={handleRoleChange}
+          >
+            <option value="Student">Student</option>
+            <option value="INSTRUCTOR">Instructor</option>
+            <option value="GTA">Graduate Teaching Assistant</option>
+            <option value="UTA">Undergraduate Teaching Assistant</option>
+          </select>
+        </div>
+        {searchEnabled && (
+          <button 
+            className="view-students-button"
+            onClick={() => navigate('/view-students')}
+          >
+            View Students
+          </button>
+        )}
       </div>
       
       <div className="profile-content">
@@ -431,8 +644,6 @@ function Profile() {
                 if (!userData) return;
               
                 try {
-                  const sessionId = localStorage.getItem('sessionId');
-                  
                   if (!sessionId) {
                     alert("You must be logged in to update availability");
                     return;
@@ -470,9 +681,20 @@ function Profile() {
             >
               Remove Availability
             </button>
-            
+
             <div className="availability-preview">
               <h4>Current Availability:</h4>
+
+              <div className="time-indicators-container">
+                <div className="time-indicators-spacer"></div>
+                <div className="time-indicators">
+                  {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
+                    <div key={hour} className="time-indicator">
+                      <span>{hour}:00</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <div className="availability-visual">
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
                   <div key={day} className="day-row">
@@ -724,6 +946,59 @@ function Profile() {
         </div>
       )}
       
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content delete-modal">
+            <h3>Delete Account</h3>
+            <p>This action cannot be undone. Please enter your password to confirm.</p>
+            
+            <div className="password-field-container">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="Password" 
+                value={deletePassword}
+                onChange={(e) => {
+                  setDeletePassword(e.target.value);
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    confirmDeleteProfile();
+                  }
+                }}
+              />
+              <button 
+                type="button" 
+                className="toggle-password-visibility" 
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            
+            <div className="modal-buttons">
+              <button 
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletePassword('');
+                  toast.info("Delete profile cancelled.");
+                }}
+                className="cancel-button"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteProfile}
+                className="delete-button"
+                disabled={!deletePassword}
+              >
+                Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Hidden datalist for time selection */}
       <datalist id="valid-times">
         <option value="00:00"></option>
@@ -751,6 +1026,18 @@ function Profile() {
         <option value="22:00"></option>
         <option value="23:00"></option>
       </datalist>
+
+      <ToastContainer 
+        position="bottom-left"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }

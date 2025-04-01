@@ -73,21 +73,26 @@
 | GET    | `/users/{userEmail}/preferred-locations` | -            | userEmail     | Session-Id  | Gets user's preferred locations   | List of Location objects   |
 ## Groups
 
-| Method | Endpoint                            | Request Body  | Path Variable | Headers    | Description                     | Response                    |
-|--------|-------------------------------------|---------------|---------------|------------|---------------------------------|-----------------------------|
-| GET    | `/groups/all`                       | -             | -             | Session-Id | Gets all groups in database     | List of Group objects       |
-| GET    | `/groups/all-short`                 | -             | -             | Session-Id | Gets all groups in short form   | List of ShortGroup objects  |
-| POST   | `/groups/create`                    | Group object  | -             | Session-Id | Creates a new group             | Created Group object        |
-| GET    | `/groups/{groupId}`                 | -             | groupId       | Session-Id | Gets a specific group by ID     | Group object                |
-| POST   | `/groups/{groupId}/events/create`   | Event object  | groupId       | Session-Id | Creates an event for a group    | Created Event object        |
-| GET    | `/groups/{groupId}/events`          | -             | groupId       | Session-Id | Gets all events for a group     | List of Event objects       |
-| GET    | `/groups/{groupId}/events-short`    | -             | groupId       | Session-Id | Gets group events in short form | List of ShortEvent objects  |
-| GET    | `/groups/{groupId}/ratings-reviews` | -             | groupId       | Session-Id | Gets all ratings and reviews    | Map with scores and reviews |
-| GET    | `/groups/{groupId}/average-rating`  | -             | groupId       | Session-Id | Gets average rating and count   | Map with rating summary     |
-| POST   | `/groups/{groupId}/add-rating`      | RatingRequest | groupId       | Session-Id | Adds a rating and/or review     | Updated Group object        |
-| GET    | `/groups/{groupId}/my-rating`       | -             | groupId       | Session-Id | Gets user's own rating/review   | Map with score and review   |
-| PUT    | `/groups/{groupId}/update-rating`   | RatingRequest | groupId       | Session-Id | Updates a rating and/or review  | Updated Group object        |
-| DELETE | `/groups/{groupId}/delete-rating`   | -             | groupId       | Session-Id | Deletes a rating and review     | Updated Group object        |
+| Method | Endpoint                                                            | Request Body  | Path Variable                         | Headers    | Description                      | Response                    |
+|--------|---------------------------------------------------------------------|---------------|---------------------------------------|------------|----------------------------------|-----------------------------|
+| GET    | `/groups/all`                                                       | -             | -                                     | Session-Id | Gets all groups in database      | List of Group objects       |
+| GET    | `/groups/all-short`                                                 | -             | -                                     | Session-Id | Gets all groups in short form    | List of ShortGroup objects  |
+| GET    | `/groups/all-short?isPublic=true`                                   | -             | -                                     | Session-Id | Gets only public groups          | List of ShortGroup objects  |
+| GET    | `/groups/all-short?isPublic=false`                                  | -             | -                                     | Session-Id | Gets only private groups         | List of ShortGroup objects  |
+| GET    | `/groups/{groupId}/check-access`                                    | -             | groupId                               | Session-Id | Checks if user has group access  | {"hasAccess": true/false}   |
+| POST   | `/groups/{groupId}/request-access`                                  | -             | groupId                               | Session-Id | Requests access to private group | Success/error message       |
+| GET    | `/groups/respond-access/{requestId}/{action}/{groupId}/{userEmail}` | -             | requestId, action, groupId, userEmail | -          | Responds to access request       | HTML response page          |
+| POST   | `/groups/create`                                                    | Group object  | -                                     | Session-Id | Creates a new group              | Created Group object        |
+| GET    | `/groups/{groupId}`                                                 | -             | groupId                               | Session-Id | Gets a specific group by ID      | Group object                |
+| POST   | `/groups/{groupId}/events/create`                                   | Event object  | groupId                               | Session-Id | Creates an event for a group     | Created Event object        |
+| GET    | `/groups/{groupId}/events`                                          | -             | groupId                               | Session-Id | Gets all events for a group      | List of Event objects       |
+| GET    | `/groups/{groupId}/events-short`                                    | -             | groupId                               | Session-Id | Gets group events in short form  | List of ShortEvent objects  |
+| GET    | `/groups/{groupId}/ratings-reviews`                                 | -             | groupId                               | Session-Id | Gets all ratings and reviews     | Map with scores and reviews |
+| GET    | `/groups/{groupId}/average-rating`                                  | -             | groupId                               | Session-Id | Gets average rating and count    | Map with rating summary     |
+| POST   | `/groups/{groupId}/add-rating`                                      | RatingRequest | groupId                               | Session-Id | Adds a rating and/or review      | Updated Group object        |
+| GET    | `/groups/{groupId}/my-rating`                                       | -             | groupId                               | Session-Id | Gets user's own rating/review    | Map with score and review   |
+| PUT    | `/groups/{groupId}/update-rating`                                   | RatingRequest | groupId                               | Session-Id | Updates a rating and/or review   | Updated Group object        |
+| DELETE | `/groups/{groupId}/delete-rating`                                   | -             | groupId                               | Session-Id | Deletes a rating and review      | Updated Group object        |
 
 ## Events
 

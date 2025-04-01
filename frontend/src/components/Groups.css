@@ -86,20 +86,31 @@
 }
 
 .join-group-button {
-  align-self: flex-start;
   background-color: #8ebd89;
-  border: none;
-  border-radius: 6px;
   color: white;
+  border: none;
   padding: 10px 20px;
-  font-size: 16px;
+  border-radius: 4px;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: auto;
+  transition: all 0.2s ease;
+  margin-top: 15px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: relative; /* Ensure z-index works */
+  z-index: 5; /* Make sure it's above other elements */
+  outline-offset: 2px;
 }
 
 .join-group-button:hover {
-  background-color: #7aa875;
+  background-color: #7aaa75;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.join-group-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .group-content {
@@ -140,15 +151,19 @@
 
 .member-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 10px;
-  background-color: #f9f9f9;
+  padding: 1rem;
   border-radius: 8px;
-  transition: background-color 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background-color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-align: center;
 }
 
 .member-card:hover {
-  background-color: #f0f0f0;
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .member-avatar {
@@ -462,6 +477,8 @@ h1 {
   padding: 20px 0;
   scroll-behavior: smooth;
   scrollbar-width: none; /* Firefox */
+  min-height: 120px;
+  align-items: center;
 }
 
 .scroll-container2::-webkit-scrollbar {
@@ -469,18 +486,30 @@ h1 {
 }
 
 .group-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   min-width: 250px;
+  min-height: 120px; /* Ensure consistent height */
   background-color: white;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  padding-bottom: 30px; /* Make room for the indicator */
+  border: 1px solid rgba(0, 0, 0, 0.1); /* Optional: Add a subtle border to all cards for consistency */
 }
 
 .group-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.group-card:has(.private-group-indicator):hover {
+  background-color: #f9f9f9; /* Optional: Change the hover effect for private groups */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .group-card img {
@@ -529,4 +558,273 @@ h1 {
 .error h2 {
   color: #666;
   margin-bottom: 20px;
+}
+
+/* Add this to your CSS file */
+.empty-groups-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 120px; /* Match the approximate height of group cards */
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.empty-groups-message p {
+  margin: 0;
+  padding: 20px;
+}
+
+/* Group card updates for private indicator */
+.private-group-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #666;
+  font-size: 0.8rem;
+  padding: 4px 0;
+  border-radius: 0 0 8px 8px;
+}
+
+.lock-icon {
+  margin-right: 4px;
+  font-size: 0.8rem;
+}
+
+.private-text {
+  font-weight: 500;
+}
+
+/* Add this to your CSS file */
+.show-private-btn {
+  background-color: #8ebd89;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  margin-left: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.show-private-btn:hover {
+  background-color: #7aaa75;
+}
+
+.filter-checkbox {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.filter-description {
+  font-size: 0.8rem;
+  color: #666;
+  font-style: italic;
+  max-width: 250px;
+  margin-top: 2px;
+}
+
+/* Access denied styling */
+.access-denied-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin: 2rem auto;
+  max-width: 600px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.lock-icon-large {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #888;
+}
+
+.access-denied-container h2 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.access-denied-container p {
+  margin-bottom: 2rem;
+  color: #666;
+  max-width: 80%;
+  line-height: 1.5;
+}
+
+.request-access-button {
+  background-color: #8ebd89;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 1rem;
+}
+
+.request-access-button:hover {
+  background-color: #7aaa75;
+}
+
+.request-sent-message {
+  background-color: #f0f7f0;
+  padding: 1rem;
+  border-radius: 4px;
+  border-left: 4px solid #8ebd89;
+  margin-top: 1rem;
+  width: 80%;
+}
+
+.request-sent-message p {
+  margin: 0.5rem 0;
+  color: #4a7a47;
+}
+
+/* Host styling */
+.hosts-section, .regular-members-section {
+  margin-bottom: 2rem;
+}
+
+.hosts-section h3, .regular-members-section h3 {
+  color: #555;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.host-card {
+  position: relative;
+  border: 1px solid #8ebd89;
+  background-color: #f5f9f5;
+}
+
+.host-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: #8ebd89;
+  color: white;
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.no-members-message {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  padding: 2rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.membership-status {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: #f5f9f5;
+  display: inline-block;
+}
+
+.host-badge-status {
+  color: #5a9a55;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.host-badge-status::before {
+  content: "👑";
+  margin-right: 6px;
+}
+
+.member-badge-status {
+  color: #5f7b5d;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.member-badge-status::before {
+  content: "✓";
+  margin-right: 6px;
+  font-weight: bold;
+}
+
+/* Add these new styles */
+.rating-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.rating-star {
+  cursor: pointer;
+  font-size: 20px;
+  color: #ddd;
+  transition: color 0.2s;
+}
+
+.rating-star.filled {
+  color: #ffb400;
+}
+
+.submit-rating-button {
+  background-color: #8ebd89;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-rating-button:hover {
+  background-color: #7aa875;
+}
+
+.submit-rating-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.delete-rating-button {
+  background-color: #dc3545;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.delete-rating-button:hover {
+  background-color: #c82333;
 }
