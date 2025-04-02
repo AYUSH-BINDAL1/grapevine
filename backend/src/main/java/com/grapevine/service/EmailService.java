@@ -49,7 +49,7 @@ public class EmailService {
     }
 
     // Helper method to extract URLs from HTML content
-    private String extractUrl(String htmlContent, String buttonType) {
+    String extractUrl(String htmlContent, String buttonType) {
         try {
             String searchStart = buttonType.equals("Accept") ?
                     "href=\"" : "Deny</a></td>"; // Different search pattern based on button
