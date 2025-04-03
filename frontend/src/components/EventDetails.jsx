@@ -12,15 +12,32 @@ function EventDetails() {
     const [editedData, setEditedData] = useState({});
 
     const hardcodedLocations = [
-        { id: 1, shortName: "WALC" }, { id: 2, shortName: "LWSN" }, { id: 3, shortName: "PMUC" },
-        { id: 4, shortName: "HAMP" }, { id: 5, shortName: "RAWL" }, { id: 6, shortName: "CHAS" },
-        { id: 7, shortName: "CL50" }, { id: 8, shortName: "FRNY" }, { id: 9, shortName: "KRAN" },
-        { id: 10, shortName: "MSEE" }, { id: 11, shortName: "MATH" }, { id: 12, shortName: "PHYS" },
-        { id: 13, shortName: "POTR" }, { id: 14, shortName: "HAAS" }, { id: 15, shortName: "HIKS" },
-        { id: 16, shortName: "BRWN" }, { id: 17, shortName: "HEAV" }, { id: 18, shortName: "BRNG" },
-        { id: 19, shortName: "SC" }, { id: 20, shortName: "WTHR" }, { id: 21, shortName: "UNIV" },
-        { id: 22, shortName: "YONG" }, { id: 23, shortName: "ME" }, { id: 24, shortName: "ELLT" },
-        { id: 25, shortName: "PMU" }, { id: 26, shortName: "STEW" }
+        { id: 1, shortName: "WALC" },
+        { id: 2, shortName: "LWSN" },
+        { id: 3, shortName: "PMUC" },
+        { id: 4, shortName: "HAMP" },
+        { id: 5, shortName: "RAWL" },
+        { id: 6, shortName: "CHAS" },
+        { id: 7, shortName: "CL50" },
+        { id: 8, shortName: "FRNY" },
+        { id: 9, shortName: "KRAN" },
+        { id: 10, shortName: "MSEE" },
+        { id: 11, shortName: "MATH" },
+        { id: 12, shortName: "PHYS" },
+        { id: 13, shortName: "POTR" },
+        { id: 14, shortName: "HAAS" },
+        { id: 15, shortName: "HIKS" },
+        { id: 16, shortName: "BRWN" },
+        { id: 17, shortName: "HEAV" },
+        { id: 18, shortName: "BRNG" },
+        { id: 19, shortName: "SC" },
+        { id: 20, shortName: "WTHR" },
+        { id: 21, shortName: "UNIV" },
+        { id: 22, shortName: "YONG" },
+        { id: 23, shortName: "ME" },
+        { id: 24, shortName: "ELLT" },
+        { id: 25, shortName: "PMU" },
+        { id: 26, shortName: "STEW" }
     ];
 
     const [hostNames, setHostNames] = useState({});
@@ -30,7 +47,7 @@ function EventDetails() {
             try {
                 const sessionId = localStorage.getItem("sessionId");
                 if (!sessionId) {
-                    alert("Session expired.");
+                    alert("Session expired. Please log in again.");
                     navigate("/");
                     return;
                 }
@@ -38,7 +55,6 @@ function EventDetails() {
                 const response = await axios.get(`http://localhost:8080/events/${eventId}`, {
                     headers: { "Session-Id": sessionId }
                 });
-
                 setEventData(response.data);
                 setEditedData(response.data);
 
@@ -46,6 +62,7 @@ function EventDetails() {
                     headers: { "Session-Id": sessionId }
                 });
                 setGroupName(groupResponse.data.name);
+
                 const hosts = response.data.hosts || [];
                 const names = {};
                 await Promise.all(
@@ -109,6 +126,9 @@ function EventDetails() {
         return <div className="event-details-loading">Loading...</div>;
     }
 
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const currentUserEmail = userData?.userEmail || "";
+    const isHost = eventData.hosts && eventData.hosts.includes(currentUserEmail);
     const locationLabel = hardcodedLocations.find(
         (loc) => loc.id === parseInt(editedData.locationId)
     )?.shortName || "Not specified";
@@ -141,6 +161,7 @@ function EventDetails() {
                                     value={editedData.locationId}
                                     onChange={handleInputChange}
                                 >
+                                    <option value="">Select Location</option>
                                     {hardcodedLocations.map((loc) => (
                                         <option key={loc.id} value={loc.id}>
                                             {loc.shortName}
@@ -172,9 +193,11 @@ function EventDetails() {
                             <div className="event-details-meta-item">📍 {locationLabel}</div>
                             <div className="event-details-meta-item">🕒 {new Date(eventData.eventTime).toLocaleString()}</div>
                             <div className="event-details-meta-item">👥 Max Participants: {eventData.maxUsers}</div>
-                            <div className="event-details-meta-item event-details-link" onClick={() => navigate(`/group/${eventData.groupId}`)}>
-                                🔗 {groupName}
-                            </div>
+                            {eventData.groupId && (
+                                <div className="event-details-meta-item event-details-link" onClick={() => navigate(`/group/${eventData.groupId}`)}>
+                                    🔗 {groupName}
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
@@ -203,7 +226,6 @@ function EventDetails() {
                                 <span className="member-role">Host</span>
                             </div>
                         ))}
-
                         {eventData.participants?.map((participant, index) => {
                             const name = hostNames[participant] || participant;
                             if (eventData.hosts?.includes(participant)) return null;
@@ -217,19 +239,21 @@ function EventDetails() {
                 </div>
             </div>
 
-            <div className="event-details-actions">
-                {editMode ? (
-                    <>
-                        <button className="save-button" onClick={handleSave}>Save</button>
-                        <button className="cancel-button" onClick={() => setEditMode(false)}>Cancel</button>
-                    </>
-                ) : (
-                    <>
-                        <button className="edit-button" onClick={() => setEditMode(true)}>Edit</button>
-                        <button className="delete-button" onClick={handleDelete}>Delete</button>
-                    </>
-                )}
-            </div>
+            {isHost && (
+                <div className="event-details-actions">
+                    {editMode ? (
+                        <>
+                            <button className="save-button" onClick={handleSave}>Save</button>
+                            <button className="cancel-button" onClick={() => setEditMode(false)}>Cancel</button>
+                        </>
+                    ) : (
+                        <>
+                            <button className="edit-button" onClick={() => setEditMode(true)}>Edit</button>
+                            <button className="delete-button" onClick={handleDelete}>Delete</button>
+                        </>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
