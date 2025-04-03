@@ -12,6 +12,7 @@ function CourseSearch() {
   const [error, setError] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const navigate = useNavigate();
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('userData');
@@ -56,7 +57,9 @@ function CourseSearch() {
       setError('Session expired. Please login again.');
       return;
     }
-
+  
+    setHasSearched(true); // Set flag when search is performed
+  
     try {
       const response = await axios.get(`http://localhost:8080/courses/search/short?query=${searchQuery}`, {
         headers: {
@@ -73,6 +76,7 @@ function CourseSearch() {
   const handleInputChange = (e) => {
     setSearchQuery(e.target.value.toUpperCase());
     setError('');
+    setHasSearched(false); // Reset search flag when input changes
   };
 
   const handleCourseClick = (course) => {
@@ -144,29 +148,32 @@ function CourseSearch() {
     }
   };
 
-  return (
-    <div className="course-search-container">
-      <h1>Course Directory</h1>
-      
-      <form onSubmit={handleSearch} className="search-form">
-        <div className="search-input-container">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={handleInputChange}
-            placeholder="Enter course code..."
-            className="search-input"
-            pattern="[A-Za-z0-9 ]+"
-            title="Please enter letters, numbers, and spaces only"
-            required
-          />
-          {error && <div className="error-message">{error}</div>}
-        </div>
-        <button type="submit" className="search-button">Search</button>
-      </form>
+// ...existing imports and component code...
 
-      <div className="course-list">
-        {courses.length === 0 ? (
+return (
+  <div className="course-search-container">
+    <h1>Course Directory</h1>
+    
+    <form onSubmit={handleSearch} className="search-form">
+      <div className="search-input-container">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleInputChange}
+          placeholder="Enter course code..."
+          className="search-input"
+          pattern="[A-Za-z0-9 ]+"
+          title="Please enter letters, numbers, and spaces only"
+          required
+        />
+        {error && <div className="error-message">{error}</div>}
+      </div>
+      <button type="submit" className="search-button">Search</button>
+    </form>
+
+    <div className="course-list">
+      {hasSearched ? (
+        courses.length === 0 ? (
           <div className="no-courses-message">
             There aren't any courses that match your search.
           </div>
@@ -178,11 +185,12 @@ function CourseSearch() {
               onClick={() => handleCourseClick(course)}
             >
               {course.courseKey} - {course.title}
-              {userCourses.includes(course.courseKey) && <span className="enrolled-badge">Enrolled</span>}
+              {userCourses.includes(course.courseKey) && <span className="enrolled-star">★</span>}
             </div>
           ))
-        )}
-      </div>
+        )
+      ) : null}
+    </div>
 
       {selectedCourse && (
         <div className="modal-overlay">

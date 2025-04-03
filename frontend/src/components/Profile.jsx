@@ -43,6 +43,8 @@ function Profile() {
   const navigate = useNavigate();
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [userRole, setUserRole] = useState('');
+  const [coursesData, setCoursesData] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   useEffect(() => {
     if (!sessionId) {
@@ -102,6 +104,36 @@ function Profile() {
     setTimeout(() => setIsLoading(false), 500);
   }, []);
   
+  useEffect(() => {
+    const fetchUserCourses = async () => {
+      if (!userData?.userEmail) return;
+      
+      setCoursesLoading(true);
+      
+      try {
+        const sessionId = localStorage.getItem('sessionId');
+        
+        const response = await axios.get(
+          `http://localhost:8080/users/${userData.userEmail}/courses`,
+          {
+            headers: {
+              'Session-Id': sessionId
+            }
+          }
+        );
+        
+        console.log('Courses data fetched:', response.data);
+        setCoursesData(response.data || []);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+    
+    fetchUserCourses();
+  }, [userData?.userEmail]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -881,6 +913,39 @@ function Profile() {
             <option value="25">PMU</option>
             <option value="26">STEW</option>
           </select>
+        </div>
+
+        <div className="courses-container">
+          <h3 className="panel-header">My Courses</h3>
+          
+          {coursesLoading ? (
+            <div className="loading-courses">
+              <div className="skeleton-courses">
+                <div className="skeleton-course"></div>
+                <div className="skeleton-course"></div>
+                <div className="skeleton-course"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="courses-list">
+              {coursesData && coursesData.length > 0 ? (
+                coursesData.map((course, index) => (
+                  <div key={index} className="course-item">
+                    <p className="course-name">
+                      {course.courseId || course}
+                      {course.courseName && course.courseId !== course.courseName && (
+                        <span className="course-full-name"> - {course.courseName}</span>
+                      )}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-courses-message">
+                  <p>No courses added yet</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       

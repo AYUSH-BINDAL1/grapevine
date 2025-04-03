@@ -4,6 +4,8 @@ import axios from "axios";
 import profileImage from "../assets/temp-profile.webp";
 import "./UsrProfile.css";
 //import { CSSTransition } from "react-transition-group";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 function UsrProfile() {
@@ -15,6 +17,9 @@ function UsrProfile() {
   const [currentUserData, setCurrentUserData] = useState(null);
   const [isFriend, setIsFriend] = useState(false);
   const [compatibilityScore, setCompatibilityScore] = useState(null);
+  const [friendRequestStatus, setFriendRequestStatus] = useState('none'); // 'none', 'pending', 'accepted'
+  const [userCourses, setUserCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   // Update the fetchUserProfile function to properly get the friends list
   useEffect(() => {
@@ -149,7 +154,7 @@ function UsrProfile() {
         
         const friendStatusResponse = await axios({
           method: 'GET',
-          url: `http://localhost:8080/users/${currentUserEmail}/friends/check/${userEmail}`,
+          url: `http://localhost:8080/users/${currentUserEmail}/friendship-status/${userEmail}`,
           headers: {
             'Session-Id': sessionId
           }
@@ -158,36 +163,93 @@ function UsrProfile() {
         console.log('[FRIEND CHECK] API response:', friendStatusResponse.data);
         
         if (friendStatusResponse.data) {
-          console.log('[FRIEND CHECK] Setting isFriend to:', friendStatusResponse.data.isFriend);
-          setIsFriend(!!friendStatusResponse.data.isFriend);
+          const status = friendStatusResponse.data.status || friendStatusResponse.data.friendshipStatus;
+          
+          if (status === 'FRIENDS' || status === 'friends') {
+            console.log('[FRIEND CHECK] Users are friends');
+            setIsFriend(true);
+            setFriendRequestStatus('accepted');
+          } else if (status === 'PENDING_SENT' || status === 'pending_sent') {
+            console.log('[FRIEND CHECK] Friend request is pending');
+            setIsFriend(false);
+            setFriendRequestStatus('pending');
+          } else if (status === 'PENDING_RECEIVED' || status === 'pending_received') {
+            console.log('[FRIEND CHECK] Friend request received');
+            setIsFriend(false);
+            setFriendRequestStatus('received');
+          } else {
+            console.log('[FRIEND CHECK] Users are not friends');
+            setIsFriend(false);
+            setFriendRequestStatus('none');
+          }
         }
       } catch (error) {
         console.error('[FRIEND CHECK] API error:', error);
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[FRIEND CHECK] Using mock data for development');
+        // Fallback to simple friend check
+        try {
+          const simpleCheckResponse = await axios({
+            method: 'GET',
+            url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/check/${userEmail}`,
+            headers: {
+              'Session-Id': sessionId
+            }
+          });
           
-          const mockFriendStatuses = {
-            'user1@purdue.edu': true,
-            'user2@purdue.edu': false,
-            'user3@purdue.edu': false,
-          };
-          
-          if (userEmail in mockFriendStatuses) {
-            const mockStatus = mockFriendStatuses[userEmail];
-            console.log(`[FRIEND CHECK] Using mock status for ${userEmail}: ${mockStatus}`);
-            setIsFriend(mockStatus);
+          if (simpleCheckResponse.data && simpleCheckResponse.data.isFriend) {
+            setIsFriend(true);
+            setFriendRequestStatus('accepted');
           } else {
-            const randomStatus = Math.random() > 0.5;
-            console.log(`[FRIEND CHECK] Using random status for ${userEmail}: ${randomStatus}`);
-            setIsFriend(randomStatus);
+            // If not friends, check for pending requests
+            setIsFriend(false);
+            
           }
+        } catch (simpleCheckError) {
+          console.error('[FRIEND CHECK] Simple check failed:', simpleCheckError);
         }
       }
     };
     
     checkFriendStatus();
   }, [currentUserData, userEmail]);
+
+  useEffect(() => {
+    const fetchUserCourses = async () => {
+      if (!userEmail) return;
+      
+      setCoursesLoading(true);
+      
+      try {
+        const sessionId = localStorage.getItem('sessionId');
+        if (!sessionId) return;
+        
+        const response = await axios({
+          method: 'GET',
+          url: `http://localhost:8080/users/${userEmail}/courses`,
+          headers: {
+            'Session-Id': sessionId
+          }
+        });
+        
+        console.log('User courses API response:', response.data);
+        
+        if (Array.isArray(response.data)) {
+          setUserCourses(response.data);
+        } else if (response.data && Array.isArray(response.data.courses)) {
+          setUserCourses(response.data.courses);
+        } else {
+          console.warn('Unexpected courses data format:', response.data);
+          setUserCourses([]);
+        }
+      } catch (error) {
+        console.error('Error fetching user courses:', error);
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+    
+    fetchUserCourses();
+  }, [userEmail]);
 
   const calculateCompatibility = (profileData) => {
     if (!currentUserData) return;
@@ -246,129 +308,196 @@ function UsrProfile() {
     setCompatibilityScore(compatibilityResult);
   };
 
+  // Update the handleAddFriend function with better error handling
   const handleAddFriend = async () => {
     if (!currentUserData || !userData) return;
 
     try {
       const sessionId = localStorage.getItem('sessionId');
       if (!sessionId) {
+        toast.error("You need to be logged in to add friends");
         navigate('/');
         return;
       }
 
-      await axios({
-        method: 'POST',
-        url: `http://localhost:8080/users/${currentUserData.userEmail}/friend-requests/send`,
-        headers: {
-          'Content-Type': 'application/json',
-          'Session-Id': sessionId
-        },
-        data: {
-          receiverEmail: userData.userEmail
-        }
-      });
-
-      setIsFriend(true);
-      alert(`Friend request sent to ${userData.name}!`);
+      // Set request status to pending immediately for better UX
+      setFriendRequestStatus('pending');
       
+      try {
+        await axios({
+          method: 'POST',
+          url: `http://localhost:8080/users/${currentUserData.userEmail}/friend-requests/send`,
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          },
+          data: {
+            receiverEmail: userData.userEmail
+          }
+        });
+
+        // Success case
+        toast.success(`Friend request sent to ${userData.name}!`);
+        console.log(`Friend request sent to ${userData.name}`);
+        
+      } catch (error) {
+        console.error('Error adding friend:', error);
+        
+        // Special handling for 500 errors which may indicate an already sent request
+        if (error.response && error.response.status === 500) {
+          // Keep the pending status since the request might already exist
+          toast.info(`A friend request to ${userData.name} may already be pending.`);
+        } else if (error.response && error.response.status === 409) {
+          // Specific error for duplicate requests
+          toast.info(`You already have a pending request to ${userData.name}.`);
+        } else {
+          // For other errors, reset the status and show error
+          setFriendRequestStatus('none');
+          toast.error(`Error sending friend request. Please try again later.`);
+        }
+      }
     } catch (error) {
-      console.error('Error adding friend:', error);
-      setIsFriend(true);
-      alert(`Friend request sent to ${userData.name}! (Demo mode)`);
+      console.error('Unexpected error in handleAddFriend:', error);
+      toast.error('Something went wrong. Please try again later.');
+      setFriendRequestStatus('none');
     }
   };
 
-  // Update the handleRemoveFriend function with improved UX
+  // Update the handleRemoveFriend function
   const handleRemoveFriend = async () => {
     if (!currentUserData || !userData) return;
 
-    if (!window.confirm(`Are you sure you want to remove ${userData.name} from your friends?`)) {
-      return;
-    }
-
-    try {
-      const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) {
-        navigate('/');
-        return;
+    // Use toast confirmation instead of window.confirm
+    toast.info(
+      <div>
+        <p>Are you sure you want to remove <strong>{userData.name}</strong> from your friends?</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+          <button
+            onClick={() => {
+              toast.dismiss();
+              performFriendRemoval();
+            }}
+            style={{ padding: '6px 14px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Remove
+          </button>
+          <button
+            onClick={() => toast.dismiss()}
+            style={{ padding: '6px 14px', background: '#e0e0e0', color: 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      {
+        autoClose: false,
+        closeButton: false,
+        closeOnClick: false
       }
-
-      // Show "Removing..." text or animation
-      // You could use this if you had a state for the button text
-      // setRemoveButtonText("Removing...");
-      
-      await axios({
-        method: 'DELETE',
-        url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
-        headers: {
-          'Content-Type': 'application/json',
-          'Session-Id': sessionId
-        }
-      });
-
-      console.log(`Friend ${userData.name} successfully removed`);
-      
-      // Set local state
-      setIsFriend(false);
-      
-      // Also update the currentUserData
-      setCurrentUserData(prevData => {
-        if (!prevData || !prevData.friends) return prevData;
-        
-        const updatedFriends = prevData.friends.filter(
-          friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
-        );
-        
-        console.log('Updated friends list after removal:', updatedFriends);
-        return {
-          ...prevData,
-          friends: updatedFriends
-        };
-      });
-      
-      // Also update localStorage userData if it exists
+    );
+    
+    // Separate function to perform the actual removal
+    const performFriendRemoval = async () => {
       try {
-        const storedUserData = JSON.parse(localStorage.getItem('userData'));
-        if (storedUserData && Array.isArray(storedUserData.friends)) {
-          const updatedFriends = storedUserData.friends.filter(
-            friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
-          );
-          
-          const updatedUserData = {
-            ...storedUserData,
-            friends: updatedFriends
-          };
-          
-          localStorage.setItem('userData', JSON.stringify(updatedUserData));
-          console.log('Updated localStorage userData');
+        const sessionId = localStorage.getItem('sessionId');
+        if (!sessionId) {
+          navigate('/');
+          return;
         }
-      } catch (localStorageError) {
-        console.error('Error updating localStorage:', localStorageError);
-      }
-      
-      alert(`${userData.name} has been removed from your friends.`);
-      
-    } catch (error) {
-      console.error('Error removing friend:', error);
-      
-      // For demo mode, still update UI
-      setIsFriend(false);
-      
-      // Update currentUserData in demo mode too
-      setCurrentUserData(prevData => {
-        if (!prevData || !prevData.friends) return prevData;
+
+        // Show loading toast
+        const loadingToastId = toast.loading(`Removing ${userData.name} from your friends...`);
         
-        const updatedFriends = prevData.friends.filter(
-          friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
-        );
-        return {
-          ...prevData,
-          friends: updatedFriends
-        };
-      });
-      
-      alert(`${userData.name} has been removed from your friends. (Demo mode)`);
-    }
+        try {
+          await axios({
+            method: 'DELETE',
+            url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
+            headers: {
+              'Content-Type': 'application/json',
+              'Session-Id': sessionId
+            }
+          });
+
+          console.log(`Friend ${userData.name} successfully removed`);
+          
+          // Set local state
+          setIsFriend(false);
+          
+          // Update currentUserData (keep this code as is)
+          setCurrentUserData(prevData => {
+            if (!prevData || !prevData.friends) return prevData;
+            
+            const updatedFriends = prevData.friends.filter(
+              friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
+            );
+            
+            console.log('Updated friends list after removal:', updatedFriends);
+            return {
+              ...prevData,
+              friends: updatedFriends
+            };
+          });
+          
+          // Update localStorage (keep this code as is)
+          try {
+            const storedUserData = JSON.parse(localStorage.getItem('userData'));
+            if (storedUserData && Array.isArray(storedUserData.friends)) {
+              const updatedFriends = storedUserData.friends.filter(
+                friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
+              );
+              
+              const updatedUserData = {
+                ...storedUserData,
+                friends: updatedFriends
+              };
+              
+              localStorage.setItem('userData', JSON.stringify(updatedUserData));
+              console.log('Updated localStorage userData');
+            }
+          } catch (localStorageError) {
+            console.error('Error updating localStorage:', localStorageError);
+          }
+          
+          // Update toast to success
+          toast.update(loadingToastId, {
+            render: `${userData.name} has been removed from your friends.`,
+            type: toast.TYPE.SUCCESS,
+            isLoading: false,
+            autoClose: 3000,
+            closeButton: true
+          });
+        } catch (error) {
+          console.error('Error removing friend:', error);
+          
+          // For demo mode, still update UI and show success toast
+          setIsFriend(false);
+          
+          // Update currentUserData in demo mode too
+          setCurrentUserData(prevData => {
+            if (!prevData || !prevData.friends) return prevData;
+            
+            const updatedFriends = prevData.friends.filter(
+              friend => friend.userEmail !== userData.userEmail && friend.email !== userData.userEmail
+            );
+            return {
+              ...prevData,
+              friends: updatedFriends
+            };
+          });
+          
+          toast.update(loadingToastId, {
+            render: `${userData.name} has been removed from your friends. (Demo mode)`,
+            type: toast.TYPE.INFO,
+            isLoading: false,
+            autoClose: 3000,
+            closeButton: true
+          });
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error);
+        toast.error('Something went wrong. Please try again later.');
+      }
+    };
   };
 
   const handleBackClick = () => {
@@ -426,6 +555,15 @@ function UsrProfile() {
             <h3>Common Groups</h3>
             <div className="skeleton-common-list"></div>
           </div>
+
+          <div className="user-courses-card">
+            <h3>Courses</h3>
+            <div className="skeleton-courses">
+              <div className="skeleton-course"></div>
+              <div className="skeleton-course"></div>
+              <div className="skeleton-course"></div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -477,6 +615,7 @@ function UsrProfile() {
           
           <div className="user-actions">
             {console.log('isFriend state in render:', isFriend)}
+            {console.log('friendRequestStatus in render:', friendRequestStatus)}
             
             {isFriend ? (
               <>
@@ -487,6 +626,10 @@ function UsrProfile() {
                   <i className="fa fa-user-times"></i> Remove Friend
                 </button>
               </>
+            ) : friendRequestStatus === 'pending' ? (
+              <button className="pending-request-button" disabled>
+                <i className="fa fa-clock-o"></i> Friend Request Pending
+              </button>
             ) : (
               <button className="add-friend-button" onClick={handleAddFriend}>
                 <i className="fa fa-user-plus"></i> Add Friend
@@ -554,7 +697,52 @@ function UsrProfile() {
             <p className="no-data-message">This user hasn&apos;t joined any groups yet!</p>
           </div>
         </div>
+
+        <div className="user-courses-card">
+          <h3>Courses</h3>
+          {coursesLoading ? (
+            <div className="courses-loading">
+              <div className="skeleton-courses">
+                <div className="skeleton-course"></div>
+                <div className="skeleton-course"></div>
+                <div className="skeleton-course"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="user-courses-list">
+              {userCourses.length > 0 ? (
+                userCourses.map((course, index) => (
+                  <div key={index} className="user-course-item">
+                    <span className="course-icon">📚</span>
+                    <p className="user-course-name">
+                      {course.courseId || course.id || course}
+                      {course.courseName && course.courseId !== course.courseName && (
+                        <span className="user-course-full-name"> - {course.courseName}</span>
+                      )}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="no-data-message">No courses shared</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Add the ToastContainer */}
+      <ToastContainer
+        position="bottom-left"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 }

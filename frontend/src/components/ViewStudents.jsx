@@ -33,6 +33,7 @@ function ViewStudents() {
             }
 
             try {
+                // First get the instructor's courses
                 const userResponse = await axios.get(
                     `http://localhost:8080/users/${userEmail}`,
                     { headers: { 'Session-Id': sessionId } }
@@ -48,17 +49,21 @@ function ViewStudents() {
 
                 let allStudents = [];
 
+                // Fetch enrolled students for each course
                 for (const courseCode of courses) {
                     try {
                         const courseResponse = await axios.get(
-                            `http://localhost:8080/courses/${courseCode}`,
+                            `http://localhost:8080/courses/${courseCode}/enrolled-students`,
                             { headers: { 'Session-Id': sessionId } }
                         );
                         
-                        const courseStudents = courseResponse.data.map(student => ({
-                            ...student,
-                            course: courseCode
-                        }));
+                        // Filter out current user and add course code to each student's data
+                        const courseStudents = courseResponse.data
+                            .filter(student => student.userEmail !== userEmail) // Filter out current user
+                            .map(student => ({
+                                ...student,
+                                course: courseCode
+                            }));
                         
                         allStudents = [...allStudents, ...courseStudents];
                     } catch (courseError) {
@@ -66,12 +71,14 @@ function ViewStudents() {
                     }
                 }
 
+                // Remove duplicates based on email
                 const uniqueStudents = Array.from(new Map(
                     allStudents.map(student => [student.userEmail, student])
                 ).values());
 
                 setStudents(uniqueStudents);
             } catch (error) {
+                console.error('Error fetching data:', error);
                 if (error.response?.status === 401) {
                     setError('Session expired. Please login again.');
                     navigate('/');
@@ -87,6 +94,10 @@ function ViewStudents() {
             fetchStudents();
         }
     }, [navigate, userEmail]);
+
+    const handleStudentClick = (studentEmail) => {
+        navigate(`/user/${studentEmail}`);
+    };
 
     if (loading) {
         return (
@@ -109,6 +120,9 @@ function ViewStudents() {
         );
     }
 
+    // Add the handleStudentClick function near your other handlers
+
+// Then modify the student card rendering in your return statement
     return (
         <div className="friends-page">
             <div className="friends-container">
@@ -117,7 +131,12 @@ function ViewStudents() {
                 {students.length > 0 ? (
                     <div className="friends-list">
                         {students.map(student => (
-                            <div className="friend-card" key={student.userEmail}>
+                            <div 
+                                className="friend-card" 
+                                key={student.userEmail}
+                                onClick={() => handleStudentClick(student.userEmail)}
+                                style={{ cursor: 'pointer' }} // Add cursor pointer to indicate clickable
+                            >
                                 <img src={profileImage} alt={student.name} />
                                 <h3>{student.name}</h3>
                                 <p className="student-email">{student.userEmail}</p>
@@ -132,6 +151,7 @@ function ViewStudents() {
                     <div className="no-friends-message">
                         <div className="empty-state-icon">👥</div>
                         <h3>No students found</h3>
+                        <p>You don't have any students enrolled in your courses yet.</p>
                     </div>
                 )}
             </div>
