@@ -196,6 +196,41 @@ public class GroupService {
         return result;
     }
 
+    public Group joinPublicGroup(Long groupId, User currentUser) {
+        Group group = getGroupById(groupId);
+
+        // Check if the group is public
+        if (!group.isPublic()) {
+            throw new IllegalStateException("Cannot directly join a private group. Please request access instead.");
+        }
+
+        // Check if user is already a participant or host
+        if (group.getParticipants().contains(currentUser.getUserEmail()) ||
+                group.getHosts().contains(currentUser.getUserEmail())) {
+            return group; // User is already in the group
+        }
+
+        // Add user to participants
+        if (group.getParticipants() == null) {
+            group.setParticipants(new ArrayList<>());
+        }
+        group.getParticipants().add(currentUser.getUserEmail());
+
+        // Update user's joinedGroups list
+        if (currentUser.getJoinedGroups() == null) {
+            currentUser.setJoinedGroups(new ArrayList<>());
+        }
+        if (!currentUser.getJoinedGroups().contains(groupId)) {
+            currentUser.getJoinedGroups().add(groupId);
+        }
+
+        // Save the user
+        userRepository.save(currentUser);
+
+        // Save and return the updated group
+        return groupRepository.save(group);
+    }
+
     /**
      * Returns the average rating and total number of reviews for a group
      */
