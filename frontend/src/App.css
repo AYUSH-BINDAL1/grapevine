@@ -421,7 +421,11 @@ h1 {
 }
 
 .all-groups-grid .group-card p {
-  margin-top: 8px;
+  margin: 0;
+  padding: 8px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
 }
 
 .section-header {
