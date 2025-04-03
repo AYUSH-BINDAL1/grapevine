@@ -358,7 +358,7 @@ create_groups_for_user1() {
  if [ ! -z "$HAS_RATING_GROUP_ID" ]; then
    echo -e "\n${GREEN}Adding ratings to HasRating group...${NC}"
 
-   # Add a high rating from user1
+   # Add a high rating from user1 (who created the group and is already a member)
    curl -s -X POST "$BACKEND_URL/groups/$HAS_RATING_GROUP_ID/add-rating" \
      -H "Content-Type: application/json" \
      -H "Session-Id: $SESSION_ID" \
@@ -368,14 +368,21 @@ create_groups_for_user1() {
      }'
    echo -e "${GREEN}Added rating from user1${NC}"
 
-   # Login as user2 and add another rating
+   # Login as user2
    USER2_SESSION_ID=$(curl -s -X POST "$BACKEND_URL/users/login" \
      -H "Content-Type: application/json" \
      -d '{"email": "user2@purdue.edu", "password": "pw2"}' | grep -o '"sessionId":"[^"]*' | sed 's/"sessionId":"//g')
 
    echo "User2 Session ID: $USER2_SESSION_ID"
 
-   # Add user2 to the HasRating group (for public group, we can directly add a rating)
+   # First have user2 join the HasRating group using the new join endpoint
+   echo -e "${BLUE}User2 joining HasRating group...${NC}"
+   JOIN_RESPONSE=$(curl -s --location --request POST "$BACKEND_URL/groups/$HAS_RATING_GROUP_ID/join" \
+     --header "Session-Id: $USER2_SESSION_ID")
+
+   echo -e "${GREEN}Join response: $JOIN_RESPONSE${NC}"
+
+   # Now user2 can add a rating after joining
    curl -s -X POST "$BACKEND_URL/groups/$HAS_RATING_GROUP_ID/add-rating" \
      -H "Content-Type: application/json" \
      -H "Session-Id: $USER2_SESSION_ID" \
