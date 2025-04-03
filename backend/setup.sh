@@ -250,7 +250,140 @@ create_groups_for_user1() {
   echo -e "${GREEN}Created: Web Development Club${NC}"
 
   echo -e "\n${GREEN}Successfully created 5 groups for user1@purdue.edu${NC}"
-}
+
+ # Add public groups with complete JSON data
+ echo -e "\n${GREEN}Creating public groups...${NC}"
+ curl -s -X POST "$BACKEND_URL/groups/create" \
+   -H "Content-Type: application/json" \
+   -H "Session-Id: $SESSION_ID" \
+   -d '{"name": "Public Group 1", "description": "This is a public group", "maxUsers": 20, "public": true}'
+ echo -e "${GREEN}Created: Public Group 1${NC}"
+
+ curl -s -X POST "$BACKEND_URL/groups/create" \
+   -H "Content-Type: application/json" \
+   -H "Session-Id: $SESSION_ID" \
+   -d '{"name": "HasEvents", "description": "Group with events", "maxUsers": 20, "public": true}'
+ echo -e "${GREEN}Created: HasEvents${NC}"
+./s
+ curl -s -X POST "$BACKEND_URL/groups/create" \
+   -H "Content-Type: application/json" \
+   -H "Session-Id: $SESSION_ID" \
+   -d '{"name": "HasRating", "description": "Group with ratings", "maxUsers": 20, "public": true}'
+ echo -e "${GREEN}Created: HasRating${NC}"
+
+ # Wait for groups to be created
+ sleep 2
+
+ # Get the group IDs
+ echo -e "\n${GREEN}Getting group IDs...${NC}"
+ GROUP_LIST=$(curl -s -X GET "$BACKEND_URL/groups/all-short" -H "Session-Id: $SESSION_ID")
+
+ # Extract the group IDs using more robust approach
+ HAS_EVENTS_GROUP_ID=$(echo "$GROUP_LIST" | grep -o '{[^}]*"name":"HasEvents"[^}]*}' | grep -o '"groupId":[0-9]*' | cut -d':' -f2)
+ HAS_RATING_GROUP_ID=$(echo "$GROUP_LIST" | grep -o '{[^}]*"name":"HasRating"[^}]*}' | grep -o '"groupId":[0-9]*' | cut -d':' -f2)
+
+ echo "HasEvents Group ID: $HAS_EVENTS_GROUP_ID"
+ echo "HasRating Group ID: $HAS_RATING_GROUP_ID"
+
+ # Create events for HasEvents group
+ if [ ! -z "$HAS_EVENTS_GROUP_ID" ]; then
+   echo -e "\n${GREEN}Creating events for HasEvents group...${NC}"
+
+   # Regular event
+   curl -s -X POST "$BACKEND_URL/groups/$HAS_EVENTS_GROUP_ID/events/create" \
+     -H "Content-Type: application/json" \
+     -H "Session-Id: $SESSION_ID" \
+     -d '{
+       "name": "Regular Event",
+       "description": "A regular event for testing",
+       "maxUsers": 10,
+       "isPublic": true,
+       "eventTime": "2030-12-25T18:30:00"
+     }'
+   echo -e "${GREEN}Created: Regular Event${NC}"
+
+   # Full event (maxUsers=1, so it will be full with just the host)
+   curl -s -X POST "$BACKEND_URL/groups/$HAS_EVENTS_GROUP_ID/events/create" \
+     -H "Content-Type: application/json" \
+     -H "Session-Id: $SESSION_ID" \
+     -d '{
+       "name": "FullEvent",
+       "description": "A full event for testing",
+       "maxUsers": 1,
+       "isPublic": true,
+       "eventTime": "2030-11-15T18:00:00"
+     }'
+   echo -e "${GREEN}Created: FullEvent${NC}"
+
+# Create a PastEvent using the API with modified date
+    PAST_DATE=$(date -d "-7 days" "+%Y-%m-%dT%H:%M:%S")
+
+    # First create the event via API
+    EVENT_RESPONSE=$(curl -s -X POST "$BACKEND_URL/groups/$HAS_EVENTS_GROUP_ID/events/create" \
+      -H "Content-Type: application/json" \
+      -H "Session-Id: $SESSION_ID" \
+      -d "{
+        \"name\": \"PastEvent\",
+        \"description\": \"This event is in the past\",
+        \"maxUsers\": 10,
+        \"isPublic\": true,
+        \"eventTime\": \"2030-11-25T10:00:00\"
+      }")
+
+    # Extract the event ID
+    PAST_EVENT_ID=$(echo "$EVENT_RESPONSE" | grep -o '"eventId":[0-9]*' | cut -d':' -f2)
+    echo "Created event with ID: $PAST_EVENT_ID"
+
+    # Now update the event time directly in the database
+    if [ ! -z "$PAST_EVENT_ID" ]; then
+      echo -e "\n${GREEN}Setting event date to past...${NC}"
+      # Update event time to be in the past
+      docker exec backend-postgres-1 psql -U postgres -d postgres -c "
+        UPDATE events
+        SET event_time = '$PAST_DATE'
+        WHERE event_id = $PAST_EVENT_ID;"
+      echo -e "${GREEN}Updated: PastEvent (ID: $PAST_EVENT_ID) to date: $PAST_DATE${NC}"
+    else
+      echo -e "${RED}Could not get event ID. Past event creation failed.${NC}"
+    fi
+  else
+    echo -e "${RED}Could not find HasEvents group ID. Skipping event creation.${NC}"
+  fi
+
+ # Add ratings and reviews to HasRating group
+ if [ ! -z "$HAS_RATING_GROUP_ID" ]; then
+   echo -e "\n${GREEN}Adding ratings to HasRating group...${NC}"
+
+   # Add a high rating from user1
+   curl -s -X POST "$BACKEND_URL/groups/$HAS_RATING_GROUP_ID/add-rating" \
+     -H "Content-Type: application/json" \
+     -H "Session-Id: $SESSION_ID" \
+     -d '{
+       "score": 4.5,
+       "review": "Great group with helpful members!"
+     }'
+   echo -e "${GREEN}Added rating from user1${NC}"
+
+   # Login as user2 and add another rating
+   USER2_SESSION_ID=$(curl -s -X POST "$BACKEND_URL/users/login" \
+     -H "Content-Type: application/json" \
+     -d '{"email": "user2@purdue.edu", "password": "pw2"}' | grep -o '"sessionId":"[^"]*' | sed 's/"sessionId":"//g')
+
+   echo "User2 Session ID: $USER2_SESSION_ID"
+
+   # Add user2 to the HasRating group (for public group, we can directly add a rating)
+   curl -s -X POST "$BACKEND_URL/groups/$HAS_RATING_GROUP_ID/add-rating" \
+     -H "Content-Type: application/json" \
+     -H "Session-Id: $USER2_SESSION_ID" \
+     -d '{
+       "score": 3.5,
+       "review": "Good group but could be more active"
+     }'
+   echo -e "${GREEN}Added rating from user2${NC}"
+ else
+   echo -e "${RED}Could not find HasRating group ID. Skipping rating creation.${NC}"
+ fi
+ }
 
 set_instructor_role() {
   echo -e "\n${GREEN}Setting user1 as instructor...${NC}"
@@ -287,9 +420,13 @@ set_instructor_role() {
   echo -e "${GREEN}User1 role updated to instructor successfully!${NC}"
 }
 
-# Register two users
+# Register four users
 register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
 register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
+echo -e "\n${BLUE}Creating additional test users...${NC}"
+register_and_verify_user "denyuser@purdue.edu" "denypw" "Deny User"
+register_and_verify_user "deleteuser@purdue.edu" "deletepw" "Delete User"
+
 
 # Create groups for user1
 create_groups_for_user1
@@ -300,6 +437,8 @@ set_instructor_role
 echo -e "\n${GREEN}Login to test the users:${NC}"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user1@purdue.edu\", \"password\": \"pw1\"}'"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user2@purdue.edu\", \"password\": \"pw2\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"denyuser@purdue.edu\", \"password\": \"denypw\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"deleteuser@purdue.edu\", \"password\": \"deletepw\"}'"
 
 setup_bucket
 

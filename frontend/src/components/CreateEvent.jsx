@@ -10,7 +10,6 @@ function CreateEvent() {
         date: '',
         time: '',
         maxUsers: '',
-        isPublic: false,
         groupId: '',
         locationId: ''
     });
@@ -99,7 +98,6 @@ function CreateEvent() {
                 name: formData.name,
                 description: formData.description,
                 maxUsers: parseInt(formData.maxUsers, 10),
-                isPublic: formData.isPublic,
                 eventTime: eventTime,
                 locationId: parseInt(formData.locationId, 10)
             };
@@ -174,17 +172,6 @@ function CreateEvent() {
                         placeholder="Max Users"
                         required
                     />
-                </div>
-                <div className="form-group">
-                    <label>
-                        <input
-                            type="checkbox"
-                            name="isPublic"
-                            checked={formData.isPublic}
-                            onChange={handleChange}
-                        />
-                        Public Event
-                    </label>
                 </div>
                 <div className="form-group">
                     <select

@@ -193,6 +193,7 @@
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   min-width: 120px;
+  flex: 1;
 }
 
 /* Icon styles for all buttons */
@@ -254,6 +255,43 @@
 .message-button:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Already Friends button styles */
+.already-friends-button {
+  background-color: #e0e0e0;
+  color: #606060;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s;
+}
+
+.already-friends-button i {
+  font-size: 16px;
+  color: #4caf50;
+}
+
+/* Alternative UI Option - Friend status indicator */
+.friend-status-indicator {
+  background-color: #f5f9f5;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #4caf50;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.friend-status-indicator i {
+  font-size: 12px;
 }
 
 /* Responsive styles for mobile */

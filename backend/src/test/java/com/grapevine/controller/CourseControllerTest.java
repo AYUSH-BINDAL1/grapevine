@@ -1,6 +1,5 @@
-package com.grapevine;
+package com.grapevine.controller;
 
-import com.grapevine.controller.CourseController;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.exception.ResourceNotFoundException;
 import com.grapevine.model.Course;
