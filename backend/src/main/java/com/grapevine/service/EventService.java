@@ -110,7 +110,7 @@ public class EventService {
 
         // Convert to ShortEvent objects
         return filteredEvents.stream()
-                .map(event -> new ShortEvent(event.getEventId(), event.getName()))
+                .map(event -> new ShortEvent(event.getEventId(), event.getName(), event.getLocationId()))
                 .collect(Collectors.toList());
     }
 
@@ -315,7 +315,7 @@ public class EventService {
         if (group.getEvents() != null) {
             for (Long eventId : group.getEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> shortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+                        .ifPresent(event -> shortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
             }
         }
 
