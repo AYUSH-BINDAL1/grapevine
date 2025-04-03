@@ -239,8 +239,6 @@ function EventDetails() {
                 </div>
             </div>
 
-            // ...existing code...
-
             {isHost && (
                 <div className="event-details-actions">
                     {editMode ? (
