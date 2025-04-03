@@ -554,6 +554,79 @@
   padding: 20px 0;
 }
 
+/* Course card */
+.user-courses-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Course list */
+.user-courses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Course item */
+.user-course-item {
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 10px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.user-course-item:hover {
+  background-color: #e9ecef;
+}
+
+/* Course icon */
+.course-icon {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+/* Course name */
+.user-course-name {
+  margin: 0;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Course full name (course title) */
+.user-course-full-name {
+  font-weight: normal;
+  color: #6c757d;
+  margin-left: 4px;
+}
+
+/* Skeleton loading courses */
+.skeleton-courses {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.skeleton-course {
+  height: 38px;
+  background-color: #f0f0f0;
+  border-radius: 6px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
 /* Responsive design */
 @media (max-width: 900px) {
   .user-content-grid {
