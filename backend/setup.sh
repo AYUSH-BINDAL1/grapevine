@@ -298,7 +298,8 @@ create_groups_for_user1() {
        "description": "A regular event for testing",
        "maxUsers": 10,
        "isPublic": true,
-       "eventTime": "2030-12-25T18:30:00"
+       "eventTime": "2030-12-25T18:30:00",
+       "locationId": 1
      }'
    echo -e "${GREEN}Created: Regular Event${NC}"
 
@@ -311,7 +312,8 @@ create_groups_for_user1() {
        "description": "A full event for testing",
        "maxUsers": 1,
        "isPublic": true,
-       "eventTime": "2030-11-15T18:00:00"
+       "eventTime": "2030-11-15T18:00:00",
+       "locationId": 2
      }'
    echo -e "${GREEN}Created: FullEvent${NC}"
 
@@ -327,7 +329,9 @@ create_groups_for_user1() {
         \"description\": \"This event is in the past\",
         \"maxUsers\": 10,
         \"isPublic\": true,
-        \"eventTime\": \"2030-11-25T10:00:00\"
+        \"eventTime\": \"2030-11-25T10:00:00\",
+        \"locationId\": 4
+
       }")
 
     # Extract the event ID
@@ -424,8 +428,8 @@ set_instructor_role() {
 register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
 register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
 echo -e "\n${BLUE}Creating additional test users...${NC}"
-register_and_verify_user "denyuser@purdue.edu" "denypw" "Deny User"
-register_and_verify_user "deleteuser@purdue.edu" "deletepw" "Delete User"
+register_and_verify_user "deny@purdue.edu" "deny" "Deny User"
+register_and_verify_user "delete@purdue.edu" "delete" "Delete User"
 
 
 # Create groups for user1
@@ -437,8 +441,8 @@ set_instructor_role
 echo -e "\n${GREEN}Login to test the users:${NC}"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user1@purdue.edu\", \"password\": \"pw1\"}'"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user2@purdue.edu\", \"password\": \"pw2\"}'"
-echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"denyuser@purdue.edu\", \"password\": \"denypw\"}'"
-echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"deleteuser@purdue.edu\", \"password\": \"deletepw\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"deny@purdue.edu\", \"password\": \"deny\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"delete@purdue.edu\", \"password\": \"delete\"}'"
 
 setup_bucket
 

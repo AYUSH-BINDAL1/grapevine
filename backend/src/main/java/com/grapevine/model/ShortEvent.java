@@ -12,4 +12,5 @@ import lombok.ToString;
 public class ShortEvent {
     private Long eventId;
     private String name;
+    private Long locationId;
 }
