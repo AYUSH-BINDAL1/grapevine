@@ -54,16 +54,27 @@ function Events() {
                 const userData = JSON.parse(localStorage.getItem('userData'));
                 const sessionId = localStorage.getItem('sessionId');
                 if (!userData || !sessionId) return;
+
                 const email = userData.userEmail;
+
                 const response = await axios.get(
-                    `http://localhost:8080/users/${email}/all-events-short`,
+                    `http://localhost:8080/events/all`,
                     { headers: { 'Session-Id': sessionId } }
                 );
-                setMyEvents(response.data);
+
+                const allEvents = response.data;
+
+                // Filter for events where the user is a host or participant
+                const userEvents = allEvents.filter(ev =>
+                    ev.hosts?.includes(email) || ev.participants?.includes(email)
+                );
+
+                setMyEvents(userEvents);
             } catch (error) {
-                console.error("Error fetching my events:", error);
+                console.error("Error fetching events:", error);
             }
         };
+
         fetchMyEvents();
     }, []);
 
@@ -73,8 +84,8 @@ function Events() {
             try {
                 const sessionId = localStorage.getItem('sessionId');
                 if (!sessionId) return;
-                const response = await axios.get("http://localhost:8080/events/all-short", {
-                    headers: { 'Session-Id': sessionId }
+                const response = await axios.get("http://localhost:8080/events/all", {
+                    headers: {'Session-Id': sessionId}
                 });
                 setAllEvents(response.data);
                 setFilteredEvents(response.data);
@@ -121,7 +132,7 @@ function Events() {
                     query.append(key, val);
                 }
             });
-            const url = `http://localhost:8080/events/all-short?${query.toString()}`;
+            const url = `http://localhost:8080/events/all?${query.toString()}`;
             console.log("Requesting:", url);
             const response = await axios.get(url, {
                 headers: { 'Session-Id': sessionId }
@@ -166,6 +177,9 @@ function Events() {
                         myEvents.map((ev) => (
                             <div key={ev.eventId} className="group-card" onClick={() => handleEventClick(ev.eventId)}>
                                 <h3>{ev.name}</h3>
+                                <div className="event-location-footer">
+                                    📍 {hardcodedLocations.find(loc => loc.id === ev.locationId)?.shortName || "N/A"}
+                                </div>
                             </div>
                         ))
                     )}
@@ -272,6 +286,9 @@ function Events() {
                             <div key={event.eventId} className="group-card" onClick={() => handleEventClick(event.eventId)}>
                                 <h3>{event.name}</h3>
                                 <p>{event.description}</p>
+                                <div className="event-location-footer">
+                                    📍 {hardcodedLocations.find(loc => loc.id === event.locationId)?.shortName || "N/A"}
+                                </div>
                             </div>
                         ))
                     )}
