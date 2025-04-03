@@ -73,3 +73,9 @@
 .cancel-button:hover {
     background-color: #6f2885;
 }
+
+.enrolled-star {
+    color: #ffb400;
+    margin-left: 8px;
+    font-size: 18px;
+}

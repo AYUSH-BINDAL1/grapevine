@@ -60,6 +60,30 @@ h2:hover {
   overflow: hidden;
 }
 
+.friend-card h3 {
+  text-align: center;
+  width: 100%;
+  margin: 10px 0;
+}
+
+/* Ensure all text content in friend cards is centered */
+.friend-card p {
+  text-align: center;
+  width: 100%;
+  margin: 5px 0;
+}
+
+.friend-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(142, 189, 137, 0.4);
+}
+
+/* Center the image */
+.friend-card img {
+  display: block;
+  margin: 0 auto 15px;
+}
+
 .friend-card-content {
   width: 100%;
   display: flex;
@@ -218,6 +242,25 @@ h2:hover {
   .friend-card {
     width: 150px;
     padding: 15px;
+  }
+
+  .friend-card h3 {
+    text-align: center;
+    width: 100%;
+    margin: 10px 0;
+  }
+  
+  /* Ensure all text content in friend cards is centered */
+  .friend-card p {
+    text-align: center;
+    width: 100%;
+    margin: 5px 0;
+  }
+  
+  /* Center the image */
+  .friend-card img {
+    display: block;
+    margin: 0 auto 15px;
   }
   
   .friend-card img {
