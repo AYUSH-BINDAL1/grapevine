@@ -248,7 +248,10 @@ function EventDetails() {
                         </>
                     ) : (
                         <>
-                            <button className="edit-button" onClick={() => setEditMode(true)}>Edit</button>
+                            {/* Only show Edit button if event is not expired */}
+                            {new Date(eventData.eventTime) > new Date() && (
+                                <button className="edit-button" onClick={() => setEditMode(true)}>Edit</button>
+                            )}
                             <button className="delete-button" onClick={handleDelete}>Delete</button>
                         </>
                     )}
