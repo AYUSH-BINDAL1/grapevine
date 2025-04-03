@@ -132,7 +132,7 @@ function Events() {
                     query.append(key, val);
                 }
             });
-            const url = `http://localhost:8080/events/all?${query.toString()}`;
+            const url = `http://localhost:8080/events/all-short?${query.toString()}`;
             console.log("Requesting:", url);
             const response = await axios.get(url, {
                 headers: { 'Session-Id': sessionId }
@@ -162,7 +162,7 @@ function Events() {
 
     return (
         <div className="app">
-            <h1>My Events</h1>
+            <h1>Events</h1>
             <button onClick={handleCreateEvent} className="create-event-button">
                 Create Event
             </button>
@@ -285,7 +285,6 @@ function Events() {
                         filteredEvents.map((event) => (
                             <div key={event.eventId} className="group-card" onClick={() => handleEventClick(event.eventId)}>
                                 <h3>{event.name}</h3>
-                                <p>{event.description}</p>
                                 <div className="event-location-footer">
                                     📍 {hardcodedLocations.find(loc => loc.id === event.locationId)?.shortName || "N/A"}
                                 </div>
