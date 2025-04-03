@@ -234,15 +234,15 @@ function Home() {
                     >
                       <h3>{group.name}</h3>
                       {group.public === false ? (
-                          <div className="private-group-indicator">
-                            <span className="lock-icon">🔒</span>
-                            <span className="private-text">Private</span>
-                          </div>
+                        <div className="private-group-indicator">
+                          <span className="lock-icon">🔒</span>
+                          <span className="private-text">Private</span>
+                        </div>
                       ) : (
-                          <div className="private-group-indicator">
-                            <span className="lock-icon">🌐</span>
-                            <span className="private-text">Public</span>
-                          </div>
+                        <div className="public-group-indicator">
+                          <span className="globe-icon">🌐</span>
+                          <span className="public-text">Public</span>
+                        </div>
                       )}
                     </div>
                 ))
@@ -302,15 +302,15 @@ function Home() {
                     >
                       <h3>{group.name}</h3>
                       {group.public === false ? (
-                          <div className="private-group-indicator">
-                            <span className="lock-icon">🔒</span>
-                            <span className="private-text">Private</span>
-                          </div>
+                        <div className="private-group-indicator">
+                          <span className="lock-icon">🔒</span>
+                          <span className="private-text">Private</span>
+                        </div>
                       ) : (
-                          <div className="private-group-indicator">
-                            <span className="lock-icon">🌐</span>
-                            <span className="private-text">Public</span>
-                          </div>
+                        <div className="public-group-indicator">
+                          <span className="globe-icon">🌐</span>
+                          <span className="public-text">Public</span>
+                        </div>
                       )}
                     </div>
                 ))
