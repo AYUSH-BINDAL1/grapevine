@@ -281,21 +281,6 @@ h1 {
   padding-top: 80px; /* Add top padding to all main content pages */
 }
 
-.create-group-button {
-  background-color: #8ebd89;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  margin-bottom: 20px;
-  transition: background-color 0.2s;
-}
-
-.create-group-button:hover {
-  background-color: #7aa875;
-}
 
 .scroll-wrapper2 {
   display: flex;
@@ -487,5 +472,51 @@ h1 {
     width: 35px;
     height: 35px;
   }
+}
+
+.all-groups-layout {
+  display: flex;
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.filters-panel {
+  width: 220px;
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f8f8f8;
+}
+
+.filters-panel input,
+.filters-panel select {
+  width: 90%;
+  padding: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #333;
+}
+
+.filter-button {
+  width: 100%;
+  padding: 8px;
+  background-color: #0055aa;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.filter-button:hover {
+  background-color: #003e85;
 }
 

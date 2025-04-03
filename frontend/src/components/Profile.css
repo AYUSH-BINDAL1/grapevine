@@ -935,3 +935,77 @@ It also includes responsive design for different screen sizes. */
 .role-select option {
   padding: 10px;
 }
+
+/* Courses Container Styles */
+.courses-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.courses-list {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.course-item {
+  background-color: #f7f9fc;
+  padding: 10px 15px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.course-item:hover {
+  background-color: #eef2f7;
+}
+
+.course-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.course-full-name {
+  font-weight: 400;
+  color: #666;
+  margin-left: 5px;
+}
+
+.empty-courses-message {
+  padding: 15px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+}
+
+/* Add these skeleton loading styles for courses */
+.loading-courses {
+  margin-top: 15px;
+}
+
+.skeleton-courses {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton-course {
+  height: 40px;
+  background-color: #f0f0f0;
+  border-radius: 6px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}

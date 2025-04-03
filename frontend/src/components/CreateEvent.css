@@ -28,7 +28,7 @@
 
 .form-group input,
 .form-group textarea {
-    width: 100%;
+    width: 80%;
     padding: 0.75rem;
     border: 1px solid #8ebd89;
     border-radius: 4px;
@@ -50,6 +50,8 @@
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    display: block;
+    margin: 0 auto 20px
 }
 
 .create-event-button:hover {
@@ -65,9 +67,15 @@
     border-radius: 4px;
     font-size: 1rem;
     cursor: pointer;
-    margin-top: 10px;
+    margin-top: 0px;
 }
 
 .cancel-button:hover {
     background-color: #6f2885;
+}
+
+.enrolled-star {
+    color: #ffb400;
+    margin-left: 8px;
+    font-size: 18px;
 }
