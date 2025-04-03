@@ -294,6 +294,44 @@
   font-size: 12px;
 }
 
+/* Add this for the pending request button */
+.pending-request-button {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  font-size: 14px !important;
+  cursor: pointer !important; /* Change from default to pointer */
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+}
+
+.pending-request-button:hover {
+  background-color: #e0a800 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+}
+
+.pending-request-button i {
+  font-size: 16px !important;
+}
+
+/* Add an indicator to show this is clickable to cancel */
+.pending-request-button::after {
+  content: '(Click to cancel)';
+  font-size: 12px;
+  opacity: 0;
+  margin-left: 5px;
+  transition: opacity 0.2s ease;
+}
+
+.pending-request-button:hover::after {
+  opacity: 1;
+}
+
 /* Responsive styles for mobile */
 @media (max-width: 480px) {
   .user-actions {
