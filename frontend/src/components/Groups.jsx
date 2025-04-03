@@ -36,6 +36,9 @@ function Groups() {
   const [submittingRating, setSubmittingRating] = useState(false);
   const [myRating, setMyRating] = useState(null);
   const [isMember, setIsMember] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [existingReview, setExistingReview] = useState(null);
+
 
   // Mock data for the group
   const groupsData = {
@@ -185,6 +188,8 @@ function Groups() {
           
           console.log('Formatted group data:', formattedGroup);
           setGroup(formattedGroup);
+
+          
           
           // Now fetch the rating data
           try {
@@ -208,6 +213,31 @@ function Groups() {
               totalReviews: reviews.length
             });
           }
+          try {
+            const myRatingResponse = await axios.get(
+              `http://localhost:8080/groups/${id}/my-rating`,
+              {
+                headers: {
+                  'Session-Id': sessionId,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            
+            if (myRatingResponse.data) {
+              setMyRating(myRatingResponse.data.score);
+              setUserRating(myRatingResponse.data.score);
+              setExistingReview(myRatingResponse.data);
+              // Pre-populate the userReview state
+              setUserReview({
+                rating: myRatingResponse.data.score,
+                comment: myRatingResponse.data.review || ''
+              });
+            }
+          } catch (ratingError) {
+            console.error('Error fetching user rating:', ratingError);
+          }
+          await fetchReviews();
           
         } catch (groupError) {
           console.error('Error fetching group data after access check:', groupError);
@@ -283,6 +313,44 @@ function Groups() {
     }
   };
 
+  const fetchReviews = async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    console.log('Fetching ratings and reviews for group:', id);
+    
+    try {
+      const reviewsResponse = await axios.get(
+        `http://localhost:8080/groups/${id}/ratings-reviews`,
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log('Raw ratings-reviews response:', reviewsResponse.data);
+      
+      // Transform the parallel arrays into review objects
+      const formattedReviews = reviewsResponse.data.reviews.map((review, index) => ({
+        id: index,
+        userEmail: 'user@example.com', // Will need to be provided by backend
+        userName: 'User', // Will need to be provided by backend
+        score: reviewsResponse.data.scores[index],
+        review: review,
+        date: new Date().toISOString() // Will need to be provided by backend
+      }));
+  
+      console.log('Formatted reviews:', formattedReviews);
+      setReviews(formattedReviews);
+    } catch (error) {
+      console.error('Error fetching ratings-reviews:', error);
+      if (error.response) {
+        console.log('Error response:', error.response.data);
+        console.log('Status code:', error.response.status);
+      }
+      setReviews([]);
+    }
+  };
+
   // Helper function to handle errors from group data fetch
   const handleGroupFetchError = (error) => {
     console.error('Error fetching group data:', error);
@@ -343,6 +411,7 @@ function Groups() {
 
   useEffect(() => {
     fetchData();
+    fetchReviews();
   }, [id, navigate]);
 
   useEffect(() => {
@@ -392,35 +461,76 @@ function Groups() {
     setUserReview({ ...userReview, comment: e.target.value });
   };
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
-    if (userReview.rating === 0) {
-      alert('Please select a rating');
+    const sessionId = localStorage.getItem('sessionId');
+  
+    if (!sessionId) {
+      navigate('/');
       return;
     }
-
-    // In a real app, you would send this to your backend API
-    alert('Review submitted successfully!');
-    
-    // Add the review to the group's reviews (for demo purposes)
-    const newReview = {
-      id: group.reviews.length + 1,
-      userId: 999, // This would be the actual user's ID
-      userName: 'Current User', // This would be the actual user's name
-      rating: userReview.rating,
-      comment: userReview.comment,
-      date: new Date().toISOString().split('T')[0]
-    };
-    
-    setGroup({
-      ...group,
-      reviews: [...group.reviews, newReview]
-    });
-    
-    // Reset form
-    setUserReview({ rating: 0, comment: '' });
-    setShowReviewForm(false);
+  
+    if (userReview.rating === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+  
+    try {
+      if (existingReview) {
+        // Update existing review
+        await axios.put(
+          `http://localhost:8080/groups/${id}/update-rating`,
+          {
+            score: userReview.rating,
+            review: userReview.comment
+          },
+          {
+            headers: {
+              'Session-Id': sessionId,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      } else {
+        // Create new review
+        await axios.post(
+          `http://localhost:8080/groups/${id}/add-rating`,
+          {
+            score: userReview.rating,
+            review: userReview.comment
+          },
+          {
+            headers: {
+              'Session-Id': sessionId,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      }
+  
+      // Refresh reviews and ratings
+      await fetchReviews();
+      const ratingResponse = await axios.get(
+        `http://localhost:8080/groups/${id}/average-rating`,
+        { headers: { 'Session-Id': sessionId } }
+      );
+      
+      setRatingData(ratingResponse.data);
+      setMyRating(userReview.rating);
+      setUserRating(userReview.rating);
+      setExistingReview({
+        score: userReview.rating,
+        review: userReview.comment
+      });
+      
+      setShowReviewForm(false);
+      toast.success(existingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      toast.error('Failed to submit review. Please try again.');
+    }
   };
+  
 
   const renderStars = (rating, interactive = false) => {
     return Array(5).fill(0).map((_, i) => (
@@ -658,46 +768,46 @@ function Groups() {
             </div>
             <div className="group-meta-item">
               <span className="meta-icon">★</span>
-              <div className="rating-container">
-                <span>
-                  {ratingData ? (
-                    ratingData.totalReviews > 0 
-                      ? `${ratingData.averageRating.toFixed(1)}/5.0 (${ratingData.totalReviews} reviews)`
-                      : '(N/A)'
-                  ) : 'Loading...'}
-                </span>
-                {isMember && (
-                  <>
-                    <div className="rating-stars">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <span
-                          key={star}
-                          className={`rating-star ${star <= userRating ? 'filled' : ''}`}
-                          onClick={() => setUserRating(star)}
+                <div className="rating-container">
+                  <span>
+                    {ratingData ? (
+                      ratingData.totalReviews > 0 
+                        ? `${ratingData.averageRating.toFixed(1)}/5.0 (${ratingData.totalReviews} reviews)`
+                        : '(N/A) (0 reviews)'
+                    ) : 'Loading...'}
+                  </span>
+                  {userMembership.isMember && ( // Changed from isMember to userMembership.isMember
+                    <>
+                      <div className="rating-stars">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={`rating-star ${star <= userRating ? 'filled' : ''}`}
+                            onClick={() => setUserRating(star)}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      {myRating ? (
+                        <button
+                          className="delete-rating-button"
+                          onClick={handleDeleteRating}
                         >
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                    {myRating ? (
-                      <button
-                        className="delete-rating-button"
-                        onClick={handleDeleteRating}
-                      >
-                        Delete Rating
-                      </button>
-                    ) : (
-                      <button
-                        className="submit-rating-button"
-                        onClick={handleRatingSubmit}
-                        disabled={!userRating || submittingRating}
-                      >
-                        {submittingRating ? 'Submitting...' : 'Rate'}
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
+                          Delete Rating
+                        </button>
+                      ) : (
+                        <button
+                          className="submit-rating-button"
+                          onClick={handleRatingSubmit}
+                          disabled={!userRating || submittingRating}
+                        >
+                          {submittingRating ? 'Submitting...' : 'Rate'}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
             </div>
           </div>
           
@@ -776,15 +886,26 @@ function Groups() {
         </div>
         
         <div className="group-reviews-section">
-          <div className="reviews-header">
-            <h2>Reviews ({group.reviews ? group.reviews.length : 0})</h2>
-            <button 
+        <div className="reviews-header">
+          <h2>Reviews ({reviews ? reviews.length : 0})</h2>
+          {userMembership.isMember && (
+           <button 
               className="write-review-button"
-              onClick={() => setShowReviewForm(!showReviewForm)}
+              onClick={() => {
+                if (!showReviewForm && existingReview) {
+                  // Pre-populate form when opening with existing review
+                  setUserReview({
+                    rating: existingReview.score,
+                    comment: existingReview.review || ''
+                  });
+                }
+                setShowReviewForm(!showReviewForm);
+              }}
             >
-              {showReviewForm ? 'Cancel' : 'Write a Review'}
+              {showReviewForm ? 'Cancel' : (existingReview ? 'Edit Review' : 'Write a Review')}
             </button>
-          </div>
+          )}
+        </div>
           
           {showReviewForm && (
             <div className="review-form-container">
@@ -806,29 +927,36 @@ function Groups() {
                     required
                   />
                 </div>
-                <button type="submit" className="submit-review-button">Submit Review</button>
+                <button type="submit" className="submit-review-button">
+                  {existingReview ? 'Update Review' : 'Submit Review'}
+                </button>
               </form>
             </div>
           )}
           
-          {group.reviews && group.reviews.length > 0 ? (
+          {reviews && reviews.length > 0 ? (
             <div className="reviews-list-container">
               <div className="reviews-list">
-                {group.reviews.map(review => (
-                  <div key={review.id} className="review-card">
-                    <div className="review-header">
-                      <img src={profileImage} alt={review.userName} className="reviewer-avatar" />
-                      <div className="review-meta">
-                        <p className="reviewer-name">{review.userName}</p>
-                        <p className="review-date">{review.date}</p>
+                {reviews.map(review => {
+                  console.log('Rendering individual review:', review);
+                  return (
+                    <div key={review.id || review.userEmail} className="review-card">
+                      <div className="review-header">
+                        <img src={profileImage} alt={review.userName || 'User'} className="reviewer-avatar" />
+                        <div className="review-meta">
+                          <p className="reviewer-name">{review.userName || 'Anonymous User'}</p>
+                          <p className="review-date">
+                            {review.date ? new Date(review.date).toLocaleDateString() : 'Recent'}
+                          </p>
+                        </div>
                       </div>
+                      <div className="review-rating">
+                        {renderStars(Number(review.score))}
+                      </div>
+                      <p className="review-comment">{review.review || 'No comment provided'}</p>
                     </div>
-                    <div className="review-rating">
-                      {renderStars(review.rating)}
-                    </div>
-                    <p className="review-comment">{review.comment}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
