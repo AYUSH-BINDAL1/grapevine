@@ -133,7 +133,7 @@ function Layout() {
 function Home() {
   const [groups, setGroups] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
-  const [groupFilter, setGroupFilter] = useState("all"); // "all", "public", "private"
+  const [groupFilter, setGroupFilter] = useState("public"); // "all", "public", "private"
   const [filteredGroups, setFilteredGroups] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
@@ -162,11 +162,12 @@ function Home() {
         }
 
         try {
-          const allRes = await axios.get("http://localhost:8080/groups/all-short", {
+          const allRes = await axios.get("http://localhost:8080/groups/all", {
             headers: { 'Session-Id': sessionId }
           });
           setAllGroups(allRes.data);
-          setFilteredGroups(allRes.data);
+          const publicGroups = allRes.data.filter(group => group.public === true);
+          setFilteredGroups(publicGroups);
         } catch (error) {
           console.error('Error fetching all groups:', error);
         }
@@ -232,10 +233,15 @@ function Home() {
                         onClick={() => handleGroupClick(group.groupId)}
                     >
                       <h3>{group.name}</h3>
-                      {group.public === false && (
+                      {group.public === false ? (
                         <div className="private-group-indicator">
                           <span className="lock-icon">🔒</span>
                           <span className="private-text">Private</span>
+                        </div>
+                      ) : (
+                        <div className="public-group-indicator">
+                          <span className="globe-icon">🌐</span>
+                          <span className="public-text">Public</span>
                         </div>
                       )}
                     </div>
@@ -247,29 +253,42 @@ function Home() {
 
         <h2 className="section-header">All Groups</h2>
         <div className="all-groups-layout">
-          <div className="filters-panel">
-            <input
-                type="text"
-                placeholder="Search groups..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    applyGroupFilter();
-                  }
-                }}
-            />
-            <label htmlFor="groupFilter">Filter by:</label>
-            <select
-                id="groupFilter"
-                value={groupFilter}
-                onChange={(e) => setGroupFilter(e.target.value)}
-            >
-              <option value="all">All Groups</option>
-              <option value="public">Public</option>
-              <option value="private">Private</option>
-            </select>
+          <div className="filters-panel events-filter-panel">
+            <h2>Filter Groups</h2>
+
+            <div className="filter-group">
+              <label htmlFor="groupSearch">Search:</label>
+              <input
+                  type="text"
+                  id="groupSearch"
+                  placeholder="Search groups..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      applyGroupFilter();
+                    }
+                  }}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label htmlFor="groupFilter">Visibility:</label>
+              <select
+                  id="groupFilter"
+                  value={groupFilter}
+                  onChange={(e) => setGroupFilter(e.target.value)}
+              >
+                <option value="all">All Groups</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+
+            <button className="filter-button" onClick={applyGroupFilter}>
+              Search
+            </button>
           </div>
           <div className="all-groups-grid">
             {filteredGroups.length === 0 ? (
@@ -282,13 +301,17 @@ function Home() {
                         onClick={() => handleGroupClick(group.groupId)}
                     >
                       <h3>{group.name}</h3>
-                      {group.public === false && (
+                      {group.public === false ? (
                         <div className="private-group-indicator">
                           <span className="lock-icon">🔒</span>
                           <span className="private-text">Private</span>
                         </div>
+                      ) : (
+                        <div className="public-group-indicator">
+                          <span className="globe-icon">🌐</span>
+                          <span className="public-text">Public</span>
+                        </div>
                       )}
-                      <p>{group.description}</p>
                     </div>
                 ))
             )}
