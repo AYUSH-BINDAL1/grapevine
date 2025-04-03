@@ -54,6 +54,7 @@ jobs:
       run: docker run -d --name minio -p 9000:9000 -p 9001:9001 -e "MINIO_ROOT_USER=minioadmin" -e "MINIO_ROOT_PASSWORD=minioadmin" minio/minio server /data --console-address ":9001"
 
     - name: Build and test with Maven
+      working-directory: ./backend
       run: ./mvnw clean verify
       env:
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/postgres
@@ -70,6 +71,7 @@ jobs:
 
     - name: Build Docker image
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      working-directory: ./backend
       run: docker build -t grapevine .
 
     - name: Upload build artifacts
@@ -77,7 +79,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: app-jar
-        path: target/*.jar
+        path: backend/target/*.jar
 
   deploy:
     needs: build-and-test
