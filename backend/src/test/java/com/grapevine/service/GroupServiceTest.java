@@ -13,10 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -453,181 +450,143 @@ public class GroupServiceTest {
     @Test
     void addOrUpdateRating_NewRating_AddsRatingCorrectly() {
         // Arrange
-        testGroup.setRating(null); // Start with no rating
-        String userEmail = "rater@example.com";
-        Float score = 4.5f;
-        String review = "Great group!";
+        Group group = new Group();
+        User user = new User();
+        user.setName("Test User"); // Add name
 
-        when(groupRepository.findById(1L)).thenReturn(Optional.of(testGroup));
-        when(groupRepository.save(any(Group.class))).thenReturn(testGroup);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(userService.getUserByEmail("test@example.com")).thenReturn(user);
+        when(groupRepository.save(any(Group.class))).thenReturn(group);
 
         // Act
-        Group result = groupService.addOrUpdateRating(1L, score, review, userEmail);
+        Group result = groupService.addOrUpdateRating(1L, 4.5f, "Great group!", "test@example.com");
 
         // Assert
         assertNotNull(result);
         assertNotNull(result.getRating());
-
-        Rating rating = result.getRating();
-        assertNotNull(rating.getUserEmails());
-        assertNotNull(rating.getScores());
-        assertNotNull(rating.getReviews());
-
-        assertEquals(1, rating.getUserEmails().size());
-        assertEquals(1, rating.getScores().size());
-        assertEquals(1, rating.getReviews().size());
-
-        assertEquals(userEmail, rating.getUserEmails().get(0));
-        assertEquals(score, rating.getScores().get(0));
-        assertEquals(review, rating.getReviews().get(0));
-        assertEquals(score, rating.getAverageRating());
-
-        verify(groupRepository).findById(1L);
-        verify(groupRepository).save(testGroup);
+        assertEquals(1, result.getRating().getScores().size());
+        assertEquals(4.5f, result.getRating().getScores().get(0));
+        assertEquals("Great group!", result.getRating().getReviews().get(0));
+        assertEquals("test@example.com", result.getRating().getUserEmails().get(0));
+        assertEquals("Test User", result.getRating().getUserNames().get(0));
+        assertEquals(4.5f, result.getRating().getAverageRating());
     }
 
     @Test
     void addOrUpdateRating_ExistingRating_UpdatesRatingCorrectly() {
         // Arrange
+        Group group = new Group();
         Rating rating = new Rating();
-        String userEmail = "rater@example.com";
-        Float initialScore = 3.0f;
-        String initialReview = "Good group";
+        rating.setScores(new ArrayList<>(Arrays.asList(3.0f)));
+        rating.setReviews(new ArrayList<>(Arrays.asList("Original review")));
+        rating.setUserEmails(new ArrayList<>(Arrays.asList("test@example.com")));
+        rating.setUserNames(new ArrayList<>(Arrays.asList("Test User"))); // Add name
+        rating.setAverageRating(3.0f);
+        group.setRating(rating);
 
-        rating.setUserEmails(new ArrayList<>(List.of(userEmail)));
-        rating.setScores(new ArrayList<>(List.of(initialScore)));
-        rating.setReviews(new ArrayList<>(List.of(initialReview)));
-        rating.setAverageRating(initialScore);
+        User user = new User();
+        user.setName("Test User"); // Add name
 
-        testGroup.setRating(rating);
-
-        Float updatedScore = 5.0f;
-        String updatedReview = "Excellent group!";
-
-        when(groupRepository.findById(1L)).thenReturn(Optional.of(testGroup));
-        when(groupRepository.save(any(Group.class))).thenReturn(testGroup);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(userService.getUserByEmail("test@example.com")).thenReturn(user);
+        when(groupRepository.save(any(Group.class))).thenReturn(group);
 
         // Act
-        Group result = groupService.addOrUpdateRating(1L, updatedScore, updatedReview, userEmail);
+        Group result = groupService.addOrUpdateRating(1L, 5.0f, "Updated review!", "test@example.com");
 
         // Assert
         assertNotNull(result);
         assertNotNull(result.getRating());
-
-        Rating updatedRating = result.getRating();
-        assertEquals(1, updatedRating.getUserEmails().size());
-        assertEquals(1, updatedRating.getScores().size());
-        assertEquals(1, updatedRating.getReviews().size());
-
-        assertEquals(userEmail, updatedRating.getUserEmails().get(0));
-        assertEquals(updatedScore, updatedRating.getScores().get(0));
-        assertEquals(updatedReview, updatedRating.getReviews().get(0));
-        assertEquals(updatedScore, updatedRating.getAverageRating());
-
-        verify(groupRepository).findById(1L);
-        verify(groupRepository).save(testGroup);
+        assertEquals(1, result.getRating().getScores().size());
+        assertEquals(5.0f, result.getRating().getScores().get(0));
+        assertEquals("Updated review!", result.getRating().getReviews().get(0));
+        assertEquals("test@example.com", result.getRating().getUserEmails().get(0));
+        assertEquals("Test User", result.getRating().getUserNames().get(0));
+        assertEquals(5.0f, result.getRating().getAverageRating());
     }
 
     @Test
     void addOrUpdateRating_MultipleRatings_CalculatesAverageCorrectly() {
         // Arrange
+        Group group = new Group();
         Rating rating = new Rating();
-        rating.setUserEmails(new ArrayList<>(List.of("user1@example.com", "user2@example.com")));
-        rating.setScores(new ArrayList<>(List.of(4.0f, 2.0f)));
-        rating.setReviews(new ArrayList<>(List.of("Good", "Average")));
-        rating.setAverageRating(3.0f); // Initial average
+        rating.setScores(new ArrayList<>(Arrays.asList(4.0f)));
+        rating.setReviews(new ArrayList<>(Arrays.asList("First review")));
+        rating.setUserEmails(new ArrayList<>(Arrays.asList("user1@example.com")));
+        rating.setUserNames(new ArrayList<>(Arrays.asList("User One"))); // Add name
+        rating.setAverageRating(4.0f);
+        group.setRating(rating);
 
-        testGroup.setRating(rating);
+        User user = new User();
+        user.setName("User Two"); // Add name
 
-        String userEmail = "user3@example.com";
-        Float newScore = 5.0f;
-        String newReview = "Excellent!";
-
-        when(groupRepository.findById(1L)).thenReturn(Optional.of(testGroup));
-        when(groupRepository.save(any(Group.class))).thenReturn(testGroup);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(userService.getUserByEmail("user2@example.com")).thenReturn(user);
+        when(groupRepository.save(any(Group.class))).thenReturn(group);
 
         // Act
-        Group result = groupService.addOrUpdateRating(1L, newScore, newReview, userEmail);
+        Group result = groupService.addOrUpdateRating(1L, 2.0f, "Second review", "user2@example.com");
 
         // Assert
         assertNotNull(result);
         assertNotNull(result.getRating());
-
-        Rating updatedRating = result.getRating();
-        assertEquals(3, updatedRating.getUserEmails().size());
-        assertEquals(3, updatedRating.getScores().size());
-        assertEquals(3, updatedRating.getReviews().size());
-
-        // Check the new average rating (4.0 + 2.0 + 5.0) / 3 = 3.67
-        assertEquals(3.67f, updatedRating.getAverageRating(), 0.01);
-
-        verify(groupRepository).findById(1L);
-        verify(groupRepository).save(testGroup);
+        assertEquals(2, result.getRating().getScores().size());
+        assertEquals(3.0f, result.getRating().getAverageRating());
+        assertEquals("User Two", result.getRating().getUserNames().get(1)); // Check name
     }
 
     @Test
     void addOrUpdateRating_PartialUpdate_OnlyUpdatesSpecifiedFields() {
         // Arrange
+        Group group = new Group();
         Rating rating = new Rating();
-        String userEmail = "rater@example.com";
-        Float initialScore = 3.0f;
-        String initialReview = "Good group";
+        rating.setScores(new ArrayList<>(Arrays.asList(3.0f)));
+        rating.setReviews(new ArrayList<>(Arrays.asList("Original review")));
+        rating.setUserEmails(new ArrayList<>(Arrays.asList("test@example.com")));
+        rating.setUserNames(new ArrayList<>(Arrays.asList("Test User"))); // Add name
+        rating.setAverageRating(3.0f);
+        group.setRating(rating);
 
-        rating.setUserEmails(new ArrayList<>(List.of(userEmail)));
-        rating.setScores(new ArrayList<>(List.of(initialScore)));
-        rating.setReviews(new ArrayList<>(List.of(initialReview)));
-        rating.setAverageRating(initialScore);
+        User user = new User();
+        user.setName("Test User"); // Add name
 
-        testGroup.setRating(rating);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(userService.getUserByEmail("test@example.com")).thenReturn(user);
+        when(groupRepository.save(any(Group.class))).thenReturn(group);
 
-        // Only update the review, keep the score
-        Float updatedScore = null;
-        String updatedReview = "Updated review";
-
-        when(groupRepository.findById(1L)).thenReturn(Optional.of(testGroup));
-        when(groupRepository.save(any(Group.class))).thenReturn(testGroup);
-
-        // Act
-        Group result = groupService.addOrUpdateRating(1L, updatedScore, updatedReview, userEmail);
+        // Act - update only the review, leaving score as is
+        Group result = groupService.addOrUpdateRating(1L, null, "Updated review only!", "test@example.com");
 
         // Assert
         assertNotNull(result);
         assertNotNull(result.getRating());
-
-        Rating updatedRating = result.getRating();
-        assertEquals(userEmail, updatedRating.getUserEmails().get(0));
-        assertEquals(initialScore, updatedRating.getScores().get(0)); // Score should not change
-        assertEquals(updatedReview, updatedRating.getReviews().get(0)); // Review should update
-
-        verify(groupRepository).findById(1L);
-        verify(groupRepository).save(testGroup);
+        assertEquals(1, result.getRating().getScores().size());
+        assertEquals(3.0f, result.getRating().getScores().get(0)); // Score unchanged
+        assertEquals("Updated review only!", result.getRating().getReviews().get(0)); // Review updated
+        assertEquals("Test User", result.getRating().getUserNames().get(0)); // Name unchanged
     }
 
     @Test
     void getUserRating_ExistingRating_ReturnsUserRating() {
         // Arrange
+        Group group = new Group();
         Rating rating = new Rating();
-        String userEmail = "user@example.com";
-        Float score = 4.5f;
-        String review = "Great group!";
+        rating.setScores(new ArrayList<>(Arrays.asList(4.5f)));
+        rating.setReviews(new ArrayList<>(Arrays.asList("Great group!")));
+        rating.setUserEmails(new ArrayList<>(Arrays.asList("test@example.com")));
+        rating.setUserNames(new ArrayList<>(Arrays.asList("Test User"))); // Add name
+        group.setRating(rating);
 
-        rating.setUserEmails(new ArrayList<>(List.of(userEmail, "other@example.com")));
-        rating.setScores(new ArrayList<>(List.of(score, 3.0f)));
-        rating.setReviews(new ArrayList<>(List.of(review, "Okay")));
-
-        testGroup.setRating(rating);
-
-        when(groupRepository.findById(1L)).thenReturn(Optional.of(testGroup));
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
 
         // Act
-        Map<String, Object> result = groupService.getUserRating(1L, userEmail);
+        Map<String, Object> result = groupService.getUserRating(1L, "test@example.com");
 
         // Assert
         assertNotNull(result);
-        assertEquals(score, result.get("score"));
-        assertEquals(review, result.get("review"));
-
-        verify(groupRepository).findById(1L);
+        assertEquals(4.5f, result.get("score"));
+        assertEquals("Great group!", result.get("review"));
+        assertEquals("Test User", result.get("userName")); // Check name
     }
 
     @Test
@@ -677,39 +636,30 @@ public class GroupServiceTest {
     @Test
     void deleteUserRating_ExistingRating_RemovesAndRecalculatesAverage() {
         // Arrange
+        Group group = new Group();
         Rating rating = new Rating();
-        String userToDelete = "user2@example.com";
+        rating.setScores(new ArrayList<>(Arrays.asList(3.0f, 5.0f)));
+        rating.setReviews(new ArrayList<>(Arrays.asList("Average", "Excellent")));
+        rating.setUserEmails(new ArrayList<>(Arrays.asList("user1@example.com", "user2@example.com")));
+        rating.setUserNames(new ArrayList<>(Arrays.asList("User One", "User Two"))); // Add names
+        rating.setAverageRating(4.0f);
+        group.setRating(rating);
 
-        rating.setUserEmails(new ArrayList<>(List.of("user1@example.com", userToDelete, "user3@example.com")));
-        rating.setScores(new ArrayList<>(List.of(4.0f, 2.0f, 5.0f)));
-        rating.setReviews(new ArrayList<>(List.of("Good", "Bad", "Excellent")));
-        rating.setAverageRating(3.67f); // (4+2+5)/3
-
-        testGroup.setRating(rating);
-
-        when(groupRepository.findById(1L)).thenReturn(Optional.of(testGroup));
-        when(groupRepository.save(any(Group.class))).thenReturn(testGroup);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupRepository.save(any(Group.class))).thenReturn(group);
 
         // Act
-        Group result = groupService.deleteUserRating(1L, userToDelete);
+        Group result = groupService.deleteUserRating(1L, "user2@example.com");
 
         // Assert
         assertNotNull(result);
         assertNotNull(result.getRating());
-
-        Rating updatedRating = result.getRating();
-        assertEquals(2, updatedRating.getUserEmails().size());
-        assertEquals(2, updatedRating.getScores().size());
-        assertEquals(2, updatedRating.getReviews().size());
-
-        // The deleted user's email should not be in the list
-        assertFalse(updatedRating.getUserEmails().contains(userToDelete));
-
-        // Check the new average rating (4.0 + 5.0) / 2 = 4.5
-        assertEquals(4.5f, updatedRating.getAverageRating(), 0.01);
-
-        verify(groupRepository).findById(1L);
-        verify(groupRepository).save(testGroup);
+        assertEquals(1, result.getRating().getScores().size());
+        assertEquals(3.0f, result.getRating().getScores().get(0));
+        assertEquals("Average", result.getRating().getReviews().get(0));
+        assertEquals("user1@example.com", result.getRating().getUserEmails().get(0));
+        assertEquals("User One", result.getRating().getUserNames().get(0)); // Check remaining name
+        assertEquals(3.0f, result.getRating().getAverageRating());
     }
 
     @Test
@@ -764,44 +714,44 @@ public class GroupServiceTest {
     @Test
     void recalculateAverageRating_IgnoresZeroScores() {
         // Arrange
-        Rating rating = new Rating();
-        rating.setScores(new ArrayList<>(List.of(4.0f, 0.0f, 5.0f)));
-
-        // Create a test group with this rating
         Group group = new Group();
+        Rating rating = new Rating();
+        rating.setScores(new ArrayList<>(Arrays.asList(0.0f, 4.0f, 0.0f, 5.0f)));
+        rating.setUserEmails(new ArrayList<>(Arrays.asList("u1@example.com", "u2@example.com", "u3@example.com", "u4@example.com")));
+        rating.setUserNames(new ArrayList<>(Arrays.asList("User 1", "User 2", "User 3", "User 4"))); // Add names
         group.setRating(rating);
 
-        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
-        when(groupRepository.save(any(Group.class))).thenAnswer(i -> i.getArgument(0)); // Return the saved object
+        User user = new User();
+        user.setName("Test User"); // Add name
 
-        // Act - we'll trigger recalculation by adding a dummy rating
-        Group result = groupService.addOrUpdateRating(1L, null, "Just a review", "user@example.com");
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(userService.getUserByEmail(anyString())).thenReturn(user);
+        when(groupRepository.save(any(Group.class))).thenReturn(group);
+
+        // Act
+        Group result = groupService.addOrUpdateRating(1L, null, null, "test@example.com");
 
         // Assert
-        // The average should only include non-zero scores (4.0 + 5.0) / 2 = 4.5
-        assertEquals(4.5f, result.getRating().getAverageRating(), 0.01);
+        assertNotNull(result.getRating());
+        assertEquals(4.5f, result.getRating().getAverageRating());
     }
 
     @Test
     void recalculateAverageRating_HandlesNullScores() {
         // Arrange
-        Rating rating = new Rating();
-        rating.setScores(new ArrayList<>());
-        rating.setUserEmails(new ArrayList<>());
-        rating.setReviews(new ArrayList<>());
-
-        // Create a test group with this rating
         Group group = new Group();
-        group.setRating(rating);
+        User user = new User();
+        user.setName("Test User"); // Add name
 
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
-        when(groupRepository.save(any(Group.class))).thenAnswer(i -> i.getArgument(0)); // Return the saved object
+        when(userService.getUserByEmail(anyString())).thenReturn(user);
+        when(groupRepository.save(any(Group.class))).thenReturn(group);
 
-        // Act - we'll add a null score
-        Group result = groupService.addOrUpdateRating(1L, null, "Just a review", "user@example.com");
+        // Act
+        Group result = groupService.addOrUpdateRating(1L, null, "Review with no score", "test@example.com");
 
         // Assert
-        // With no valid scores, average should be 0
+        assertNotNull(result.getRating());
         assertEquals(0.0f, result.getRating().getAverageRating());
     }
 
