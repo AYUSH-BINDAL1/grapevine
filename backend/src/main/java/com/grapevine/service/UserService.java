@@ -154,7 +154,16 @@ public class UserService {
             existingUser.setMinors(updatedUser.getMinors());
         }
         if (updatedUser.getCourses() != null) {
-            existingUser.setCourses(updatedUser.getCourses());
+            if (existingUser.getCourses() == null) {
+                existingUser.setCourses(new ArrayList<>());
+            }
+
+            // qdd any new courses that don't already exist in the list
+            for (String course : updatedUser.getCourses()) {
+                if (!existingUser.getCourses().contains(course)) {
+                    existingUser.getCourses().add(course);
+                }
+            }
         }
         if (updatedUser.getPreferredLocations() != null) {
             existingUser.setPreferredLocations(updatedUser.getPreferredLocations());
