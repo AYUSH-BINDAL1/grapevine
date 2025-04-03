@@ -1,10 +1,8 @@
-package com.grapevine;
+package com.grapevine.controller;
 
-import com.grapevine.controller.UserController;
 import com.grapevine.exception.ErrorResponse;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.exception.UserAlreadyExistsException;
-import com.grapevine.exception.UserNotFoundException;
 import com.grapevine.model.*;
 import com.grapevine.model.login.LoginRequest;
 import com.grapevine.model.login.LoginResponse;
@@ -19,8 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -426,4 +423,258 @@ class UserControllerTest {
         verify(userService).deleteUser("test@example.com");
         verify(userService, never()).logout(anyString());
     }
+
+    @Test
+    void sendFriendRequest_Success() {
+        // Arrange
+        String receiverEmail = "friend@example.com";
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("receiverEmail", receiverEmail);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.sendFriendRequest("test@example.com", receiverEmail)).thenReturn(testUser);
+
+        // Act
+        ResponseEntity<User> response = userController.sendFriendRequest(
+                "test@example.com", testSessionId, requestBody);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(testUser, response.getBody());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).sendFriendRequest("test@example.com", receiverEmail);
+    }
+
+    @Test
+    void sendFriendRequest_InvalidSession() {
+        // Arrange
+        String receiverEmail = "friend@example.com";
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("receiverEmail", receiverEmail);
+
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class, () ->
+                userController.sendFriendRequest("test@example.com", testSessionId, requestBody));
+
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).sendFriendRequest(anyString(), anyString());
+    }
+
+    @Test
+    void sendFriendRequest_Forbidden() {
+        // Arrange
+        String userEmail = "other@example.com";
+        String receiverEmail = "friend@example.com";
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("receiverEmail", receiverEmail);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+
+        // Act & Assert
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                userController.sendFriendRequest(userEmail, testSessionId, requestBody));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        assertEquals("You can only send friend requests from your own account", exception.getReason());
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).sendFriendRequest(anyString(), anyString());
+    }
+
+    @Test
+    void sendFriendRequest_MissingEmail() {
+        // Arrange
+        Map<String, String> requestBody = new HashMap<>();
+        // No receiverEmail set
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+
+        // Act & Assert
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                userController.sendFriendRequest("test@example.com", testSessionId, requestBody));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertEquals("Receiver email is required", exception.getReason());
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).sendFriendRequest(anyString(), anyString());
+    }
+
+    @Test
+    void getIncomingFriendRequests_Success() {
+        // Arrange
+        List<User> incomingRequests = new ArrayList<>();
+        User friend1 = new User();
+        friend1.setUserEmail("friend1@example.com");
+        friend1.setName("Friend One");
+        User friend2 = new User();
+        friend2.setUserEmail("friend2@example.com");
+        friend2.setName("Friend Two");
+        incomingRequests.add(friend1);
+        incomingRequests.add(friend2);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getIncomingFriendRequests("test@example.com")).thenReturn(incomingRequests);
+
+        // Act
+        ResponseEntity<List<User>> response = userController.getIncomingFriendRequests(
+                "test@example.com", testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(incomingRequests, response.getBody());
+        assertEquals(2, response.getBody().size());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getIncomingFriendRequests("test@example.com");
+    }
+
+    @Test
+    void getIncomingFriendRequests_Forbidden() {
+        // Arrange
+        String userEmail = "other@example.com";
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+
+        // Act & Assert
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                userController.getIncomingFriendRequests(userEmail, testSessionId));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        assertEquals("You can only view your own friend requests", exception.getReason());
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).getIncomingFriendRequests(anyString());
+    }
+
+    @Test
+    void getOutgoingFriendRequests_Success() {
+        // Arrange
+        List<User> outgoingRequests = new ArrayList<>();
+        User friend1 = new User();
+        friend1.setUserEmail("friend1@example.com");
+        friend1.setName("Friend One");
+        outgoingRequests.add(friend1);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getOutgoingFriendRequests("test@example.com")).thenReturn(outgoingRequests);
+
+        // Act
+        ResponseEntity<List<User>> response = userController.getOutgoingFriendRequests(
+                "test@example.com", testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(outgoingRequests, response.getBody());
+        assertEquals(1, response.getBody().size());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getOutgoingFriendRequests("test@example.com");
+    }
+
+    @Test
+    void acceptFriendRequest_Success() {
+        // Arrange
+        String requesterEmail = "requester@example.com";
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("requesterEmail", requesterEmail);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.acceptFriendRequest("test@example.com", requesterEmail)).thenReturn(testUser);
+
+        // Act
+        ResponseEntity<User> response = userController.acceptFriendRequest(
+                "test@example.com", testSessionId, requestBody);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(testUser, response.getBody());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).acceptFriendRequest("test@example.com", requesterEmail);
+    }
+
+    @Test
+    void denyFriendRequest_Success() {
+        // Arrange
+        String requesterEmail = "requester@example.com";
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("requesterEmail", requesterEmail);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.denyFriendRequest("test@example.com", requesterEmail)).thenReturn(testUser);
+
+        // Act
+        ResponseEntity<User> response = userController.denyFriendRequest(
+                "test@example.com", testSessionId, requestBody);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(testUser, response.getBody());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).denyFriendRequest("test@example.com", requesterEmail);
+    }
+
+    @Test
+    void getUserFriends_Success() {
+        // Arrange
+        List<User> friends = new ArrayList<>();
+        User friend1 = new User();
+        friend1.setUserEmail("friend1@example.com");
+        friend1.setName("Friend One");
+        User friend2 = new User();
+        friend2.setUserEmail("friend2@example.com");
+        friend2.setName("Friend Two");
+        friends.add(friend1);
+        friends.add(friend2);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.getUserFriends("test@example.com")).thenReturn(friends);
+
+        // Act
+        ResponseEntity<List<User>> response = userController.getUserFriends(
+                "test@example.com", testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(friends, response.getBody());
+        assertEquals(2, response.getBody().size());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).getUserFriends("test@example.com");
+    }
+
+    @Test
+    void removeFriend_Success() {
+        // Arrange
+        String friendEmail = "friend@example.com";
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.removeFriend("test@example.com", friendEmail)).thenReturn(testUser);
+
+        // Act
+        ResponseEntity<User> response = userController.removeFriend(
+                "test@example.com", friendEmail, testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(testUser, response.getBody());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).removeFriend("test@example.com", friendEmail);
+    }
+
+    @Test
+    void removeFriend_Forbidden() {
+        // Arrange
+        String userEmail = "other@example.com";
+        String friendEmail = "friend@example.com";
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+
+        // Act & Assert
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                userController.removeFriend(userEmail, friendEmail, testSessionId));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        assertEquals("You can only modify your own friends list", exception.getReason());
+        verify(userService).validateSession(testSessionId);
+        verify(userService, never()).removeFriend(anyString(), anyString());
+    }
+
 }

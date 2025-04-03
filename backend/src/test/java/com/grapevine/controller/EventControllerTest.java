@@ -1,6 +1,5 @@
-package com.grapevine;
+package com.grapevine.controller;
 
-import com.grapevine.controller.EventController;
 import com.grapevine.exception.EventNotFoundException;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.exception.UnauthorizedException;
@@ -16,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
-import org.mockito.ArgumentMatchers;
+
 import static org.mockito.ArgumentMatchers.eq;
 
 public class EventControllerTest {
@@ -296,5 +296,157 @@ public class EventControllerTest {
                 () -> eventController.deleteEvent(1L, testSessionId));
         verify(userService).validateSession(testSessionId);
         verify(eventService).deleteEvent(1L, testUser);
+    }
+
+    @Test
+    void getAllShortEvents_NoFilters_ReturnsEventsInChronologicalOrder() {
+        // Arrange
+        EventFilter expectedFilter = new EventFilter(null, null, null, null, null, null, null, null, null);
+
+        List<ShortEvent> events = List.of(
+            new ShortEvent(1L, "Upcoming Event"),
+            new ShortEvent(2L, "Another Event")
+        );
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.getAllShortEvents(argThat(filter ->
+            filter.getSearch() == null &&
+            filter.getMinUsers() == null &&
+            filter.getMaxUsers() == null &&
+            filter.getStartTime() == null &&
+            filter.getEndTime() == null &&
+            filter.getLocationId() == null &&
+            filter.getIsPublic() == null &&
+            filter.getIncludePastEvents() == null &&
+            filter.getOnlyFullEvents() == null
+        ))).thenReturn(events);
+
+        // Act
+        List<ShortEvent> result = eventController.getAllShortEvents(
+                testSessionId, null, null, null, null, null, null, null, null, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        verify(userService).validateSession(testSessionId);
+        verify(eventService).getAllShortEvents(any(EventFilter.class));
+    }
+
+    @Test
+    void getAllShortEvents_WithSearchFilter_FiltersCorrectly() {
+        // Arrange
+        String searchTerm = "Party";
+        List<ShortEvent> filteredEvents = List.of(new ShortEvent(3L, "Party Event"));
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.getAllShortEvents(argThat(filter ->
+            searchTerm.equals(filter.getSearch()) &&
+            filter.getMinUsers() == null
+        ))).thenReturn(filteredEvents);
+
+        // Act
+        List<ShortEvent> result = eventController.getAllShortEvents(
+                testSessionId, searchTerm, null, null, null, null, null, null, null, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Party Event", result.get(0).getName());
+        verify(eventService).getAllShortEvents(any(EventFilter.class));
+    }
+
+
+    @Test
+    void getAllShortEvents_WithPublicFilter_FiltersCorrectly() {
+        // Arrange
+        Boolean isPublic = true;
+        List<ShortEvent> filteredEvents = List.of(
+            new ShortEvent(1L, "Public Event 1"),
+            new ShortEvent(3L, "Public Event 2")
+        );
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.getAllShortEvents(argThat(filter ->
+            isPublic.equals(filter.getIsPublic())
+        ))).thenReturn(filteredEvents);
+
+        // Act
+        List<ShortEvent> result = eventController.getAllShortEvents(
+                testSessionId, null, null, null, null, null, null, isPublic, null, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        verify(eventService).getAllShortEvents(any(EventFilter.class));
+    }
+
+    @Test
+    void getAllShortEvents_IncludePastEvents_IncludesCorrectly() {
+        // Arrange
+        Boolean includePastEvents = true;
+        List<ShortEvent> allEvents = List.of(
+            new ShortEvent(1L, "Past Event"),
+            new ShortEvent(2L, "Current Event"),
+            new ShortEvent(3L, "Future Event")
+        );
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.getAllShortEvents(argThat(filter ->
+            includePastEvents.equals(filter.getIncludePastEvents())
+        ))).thenReturn(allEvents);
+
+        // Act
+        List<ShortEvent> result = eventController.getAllShortEvents(
+                testSessionId, null, null, null, null, null, null, null, includePastEvents, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        verify(eventService).getAllShortEvents(any(EventFilter.class));
+    }
+
+    @Test
+    void getAllShortEvents_WithCombinedFilters_FiltersCorrectly() {
+        // Arrange
+        String searchTerm = "Event";
+        Integer minUsers = 5;
+        Integer maxUsers = 20;
+        Boolean isPublic = true;
+
+        List<ShortEvent> filteredEvents = List.of(
+            new ShortEvent(5L, "Event with combined filters")
+        );
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(eventService.getAllShortEvents(argThat(filter ->
+            searchTerm.equals(filter.getSearch()) &&
+            minUsers.equals(filter.getMinUsers()) &&
+            maxUsers.equals(filter.getMaxUsers()) &&
+            isPublic.equals(filter.getIsPublic())
+        ))).thenReturn(filteredEvents);
+
+        // Act
+        List<ShortEvent> result = eventController.getAllShortEvents(
+                testSessionId, searchTerm, minUsers, maxUsers, null, null, null, isPublic, null, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Event with combined filters", result.get(0).getName());
+        verify(eventService).getAllShortEvents(any(EventFilter.class));
+    }
+
+    @Test
+    void getAllShortEvents_InvalidSession_ThrowsException() {
+        // Arrange
+        when(userService.validateSession(testSessionId))
+            .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class, () ->
+            eventController.getAllShortEvents(testSessionId, null, null, null, null, null, null, null, null, null));
+
+        verify(userService).validateSession(testSessionId);
+        verifyNoInteractions(eventService);
     }
 }

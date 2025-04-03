@@ -148,6 +148,9 @@ public class GroupService {
         // Add current user as host only
         group.getHosts().add(currentUser.getUserEmail());
 
+        // Set isPublic explicitly (handling the default if not specified)
+        group.setPublic(group.isPublic());
+
         // Initialize rating
         //Rating rating = new Rating();
         //group.setRating(rating);
@@ -181,12 +184,14 @@ public class GroupService {
             Map<String, Object> emptyResult = new HashMap<>();
             emptyResult.put("scores", new ArrayList<>());
             emptyResult.put("reviews", new ArrayList<>());
+            emptyResult.put("userNames", new ArrayList<>());
             return emptyResult;
         }
 
         Map<String, Object> result = new HashMap<>();
         result.put("scores", rating.getScores());
         result.put("reviews", rating.getReviews());
+        result.put("userNames", rating.getUserNames());
 
         return result;
     }
@@ -214,6 +219,8 @@ public class GroupService {
 
     public Group addOrUpdateRating(Long groupId, Float score, String review, String userEmail) {
         Group group = getGroupById(groupId);
+        User user = userService.getUserByEmail(userEmail);
+        String userName = user.getName();
 
         // Initialize Rating if null
         if (group.getRating() == null) {
@@ -227,6 +234,7 @@ public class GroupService {
             rating.setUserEmails(new ArrayList<>());
             rating.setScores(new ArrayList<>());
             rating.setReviews(new ArrayList<>());
+            rating.setUserNames(new ArrayList<>());
         }
 
         // Check if user has already rated this group
@@ -243,23 +251,27 @@ public class GroupService {
                 // Update review if provided
                 rating.getReviews().set(existingIndex, review);
             }
+
+            // Ensure user name is up to date
+            rating.getUserNames().set(existingIndex, userName);
         } else {
             // Add new rating/review
             rating.getUserEmails().add(userEmail);
+            rating.getUserNames().add(userName);
 
             // Handle score (use neutral value if not provided)
             if (score != null) {
                 rating.getScores().add(score);
             } else {
-                // Use a dummy score that won't affect average (null works too)
-                rating.getScores().add(0.0f); // This will be ignored in average calculation
+                // Use a dummy score that won't affect average
+                rating.getScores().add(0.0f);
             }
 
             // Handle review (use empty string if not provided)
             rating.getReviews().add(review != null ? review : "");
         }
 
-        // Recalculate average - modify to ignore dummy scores
+        // Recalculate average
         recalculateAverageRating(rating);
 
         // Save updated group
@@ -299,6 +311,7 @@ public class GroupService {
         // Default values if no rating exists
         result.put("score", null);
         result.put("review", null);
+        result.put("userName", null);
 
         if (group.getRating() != null && group.getRating().getUserEmails() != null) {
             Rating rating = group.getRating();
@@ -307,6 +320,7 @@ public class GroupService {
             if (index != -1) {
                 result.put("score", rating.getScores().get(index));
                 result.put("review", rating.getReviews().get(index));
+                result.put("userName", rating.getUserNames().get(index));
             }
         }
 
@@ -321,10 +335,11 @@ public class GroupService {
             int index = rating.getUserEmails().indexOf(userEmail);
 
             if (index != -1) {
-                // Remove user's rating and review
+                // Remove user's rating, review, and name
                 rating.getUserEmails().remove(index);
                 rating.getScores().remove(index);
                 rating.getReviews().remove(index);
+                rating.getUserNames().remove(index);
 
                 // Recalculate average rating
                 recalculateAverageRating(rating);
@@ -337,7 +352,6 @@ public class GroupService {
         // Return the group as is if no rating found
         return group;
     }
-
 
 
     //TODO: Needs to be fixed

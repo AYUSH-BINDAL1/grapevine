@@ -8,44 +8,40 @@ function CreateGroup() {
         name: '',
         description: '',
         maxUsers: '',
-        public: true // Match what the API returns
+        public: true
     });
     const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        // Handle checkbox separately
-        const newValue = type === 'checkbox' ? !checked : value;
+        const newValue = type === 'checkbox' ? checked : value;
         setFormData(prev => ({
             ...prev,
             [name]: newValue
         }));
     };
 
-    // Before sending the request, ensure we have a valid email
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         const sessionId = localStorage.getItem('sessionId');
         const userData = JSON.parse(localStorage.getItem('userData'));
-        
+
         if (!sessionId || !userData || !userData.userEmail) {
             alert('You must be logged in to create a group.');
             return;
         }
-        
-        // Use the email from userData instead of localStorage directly
+
         const payload = {
             name: formData.name,
             description: formData.description,
             maxUsers: parseInt(formData.maxUsers, 10),
             public: formData.public,
-            hosts: [], // Use authenticated user's email
+            hosts: [userData.userEmail],
             participants: [],
             events: null
         };
-        
-        // Rest of your submission code
+
         try {
             const response = await axios.post(
                 'http://localhost:8080/groups/create',
@@ -105,25 +101,16 @@ function CreateGroup() {
                         required
                     />
                 </div>
-                
-                {/* Add the privacy checkbox */}
-                <div className="form-group privacy-setting">
-                    <label className="checkbox-container">
-                        <input
-                            type="checkbox"
-                            name="public"
-                            checked={!formData.public}
-                            onChange={handleChange}
-                            className="privacy-checkbox"
-                        />
-                        <span className="checkmark"></span>
-                        Make this group private
-                        <span className="privacy-tooltip">
-                            Private groups are only visible to members and require an invitation to join
-                        </span>
-                    </label>
+                <div className="form-group checkbox-inline">
+                    <input
+                        type="checkbox"
+                        name="public"
+                        checked={formData.public}
+                        onChange={handleChange}
+                        id="public-checkbox"
+                    />
+                    <label htmlFor="public-checkbox">Public Group</label>
                 </div>
-                
                 <div className="form-actions">
                     <button type="submit" className="create-group-button">
                         Create Group
