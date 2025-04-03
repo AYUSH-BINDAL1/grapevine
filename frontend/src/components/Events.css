@@ -167,15 +167,16 @@
 
 /* All Events Grid on the Right */
 .all-events-grid {
-    flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
+    flex: 1;
+    max-height: calc(4 * 140px);
+    overflow-y: auto;
     padding: 16px;
     background-color: white;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    min-height: 300px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .all-events-grid p {
@@ -195,11 +196,13 @@
 }
 
 .event-location-footer {
-    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 5px;
+    display: inline-flex;
     font-size: 12px;
-    color: #666;
-    text-align: center;
-    padding-top: 6px;
-    border-top: 1px solid #eee;
-    width: 100%;
 }
