@@ -1,6 +1,6 @@
 # CI/CD Workflow Documentation
 
-[![CI/CD Pipeline](https://github.com/yourusername/grapevine/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/yourusername/grapevine/actions/workflows/ci-cd.yml)
+[![CI/CD Pipeline](https://github.com/ZT-19/grapevine/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ZT-19/grapevine/actions/workflows/ci-cd.yml)
 
 This document outlines how our CI/CD pipeline satisfies project requirements and provides guidance for the development team.
 
@@ -46,17 +46,17 @@ deploy:
 ## Documentation
 
 ### Branch Protection
-![Branch Protection Settings](path/to/branch-protection-screenshot.png)
+![Branch Protection Settings](screenshots/branch-protection.png)
 
 *Screenshot shows branch protection rules for main and dev branches, requiring status checks and preventing direct pushes.*
 
 ### Pull Request Workflow
-![Successful PR Workflow](path/to/pr-workflow-screenshot.png)
+![Successful PR Workflow](screenshots/pr-workflow.png)
 
 *Screenshot shows a successful workflow run on a pull request, including all passing checks.*
 
 ### Deployment Workflow
-![Successful Deployment](path/to/deployment-screenshot.png)
+![Successful Deployment](screenshots/deployment.png)
 
 *Screenshot shows a successful deployment after merging to main branch.*
 
