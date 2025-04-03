@@ -43,7 +43,6 @@ function Profile() {
   const navigate = useNavigate();
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [userRole, setUserRole] = useState('');
-  const [userCourses, setUserCourses] = useState([]);
   const [coursesData, setCoursesData] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
 
@@ -105,32 +104,6 @@ function Profile() {
     setTimeout(() => setIsLoading(false), 500);
   }, []);
   
-  useEffect(() => {
-    const fetchUserCourses = async () => {
-      if (!userData?.userEmail || !sessionId) return;
-      
-      try {
-        const response = await axios.get(
-          `http://localhost:8080/users/${userData.userEmail}/courses`,
-          {
-            headers: {
-              'Session-Id': sessionId
-            }
-          }
-        );
-        
-        if (response.data) {
-          console.log('Courses fetched:', response.data);
-          setUserCourses(response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching user courses:', error);
-      }
-    };
-    
-    fetchUserCourses();
-  }, [userData?.userEmail, sessionId]);
-
   useEffect(() => {
     const fetchUserCourses = async () => {
       if (!userData?.userEmail) return;
@@ -955,11 +928,11 @@ function Profile() {
             </div>
           ) : (
             <div className="courses-list">
-              {coursesData.length > 0 ? (
+              {coursesData && coursesData.length > 0 ? (
                 coursesData.map((course, index) => (
                   <div key={index} className="course-item">
                     <p className="course-name">
-                      {course.courseId}
+                      {course.courseId || course}
                       {course.courseName && course.courseId !== course.courseName && (
                         <span className="course-full-name"> - {course.courseName}</span>
                       )}

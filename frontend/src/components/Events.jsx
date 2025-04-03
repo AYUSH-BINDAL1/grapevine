@@ -162,7 +162,7 @@ function Events() {
 
     return (
         <div className="app">
-            <h1>My Events</h1>
+            <h1>Events</h1>
             <button onClick={handleCreateEvent} className="create-event-button">
                 Create Event
             </button>

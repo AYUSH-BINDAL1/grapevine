@@ -247,29 +247,42 @@ function Home() {
 
         <h2 className="section-header">All Groups</h2>
         <div className="all-groups-layout">
-          <div className="filters-panel">
-            <input
-                type="text"
-                placeholder="Search groups..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    applyGroupFilter();
-                  }
-                }}
-            />
-            <label htmlFor="groupFilter">Filter by:</label>
-            <select
-                id="groupFilter"
-                value={groupFilter}
-                onChange={(e) => setGroupFilter(e.target.value)}
-            >
-              <option value="all">All Groups</option>
-              <option value="public">Public</option>
-              <option value="private">Private</option>
-            </select>
+          <div className="filters-panel events-filter-panel">
+            <h2>Filter Groups</h2>
+
+            <div className="filter-group">
+              <label htmlFor="groupSearch">Search:</label>
+              <input
+                  type="text"
+                  id="groupSearch"
+                  placeholder="Search groups..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      applyGroupFilter();
+                    }
+                  }}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label htmlFor="groupFilter">Visibility:</label>
+              <select
+                  id="groupFilter"
+                  value={groupFilter}
+                  onChange={(e) => setGroupFilter(e.target.value)}
+              >
+                <option value="all">All Groups</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+
+            <button className="filter-button" onClick={applyGroupFilter}>
+              Search
+            </button>
           </div>
           <div className="all-groups-grid">
             {filteredGroups.length === 0 ? (

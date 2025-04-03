@@ -18,6 +18,8 @@ function UsrProfile() {
   const [isFriend, setIsFriend] = useState(false);
   const [compatibilityScore, setCompatibilityScore] = useState(null);
   const [friendRequestStatus, setFriendRequestStatus] = useState('none'); // 'none', 'pending', 'accepted'
+  const [userCourses, setUserCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   // Update the fetchUserProfile function to properly get the friends list
   useEffect(() => {
@@ -210,6 +212,44 @@ function UsrProfile() {
     
     checkFriendStatus();
   }, [currentUserData, userEmail]);
+
+  useEffect(() => {
+    const fetchUserCourses = async () => {
+      if (!userEmail) return;
+      
+      setCoursesLoading(true);
+      
+      try {
+        const sessionId = localStorage.getItem('sessionId');
+        if (!sessionId) return;
+        
+        const response = await axios({
+          method: 'GET',
+          url: `http://localhost:8080/users/${userEmail}/courses`,
+          headers: {
+            'Session-Id': sessionId
+          }
+        });
+        
+        console.log('User courses API response:', response.data);
+        
+        if (Array.isArray(response.data)) {
+          setUserCourses(response.data);
+        } else if (response.data && Array.isArray(response.data.courses)) {
+          setUserCourses(response.data.courses);
+        } else {
+          console.warn('Unexpected courses data format:', response.data);
+          setUserCourses([]);
+        }
+      } catch (error) {
+        console.error('Error fetching user courses:', error);
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+    
+    fetchUserCourses();
+  }, [userEmail]);
 
   const calculateCompatibility = (profileData) => {
     if (!currentUserData) return;
@@ -515,6 +555,15 @@ function UsrProfile() {
             <h3>Common Groups</h3>
             <div className="skeleton-common-list"></div>
           </div>
+
+          <div className="user-courses-card">
+            <h3>Courses</h3>
+            <div className="skeleton-courses">
+              <div className="skeleton-course"></div>
+              <div className="skeleton-course"></div>
+              <div className="skeleton-course"></div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -647,6 +696,37 @@ function UsrProfile() {
           <div className="user-common-list">
             <p className="no-data-message">This user hasn&apos;t joined any groups yet!</p>
           </div>
+        </div>
+
+        <div className="user-courses-card">
+          <h3>Courses</h3>
+          {coursesLoading ? (
+            <div className="courses-loading">
+              <div className="skeleton-courses">
+                <div className="skeleton-course"></div>
+                <div className="skeleton-course"></div>
+                <div className="skeleton-course"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="user-courses-list">
+              {userCourses.length > 0 ? (
+                userCourses.map((course, index) => (
+                  <div key={index} className="user-course-item">
+                    <span className="course-icon">📚</span>
+                    <p className="user-course-name">
+                      {course.courseId || course.id || course}
+                      {course.courseName && course.courseId !== course.courseName && (
+                        <span className="user-course-full-name"> - {course.courseName}</span>
+                      )}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="no-data-message">No courses shared</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
