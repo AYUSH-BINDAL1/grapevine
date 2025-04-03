@@ -424,12 +424,62 @@ set_instructor_role() {
   echo -e "${GREEN}User1 role updated to instructor successfully!${NC}"
 }
 
+add_users_to_course() {
+  echo -e "\n${GREEN}Adding users 3-11 to CS25000 course...${NC}"
+
+  # Add each user to the CS25000 course
+  for i in {3..11}; do
+    USER_EMAIL="user${i}@purdue.edu"
+    PASSWORD="pw${i}"
+
+    echo -e "${BLUE}Logging in as $USER_EMAIL...${NC}"
+    SESSION_ID=$(curl -s -X POST "$BACKEND_URL/users/login" \
+      -H "Content-Type: application/json" \
+      -d "{\"email\": \"$USER_EMAIL\", \"password\": \"$PASSWORD\"}" | grep -o '"sessionId":"[^"]*' | sed 's/"sessionId":"//g')
+
+    if [ -z "$SESSION_ID" ]; then
+      echo -e "${RED}Failed to login as $USER_EMAIL${NC}"
+      continue
+    fi
+
+    echo "Session ID for $USER_EMAIL: $SESSION_ID"
+
+    echo -e "${BLUE}Adding $USER_EMAIL to CS25000...${NC}"
+    RESPONSE=$(curl -s --location "$BACKEND_URL/users/$USER_EMAIL/courses" \
+      --header "Content-Type: text/plain" \
+      --header "Session-Id: $SESSION_ID" \
+      --data "CS25000")
+
+    if [[ "$RESPONSE" == *"Success"* ]] || [[ "$RESPONSE" == *"added"* ]]; then
+      echo -e "${GREEN}Added $USER_EMAIL to CS25000 successfully!${NC}"
+    else
+      echo -e "${YELLOW}Response for $USER_EMAIL: $RESPONSE${NC}"
+    fi
+
+    # Small delay to prevent overwhelming the server
+    sleep 0.5
+  done
+
+  echo -e "${GREEN}Finished adding users to CS25000 course${NC}"
+}
+
 # Register four users
 register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
 register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
 echo -e "\n${BLUE}Creating additional test users...${NC}"
 register_and_verify_user "deny@purdue.edu" "deny" "Deny User"
 register_and_verify_user "delete@purdue.edu" "delete" "Delete User"
+echo -e "\n${BLUE}Creating additional test users for courses...${NC}"
+register_and_verify_user "user3@purdue.edu" "pw3" "Test UserThree"
+register_and_verify_user "user4@purdue.edu" "pw4" "Test UserFour"
+register_and_verify_user "user5@purdue.edu" "pw5" "Test UserFive"
+register_and_verify_user "user6@purdue.edu" "pw6" "Test UserSix"
+register_and_verify_user "user7@purdue.edu" "pw7" "Test UserSeven"
+register_and_verify_user "user8@purdue.edu" "pw8" "Test UserEight"
+register_and_verify_user "user9@purdue.edu" "pw9" "Test UserNine"
+register_and_verify_user "user10@purdue.edu" "pw10" "Test UserTen"
+register_and_verify_user "user11@purdue.edu" "pw11" "Test UserEleven"
+
 
 
 # Create groups for user1
@@ -438,11 +488,25 @@ create_groups_for_user1
 # Set user1 as instructor
 set_instructor_role
 
+add_users_to_course
+
 echo -e "\n${GREEN}Login to test the users:${NC}"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user1@purdue.edu\", \"password\": \"pw1\"}'"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user2@purdue.edu\", \"password\": \"pw2\"}'"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"deny@purdue.edu\", \"password\": \"deny\"}'"
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"delete@purdue.edu\", \"password\": \"delete\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user3@purdue.edu\", \"password\": \"pw3\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user4@purdue.edu\", \"password\": \"pw4\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user5@purdue.edu\", \"password\": \"pw5\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user6@purdue.edu\", \"password\": \"pw6\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user7@purdue.edu\", \"password\": \"pw7\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user8@purdue.edu\", \"password\": \"pw8\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user9@purdue.edu\", \"password\": \"pw9\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user10@purdue.edu\", \"password\": \"pw10\"}'"
+echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user11@purdue.edu\", \"password\": \"pw11\"}'"
+
+
+
 
 setup_bucket
 
