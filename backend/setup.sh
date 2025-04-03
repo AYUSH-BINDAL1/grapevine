@@ -340,7 +340,7 @@ create_groups_for_user1() {
       # Update event time to be in the past
       docker exec backend-postgres-1 psql -U postgres -d postgres -c "
         UPDATE events
-        SET event_time = '$PAST_DATE'
+        SET event_time = '2025-01-01T10:00:00'
         WHERE event_id = $PAST_EVENT_ID;"
       echo -e "${GREEN}Updated: PastEvent (ID: $PAST_EVENT_ID) to date: $PAST_DATE${NC}"
     else
