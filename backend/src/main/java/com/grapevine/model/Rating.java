@@ -1,4 +1,3 @@
-
 package com.grapevine.model;
 
 import jakarta.persistence.*;
@@ -42,6 +41,14 @@ public class Rating {
     @Column(name = "review", columnDefinition = "TEXT")
     private List<String> reviews = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(
+            name = "rating_user_names",
+            joinColumns = @JoinColumn(name = "rating_id")
+    )
+    @Column(name = "user_name")
+    private List<String> userNames = new ArrayList<>();
+
     @OneToOne(mappedBy = "rating")
     private Group group;
 
@@ -54,10 +61,11 @@ public class Rating {
     private List<String> userEmails = new ArrayList<>();
 
     // Update the addRating method
-    public void addRating(Float score, String review, String userEmail) {
+    public void addRating(Float score, String review, String userEmail, String userName) {
         scores.add(score);
         reviews.add(review);
         userEmails.add(userEmail);
+        userNames.add(userName);
         recalculateAverageRating();
     }
 
