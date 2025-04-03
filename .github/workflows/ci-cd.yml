@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 jobs:
   build-and-test:
@@ -75,7 +75,7 @@ jobs:
       run: docker build -t grapevine .
 
     - name: Upload build artifacts
-      if: success()
+      if: success() && (github.event_name == 'push' && github.ref == 'refs/heads/main') 
       uses: actions/upload-artifact@v4
       with:
         name: app-jar
@@ -101,3 +101,4 @@ jobs:
         # Replace with actual deployment commands once we have a "production" environment (whichever AWS service we use to host)
 
         echo "Deployment successful!"
+        
