@@ -216,7 +216,7 @@ function Profile() {
     const { day, startTime, endTime } = availability;
     
     if (!day || !startTime || !endTime) {
-      alert("Please select a day, start time, and end time");
+      toast.warning("Please select a day, start time, and end time");
       return;
     }
   
@@ -257,7 +257,7 @@ function Profile() {
     try {
       
       if (!sessionId) {
-        alert("You must be logged in to save availability");
+        toast.error("You must be logged in to save availability");
         return;
       }
   
@@ -280,12 +280,11 @@ function Profile() {
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
         
-        //alert("Availability saved successfully!");
         toast.success("Availability saved successfully!");
       }
     } catch (error) {
       console.error('Error saving availability:', error);
-      alert("Failed to save availability. Please try again.");
+      toast.error("Failed to save availability. Please try again.");
     }
   };
 
@@ -404,7 +403,7 @@ function Profile() {
     try {
       
       if (!sessionId) {
-        alert("You must be logged in to save description");
+        toast.error("You must be logged in to save description");
         return;
       }
 
@@ -426,12 +425,11 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingDescription(false);
         
-        //alert("Description saved successfully!");
         toast.success("Description saved successfully!");
       }
     } catch (error) {
       console.error('Error saving description:', error);
-      alert("Failed to save description. Please try again.");
+      toast.error("Failed to save description. Please try again.");
     }
   };
 
@@ -552,7 +550,7 @@ function Profile() {
 
     // Validate email
     if (!validateEmail(editedProfileData.userEmail)) {
-      alert("Please enter a valid email address");
+      toast.error("Please enter a valid email address");
       return;
     }
     
@@ -566,7 +564,7 @@ function Profile() {
     try {
       
       if (!sessionId) {
-        alert("You must be logged in to save profile information");
+        toast.error("You must be logged in to save profile information");
         return;
       }
   
@@ -588,13 +586,12 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingProfile(false);
         
-        //alert("Profile information saved successfully!");
         toast.success("Profile information saved successfully!");
         
       }
     } catch (error) {
       console.error('Error saving profile information:', error);
-      alert("Failed to save profile information. Please try again.");
+      toast.error("Failed to save profile information. Please try again.");
     }
   };
 
@@ -792,7 +789,7 @@ function Profile() {
                 const { day, startTime, endTime } = availability;
                 
                 if (!day || !startTime || !endTime) {
-                  alert("Please select a day, start time, and end time");
+                  toast.warning("Please select a day, start time, and end time");
                   return;
                 }
               
@@ -832,7 +829,7 @@ function Profile() {
               
                 try {
                   if (!sessionId) {
-                    alert("You must be logged in to update availability");
+                    toast.error("You must be logged in to update availability");
                     return;
                   }
               
@@ -854,15 +851,15 @@ function Profile() {
                       localStorage.setItem('userData', JSON.stringify(updatedUserData));
                       setUserData(updatedUserData);
                       
-                      alert("Availability removed successfully!");
+                      toast.success("Availability removed successfully!");
                     }
                   }).catch(error => {
                     console.error('Error removing availability:', error);
-                    alert("Failed to remove availability. Please try again.");
+                    toast.error("Failed to remove availability. Please try again.");
                   });
                 } catch (error) {
                   console.error('Error removing availability:', error);
-                  alert("Failed to remove availability. Please try again.");
+                  toast.error("Failed to remove availability. Please try again.");
                 }
               }}
             >

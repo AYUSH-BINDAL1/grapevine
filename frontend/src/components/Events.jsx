@@ -1,6 +1,8 @@
 import  { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './Events.css';
 
 function Events() {
@@ -83,7 +85,7 @@ function Events() {
             try {
                 const sessionId = localStorage.getItem('sessionId');
                 if (!sessionId) {
-                    alert("Session expired. Please login again.");
+                    toast.error("Session expired. Please login again.");
                     navigate("/");
                     return;
                 }
@@ -107,7 +109,7 @@ function Events() {
         try {
             const sessionId = localStorage.getItem('sessionId');
             if (!sessionId) {
-                alert("Session expired. Please login again.");
+                toast.error("Session expired. Please login again.");
                 navigate("/");
                 return;
             }
@@ -146,7 +148,7 @@ function Events() {
             setFilteredEvents(response.data);
         } catch (error) {
             console.error("Error applying event filter:", error);
-            alert("Failed to fetch events with the given filters.");
+            toast.error("Failed to fetch events with the given filters.");
         }
     };
 
@@ -299,6 +301,7 @@ function Events() {
                     )}
                 </div>
             </div>
+            <ToastContainer />
         </div>
     );
 }
