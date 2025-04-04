@@ -15,7 +15,6 @@ function Friends() {
     const [isSearching, setIsSearching] = useState(false);
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
-    // eslint-disable-next-line no-unused-vars
     const [searchHistory, setSearchHistory] = useState([]);
     const [noResultsFound, setNoResultsFound] = useState(false);
 
@@ -494,6 +493,28 @@ function Friends() {
         toast.info("Refreshing your friends data...");
     };
 
+    // Add this to your search handling
+    const handleSearch = (e) => {
+        e.preventDefault();
+        
+        if (searchQuery.trim().length < 2) {
+            toast.warning("Please enter at least 2 characters to search");
+            return;
+        }
+        
+        performSearch(searchQuery);
+        
+        // Save to search history in localStorage
+        const existingHistory = JSON.parse(localStorage.getItem('friendSearchHistory') || '[]');
+        const updatedHistory = [
+            searchQuery, 
+            ...existingHistory.filter(item => item !== searchQuery)
+        ].slice(0, 5);
+        
+        localStorage.setItem('friendSearchHistory', JSON.stringify(updatedHistory));
+        setSearchHistory(updatedHistory);
+    };
+
     return (
         <div className="friends-page">
             <div className="friends-container">
@@ -572,14 +593,50 @@ function Friends() {
 
             <div className="search-section">
                 <form className="search-container" onSubmit={(e) => e.preventDefault()}>
-                    <input
-                        type="text"
-                        className="search-bar"
-                        placeholder="Search to add friends..."
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                    />
-                    <button type="submit" className="search-button" disabled={isSearching}>
+                    <div className="search-input-container">
+                        <input
+                            type="text"
+                            className="search-bar"
+                            placeholder="Search to add friends..."
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            onFocus={() => {
+                                // Load history from localStorage
+                                const savedHistory = JSON.parse(localStorage.getItem('friendSearchHistory') || '[]');
+                                setSearchHistory(savedHistory);
+                            }}
+                        />
+                        
+                        {searchHistory.length > 0 && searchQuery.length === 0 && document.activeElement === document.querySelector('.search-bar') && (
+                            <div className="search-history-dropdown">
+                                <div className="search-history-header">Recent Searches</div>
+                                {searchHistory.map((query, index) => (
+                                    <div 
+                                        key={index} 
+                                        className="search-history-item"
+                                        onClick={() => {
+                                            setSearchQuery(query);
+                                            performSearch(query);
+                                        }}
+                                    >
+                                        <i className="history-icon">↩️</i>
+                                        <span>{query}</span>
+                                    </div>
+                                ))}
+                                <div 
+                                    className="clear-history"
+                                    onClick={() => {
+                                        localStorage.removeItem('friendSearchHistory');
+                                        setSearchHistory([]);
+                                    }}
+                                >
+                                    Clear History
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <button type="submit" className="search-button" onClick={handleSearch} disabled={isSearching}>
                         <i className="friend-search"></i>
                         {isSearching ? 'Searching...' : 'Search'}
                     </button>

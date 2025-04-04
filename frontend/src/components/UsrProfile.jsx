@@ -16,6 +16,7 @@ function UsrProfile() {
   const [error, setError] = useState(null);
   const [currentUserData, setCurrentUserData] = useState(null);
   const [isFriend, setIsFriend] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [compatibilityScore, setCompatibilityScore] = useState(null);
   const [friendRequestStatus, setFriendRequestStatus] = useState('none'); // 'none', 'pending', 'accepted'
   const [userCourses, setUserCourses] = useState([]);
@@ -138,6 +139,7 @@ function UsrProfile() {
     };
 
     fetchUserProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userEmail, navigate]);
 
   // Create a separate useEffect for the friend status check

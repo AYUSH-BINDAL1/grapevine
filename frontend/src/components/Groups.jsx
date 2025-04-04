@@ -35,7 +35,6 @@ function Groups() {
   const [userRating, setUserRating] = useState(0);
   const [submittingRating, setSubmittingRating] = useState(false);
   const [myRating, setMyRating] = useState(null);
-  const [isMember, setIsMember] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [existingReview, setExistingReview] = useState(null);
 
@@ -292,8 +291,7 @@ function Groups() {
       } else {
         // Try to get the group data anyway, in case the access check API is just not implemented
         try {
-          // Your existing code to get group data
-          const groupResponse = await axios.get(
+          await axios.get(
             `http://localhost:8080/groups/${id}`,
             {
               headers: {
@@ -302,8 +300,6 @@ function Groups() {
               }
             }
           );
-          
-          // Process the response as before...
           
         } catch (fallbackError) {
           // Handle this error with your existing error handling...

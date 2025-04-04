@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { searchEnabled } from '../App';
 import './CourseSearch.css';
 
 function CourseSearch() {
@@ -11,7 +9,6 @@ function CourseSearch() {
   const [userCourses, setUserCourses] = useState([]);
   const [error, setError] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  const navigate = useNavigate();
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
@@ -175,7 +172,7 @@ return (
       {hasSearched ? (
         courses.length === 0 ? (
           <div className="no-courses-message">
-            There aren't any courses that match your search.
+            There aren&apos;t any courses that match your search.
           </div>
         ) : (
           courses.map(course => (

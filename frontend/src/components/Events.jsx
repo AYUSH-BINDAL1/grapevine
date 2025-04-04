@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import  { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Events.css';
 
 function Events() {
     const [myEvents, setMyEvents] = useState([]);
-    const [allEvents, setAllEvents] = useState([]);
     const [filteredEvents, setFilteredEvents] = useState([]);
     const [search, setSearch] = useState("");
     const [maxUsers, setMaxUsers] = useState("");
