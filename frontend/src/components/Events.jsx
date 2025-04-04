@@ -83,12 +83,19 @@ function Events() {
         const fetchAllEvents = async () => {
             try {
                 const sessionId = localStorage.getItem('sessionId');
-                if (!sessionId) return;
-                const response = await axios.get("http://localhost:8080/events/all", {
+                if (!sessionId) {
+                    alert("Session expired. Please login again.");
+                    navigate("/");
+                    return;
+                }
+                /*
+                const response = await axios.get("http://localhost:8080/events/all-short", {
                     headers: {'Session-Id': sessionId}
                 });
                 setAllEvents(response.data);
                 setFilteredEvents(response.data);
+                */
+               applyEventFilter();
             } catch (error) {
                 console.error("Error fetching all events:", error);
             }

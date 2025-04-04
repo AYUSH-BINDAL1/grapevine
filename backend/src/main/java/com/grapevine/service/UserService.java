@@ -366,7 +366,7 @@ public class UserService {
         if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
             for (Long eventId : currentUser.getHostedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
             }
         }
 
@@ -374,7 +374,7 @@ public class UserService {
         if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
             for (Long eventId : currentUser.getJoinedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
             }
         }
 
@@ -402,7 +402,7 @@ public class UserService {
         if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
             for (Long eventId : currentUser.getHostedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> hostedShortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+                        .ifPresent(event -> hostedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
             }
         }
 
@@ -430,7 +430,7 @@ public class UserService {
         if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
             for (Long eventId : currentUser.getJoinedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> joinedShortEvents.add(new ShortEvent(event.getEventId(), event.getName())));
+                        .ifPresent(event -> joinedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
             }
         }
 

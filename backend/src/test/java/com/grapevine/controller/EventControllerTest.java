@@ -82,8 +82,8 @@ public class EventControllerTest {
     @Test
     void getAllShortEvents_Success() {
         // Arrange
-        ShortEvent event1 = new ShortEvent(1L, "Event 1");
-        ShortEvent event2 = new ShortEvent(2L, "Event 2");
+        ShortEvent event1 = new ShortEvent(1L, "Event 1", 1L);
+        ShortEvent event2 = new ShortEvent(2L, "Event 2", 2L);
 
         // Create a filter with all null parameters (default filter)
         EventFilter filter = new EventFilter(null, null, null, null, null, null, null, null, null);
@@ -304,8 +304,8 @@ public class EventControllerTest {
         EventFilter expectedFilter = new EventFilter(null, null, null, null, null, null, null, null, null);
 
         List<ShortEvent> events = List.of(
-            new ShortEvent(1L, "Upcoming Event"),
-            new ShortEvent(2L, "Another Event")
+            new ShortEvent(1L, "Upcoming Event", 1L),
+            new ShortEvent(2L, "Another Event", 2L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -336,7 +336,7 @@ public class EventControllerTest {
     void getAllShortEvents_WithSearchFilter_FiltersCorrectly() {
         // Arrange
         String searchTerm = "Party";
-        List<ShortEvent> filteredEvents = List.of(new ShortEvent(3L, "Party Event"));
+        List<ShortEvent> filteredEvents = List.of(new ShortEvent(3L, "Party Event", 3L));
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
         when(eventService.getAllShortEvents(argThat(filter ->
@@ -361,8 +361,8 @@ public class EventControllerTest {
         // Arrange
         Boolean isPublic = true;
         List<ShortEvent> filteredEvents = List.of(
-            new ShortEvent(1L, "Public Event 1"),
-            new ShortEvent(3L, "Public Event 2")
+            new ShortEvent(1L, "Public Event 1", 1L),
+            new ShortEvent(3L, "Public Event 2", 3L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -385,9 +385,9 @@ public class EventControllerTest {
         // Arrange
         Boolean includePastEvents = true;
         List<ShortEvent> allEvents = List.of(
-            new ShortEvent(1L, "Past Event"),
-            new ShortEvent(2L, "Current Event"),
-            new ShortEvent(3L, "Future Event")
+            new ShortEvent(1L, "Past Event", 1L),
+            new ShortEvent(2L, "Current Event", 2L),
+            new ShortEvent(3L, "Future Event", 3L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -414,7 +414,7 @@ public class EventControllerTest {
         Boolean isPublic = true;
 
         List<ShortEvent> filteredEvents = List.of(
-            new ShortEvent(5L, "Event with combined filters")
+            new ShortEvent(5L, "Event with combined filters", 5L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);

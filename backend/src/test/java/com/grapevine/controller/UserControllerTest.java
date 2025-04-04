@@ -267,7 +267,7 @@ class UserControllerTest {
     @Test
     void getAllShortEvents_Success() {
         // Arrange
-        ShortEvent shortEvent = new ShortEvent(1L, "Test Event");
+        ShortEvent shortEvent = new ShortEvent(1L, "Test Event", 1L);
         List<ShortEvent> shortEvents = Arrays.asList(shortEvent);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -675,6 +675,60 @@ class UserControllerTest {
         assertEquals("You can only modify your own friends list", exception.getReason());
         verify(userService).validateSession(testSessionId);
         verify(userService, never()).removeFriend(anyString(), anyString());
+    }
+    @Test
+    void searchUsers_Success() {
+        // Arrange
+        String query = "test";
+        List<User> foundUsers = Arrays.asList(testUser);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.searchUsersByName(query)).thenReturn(foundUsers);
+
+        // Act
+        ResponseEntity<List<User>> response = userController.searchUsers(query, testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(foundUsers, response.getBody());
+        assertEquals(1, response.getBody().size());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).searchUsersByName(query);
+    }
+
+    @Test
+    void searchUsers_NoResults() {
+        // Arrange
+        String query = "nonexistent";
+        List<User> emptyList = Collections.emptyList();
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.searchUsersByName(query)).thenReturn(emptyList);
+
+        // Act
+        ResponseEntity<List<User>> response = userController.searchUsers(query, testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody().isEmpty());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).searchUsersByName(query);
+    }
+
+    @Test
+    void searchUsers_InvalidSession() {
+        // Arrange
+        String query = "test";
+
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class, () ->
+                userController.searchUsers(query, testSessionId));
+
+        verify(userService).validateSession(testSessionId);
+        verifyNoMoreInteractions(userService);
     }
 
 }
