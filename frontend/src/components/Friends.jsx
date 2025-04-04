@@ -560,7 +560,7 @@ function Friends() {
                     <div className="friend-requests-list">
                         {friendRequests.map(request => (
                             <div className="friend-request-card" key={request.id}>
-                                <div className="user-info" onClick={() => handleFriendClick(request.id)}>
+                                <div className="user-info" onClick={() => handleFriendClick(request.userEmail)}>
                                     <img src={request.image} alt={request.name} className="request-avatar" />
                                     <div className="request-details">
                                         <h4>{request.name}</h4>
