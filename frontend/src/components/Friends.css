@@ -163,6 +163,7 @@ h2:hover {
   flex: 1;
   padding: 12px 15px;
   border: 1px solid #e0e0e0;
+  width: 80%;
   border-radius: 6px;
   font-size: 16px;
   outline: none;
@@ -552,7 +553,6 @@ h2:hover {
   }
 }
 
-/* Add to Friends.css */
 .friends-header {
   display: flex;
   justify-content: space-between;
