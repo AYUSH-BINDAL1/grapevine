@@ -203,22 +203,58 @@ It also includes responsive design for different screen sizes. */
   gap: 15px;
 }
 
+/* Update the location styling to accommodate the remove button */
 .location {
   display: flex;
   align-items: center;
-  padding: 12px 15px;
-  border-radius: var(--border-radius-sm);
-  background-color: #f0f8ee;
-  border-left: 3px solid var(--primary-color);
-  transition: transform 0.2s;
+  justify-content: space-between;
+  background-color: #def3d9dc;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.location:hover {
+  background-color: #e8e8e8;
 }
 
 .location-name {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-dark);
   margin: 0;
-  text-align: left;
+  font-size: 14px;
+}
+
+.remove-location-button {
+  background-color: transparent;
+  border: none;
+  color: #666;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 5px;
+  line-height: 1;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.remove-location-button:hover {
+  background-color: #ff5252;
+  color: white;
+}
+
+/* Add a subtle animation for removal */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.location.removing {
+  animation: fadeOut 0.3s forwards;
 }
 
 .location-select {

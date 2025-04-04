@@ -488,6 +488,51 @@ function Profile() {
     }
   };
 
+  // Add this function to your Profile component
+  const handleRemoveLocation = (locationId, locationName) => {
+    if (!userData) return;
+    
+    // Ask for confirmation before removing
+    if (!window.confirm(`Remove ${locationName} from your preferred locations?`)) {
+      return;
+    }
+    
+    // Filter out the location to remove
+    const updatedLocations = userData.preferredLocations.filter(id => id !== locationId);
+    
+    // Create updated user data
+    const updatedUserData = {
+      ...userData,
+      preferredLocations: updatedLocations
+    };
+    
+    // Update local state
+    setUserData(updatedUserData);
+    
+    // Update localStorage
+    localStorage.setItem('userData', JSON.stringify(updatedUserData));
+    
+    // Update on the server
+    const sessionId = localStorage.getItem('sessionId');
+    if (sessionId) {
+      axios.put(
+        `http://localhost:8080/users/${userData.userEmail}`,
+        { preferredLocations: updatedLocations },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          }
+        }
+      ).then(() => {
+        toast.success(`Removed ${locationName} from your preferred locations.`);
+      }).catch(error => {
+        console.error('Error removing location:', error);
+        toast.error('Error removing location. Please try again.');
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="profile-loading">
@@ -793,6 +838,13 @@ function Profile() {
                 return (
                   <div key={index} className="location">
                     <p className="location-name">{locationName}</p>
+                    <button 
+                      className="remove-location-button"
+                      onClick={() => handleRemoveLocation(locationId, locationName)}
+                      title={`Remove ${locationName}`}
+                    >
+                      ×
+                    </button>
                   </div>
                 );
               })
