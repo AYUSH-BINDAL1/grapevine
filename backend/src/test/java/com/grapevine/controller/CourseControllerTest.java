@@ -157,6 +157,7 @@ class CourseControllerTest {
         verify(courseService).getCourseByKey("CS999");
     }
 
+    //STORY5 As an instructor, I would like to be able to see students enrolled in my courses
     @Test
     void getEnrolledStudents_AsInstructor_Success() {
         // Arrange
@@ -176,6 +177,7 @@ class CourseControllerTest {
         verify(courseService).getCourseByKey("CS101");
         verify(userRepository).findAllByCourses("CS101");
     }
+
 
     @Test
     void getEnrolledStudents_AsStudent_Forbidden() {
