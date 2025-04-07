@@ -48,17 +48,17 @@ deploy:
 ### Branch Protection
 ![Branch Protection Settings](screenshots/branch-protection.png)
 
-*Screenshot shows branch protection rules for main and dev branches, requiring status checks and preventing direct pushes.*
+*Branch protection rules for main and dev branches, requiring status checks and preventing direct pushes.*
 
 ### Pull Request Workflow
 ![Successful PR Workflow](screenshots/pr-workflow.png)
 
-*Screenshot shows a successful workflow run on a pull request, including all passing checks.*
+*Successful workflow run on a pull request, including all passing checks.*
 
 ### Deployment Workflow
-![Successful Deployment](screenshots/deployment.png)
+![Successful Deployment](screenshots/deploy-screenshot.png)
 
-*Screenshot shows a successful deployment after merging to main branch.*
+*Successful deployment after merging to main branch.*
 
 ## Workflow Configuration
 
