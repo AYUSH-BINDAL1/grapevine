@@ -133,7 +133,7 @@ function Layout() {
 function Home() {
   const [groups, setGroups] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
-  const [groupFilter, setGroupFilter] = useState("all"); // "all", "public", "private"
+  const [groupFilter, setGroupFilter] = useState("public"); // "all", "public", "private"
   const [filteredGroups, setFilteredGroups] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
@@ -162,11 +162,12 @@ function Home() {
         }
 
         try {
-          const allRes = await axios.get("http://localhost:8080/groups/all-short", {
+          const allRes = await axios.get("http://localhost:8080/groups/all", {
             headers: { 'Session-Id': sessionId }
           });
           setAllGroups(allRes.data);
-          setFilteredGroups(allRes.data);
+          const publicGroups = allRes.data.filter(group => group.public === true);
+          setFilteredGroups(publicGroups);
         } catch (error) {
           console.error('Error fetching all groups:', error);
         }
@@ -232,10 +233,15 @@ function Home() {
                         onClick={() => handleGroupClick(group.groupId)}
                     >
                       <h3>{group.name}</h3>
-                      {group.public === false && (
+                      {group.public === false ? (
                         <div className="private-group-indicator">
                           <span className="lock-icon">🔒</span>
                           <span className="private-text">Private</span>
+                        </div>
+                      ) : (
+                        <div className="public-group-indicator">
+                          <span className="globe-icon">🌐</span>
+                          <span className="public-text">Public</span>
                         </div>
                       )}
                     </div>
@@ -295,13 +301,17 @@ function Home() {
                         onClick={() => handleGroupClick(group.groupId)}
                     >
                       <h3>{group.name}</h3>
-                      {group.public === false && (
+                      {group.public === false ? (
                         <div className="private-group-indicator">
                           <span className="lock-icon">🔒</span>
                           <span className="private-text">Private</span>
                         </div>
+                      ) : (
+                        <div className="public-group-indicator">
+                          <span className="globe-icon">🌐</span>
+                          <span className="public-text">Public</span>
+                        </div>
                       )}
-                      <p>{group.description}</p>
                     </div>
                 ))
             )}

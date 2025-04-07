@@ -56,6 +56,7 @@ public class GroupControllerTest {
         testEvent.setName("Test Event");
     }
 
+    //STORY8 As a user, I would like to be able to see public study groups
     @Test
     void getAllGroups_Success() {
         // Arrange
@@ -290,8 +291,8 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         List<ShortEvent> events = List.of(
-                new ShortEvent(1L, "Upcoming Event"),
-                new ShortEvent(2L, "Another Event")
+                new ShortEvent(1L, "Upcoming Event", 1L),
+                new ShortEvent(2L, "Another Event", 2L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -312,7 +313,7 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         String searchTerm = "Party";
-        List<ShortEvent> filteredEvents = List.of(new ShortEvent(3L, "Party Event"));
+        List<ShortEvent> filteredEvents = List.of(new ShortEvent(3L, "Party Event", 3L));
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
         when(eventService.getShortEventsByGroupId(groupId)).thenReturn(filteredEvents);
@@ -335,8 +336,8 @@ public class GroupControllerTest {
         Long endTime = 1704067199L; // 2023-12-31T23:59:59
 
         List<ShortEvent> filteredEvents = List.of(
-                new ShortEvent(1L, "Event in December 1"),
-                new ShortEvent(2L, "Event in December 2")
+                new ShortEvent(1L, "Event in December 1", 1L),
+                new ShortEvent(2L, "Event in December 2", 2L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -357,8 +358,8 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         List<ShortEvent> filteredEvents = List.of(
-                new ShortEvent(1L, "Public Event 1"),
-                new ShortEvent(3L, "Public Event 2")
+                new ShortEvent(1L, "Public Event 1", 1L),
+                new ShortEvent(3L, "Public Event 2", 3L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -379,9 +380,9 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         List<ShortEvent> allEvents = List.of(
-                new ShortEvent(1L, "Past Event"),
-                new ShortEvent(2L, "Current Event"),
-                new ShortEvent(3L, "Future Event")
+                new ShortEvent(1L, "Past Event", 1L),
+                new ShortEvent(2L, "Current Event", 2L),
+                new ShortEvent(3L, "Future Event", 3L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -402,7 +403,7 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         List<ShortEvent> filteredEvents = List.of(
-                new ShortEvent(5L, "Event with combined filters")
+                new ShortEvent(5L, "Event with combined filters", 5L)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -434,6 +435,8 @@ public class GroupControllerTest {
         verifyNoInteractions(eventService);
     }
 
+    //STORY14 As a user I would like to see private study groups. If they are private I would like to be able to
+    //send a request to the host to join the study group.
     @Test
     void requestGroupAccess_Success() {
         // Arrange
