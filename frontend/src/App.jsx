@@ -29,6 +29,18 @@ function Taskbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [userProfileImage, setUserProfileImage] = useState(profileImage);
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    if (userData.profilePictureId) {
+      const userImageUrl = `http://localhost:9000/images/${userData.profilePictureId}`;
+      const img = new Image();
+      img.onload = () => setUserProfileImage(userImageUrl);
+      img.onerror = () => console.log("Failed to load profile image, using default");
+      img.src = userImageUrl;
+    }
+  }, []);
 
   const isActive = (path) => {
     if (path === '/home') return location.pathname === '/home' || location.pathname.startsWith('/group/');
@@ -106,7 +118,7 @@ function Taskbar() {
         <img 
           onClick={() => navigate("/profile")} 
           className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
-          src={profileImage} 
+          src={userProfileImage} 
           alt="Profile" 
         />
         <h3 
