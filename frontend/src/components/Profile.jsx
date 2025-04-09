@@ -23,16 +23,18 @@ function Profile() {
   const [availabilityString, setAvailabilityString] = useState("0".repeat(168));
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState("");
-  // Add new state variables for profile editing
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedProfileData, setEditedProfileData] = useState({
     name: "",
     userEmail: "",
     majors: [],
-    majorsString: "" // New field to store the raw input
+    majorsString: ""
   });
-  // Add these state variables to your component
   const [emailError, setEmailError] = useState("");
+  // Add state for profile picture
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   // Add a state for the delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -55,7 +57,7 @@ function Profile() {
       setTimeout(() => window.location.href = '/', 2000);
       return;
     }
-  
+
     // Load user data from localStorage
     setIsLoading(true);
     const storedUserData = localStorage.getItem('userData');
@@ -77,15 +79,33 @@ function Profile() {
       if (parsedData.weeklyAvailability) {
         setAvailabilityString(parsedData.weeklyAvailability);
       }
-  
-      // Fetch current role from backend
-      const fetchUserRole = async () => {
-        try {
-          const response = await axios.get(
-            `http://localhost:8080/users/${parsedData.userEmail}`,
-            { headers: { 'Session-Id': sessionId } }
-          );
+
+      // Important change: Fetch user data from the server to get the latest profile picture ID
+      axios.get(
+        `http://localhost:8080/users/${parsedData.userEmail}`,
+        { headers: { 'Session-Id': sessionId } }
+      ).then(response => {
+        // Update the profile picture ID from the server response
+        if (response.data && response.data.profilePictureId) {
+          console.log("Fetched profile picture ID from server:", response.data.profilePictureId);
           
+          // Update the localStorage copy with the server value
+          const updatedUserData = {
+            ...parsedData,
+            profilePictureId: response.data.profilePictureId
+          };
+          localStorage.setItem('userData', JSON.stringify(updatedUserData));
+          
+          // Load the profile picture
+          fetchProfilePicture(response.data.profilePictureId);
+        } else if (parsedData.profilePictureId) {
+          // Fallback to local storage if server doesn't return a profile picture ID
+          console.log("Using local storage profile picture ID:", parsedData.profilePictureId);
+          fetchProfilePicture(parsedData.profilePictureId);
+        }
+        
+        // Update user role from server response
+        if (response.data && response.data.role) {
           const role = response.data.role || 'Student';
           setUserRole(role);
           
@@ -95,19 +115,62 @@ function Profile() {
           
           // Update global searchEnabled variable
           window.searchEnabled = isTeachingRole;
-          
-        } catch (error) {
-          console.error('Error fetching user role:', error);
-          toast.error('Failed to fetch user role');
         }
-      };
-  
-      fetchUserRole();
+      }).catch(error => {
+        console.error('Error fetching user data:', error);
+        
+        // Still try to load picture from localStorage as fallback
+        if (parsedData.profilePictureId) {
+          fetchProfilePicture(parsedData.profilePictureId);
+        }
+        
+        // Continue with local role if available
+        const role = parsedData.role || 'Student';
+        setUserRole(role);
+        
+        // Update searchEnabled based on role
+        const isTeachingRole = ['INSTRUCTOR', 'GTA', 'UTA'].includes(role);
+        setSearchEnabled(isTeachingRole);
+        
+        // Update global searchEnabled variable
+        window.searchEnabled = isTeachingRole;
+      });
     }
     
     setTimeout(() => setIsLoading(false), 500);
   }, [sessionId]);
-  
+
+  const fetchProfilePicture = async (fileId) => {
+    console.log("fetchProfilePicture called with ID:", fileId);
+    
+    if (!fileId || fileId === 'undefined') {
+      console.log("Invalid fileId detected:", fileId);
+      return;
+    }
+    
+    try {
+      // Always use port 9000 for images
+      const imageUrl = `http://localhost:9000/images/${fileId}`;
+      console.log("Setting profile picture URL:", imageUrl);
+      
+      // Set the profile picture URL directly without waiting for verification
+      // This is important for persistence between sessions
+      setProfilePicture(imageUrl);
+      
+      // Still verify the image loads correctly in the background
+      const img = new Image();
+      img.onload = () => {
+        console.log("Image loaded successfully:", imageUrl);
+      };
+      img.onerror = (e) => {
+        console.error("Failed to load image:", imageUrl, e);
+      };
+      img.src = imageUrl;
+    } catch (error) {
+      console.error('Error setting profile picture URL:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchUserCourses = async () => {
       if (!userData?.userEmail) return;
@@ -640,6 +703,155 @@ function Profile() {
     }
   };
 
+  // Update the handleProfilePictureUpload function to store the complete filename
+  const handleProfilePictureUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload an image file (JPEG, PNG, GIF, or WEBP)");
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+    
+    // Create form data for upload
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Show upload indicator
+    setIsUploadingPicture(true);
+    
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      
+      if (!sessionId) {
+        toast.error("You must be logged in to upload a profile picture");
+        setIsUploadingPicture(false);
+        return;
+      }
+      
+      console.log("Uploading file:", file.name, "size:", file.size);
+      
+      // Using the upload endpoint from the provided API
+      const response = await axios.post(
+        'http://localhost:8080/api/files/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Session-Id': sessionId
+          }
+        }
+      );
+      
+      console.log("Upload response:", response.data);
+      
+      // Check if we have a response at all
+      if (response.status === 200 && response.data) {
+        let fileId;
+        
+        if (response.data.fileName) {
+          // Use the complete filename as the fileId - this is the key change
+          fileId = response.data.fileName;
+        } else if (response.data.publicUrl) {
+          // Extract the complete ID from the publicUrl
+          const urlParts = response.data.publicUrl.split('/');
+          fileId = urlParts[urlParts.length - 1];
+        } else {
+          // Legacy handling for other response formats
+          fileId = response.data.fileId || 
+                   response.data.id || 
+                   (typeof response.data === 'string' ? response.data : null);
+        }
+        
+        console.log("Extracted fileId:", fileId);
+        
+        if (!fileId || fileId === 'undefined') {
+          console.error("Invalid fileId in response:", fileId);
+          toast.error("Failed to extract valid file ID from server response");
+          return;
+        }
+        
+        // Use the public URL directly if available, otherwise construct it
+        const imageUrl = response.data.publicUrl || `http://localhost:9000/images/${fileId}`;
+        console.log("Setting profile picture URL:", imageUrl);
+        
+        // Update profile picture in user data - store the FULL ID
+        const updatedUserData = {
+          ...userData,
+          profilePictureId: fileId
+        };
+        
+        // Save the updated user data
+        await axios.put(
+          `http://localhost:8080/users/${userData.userEmail}`,
+          { profilePictureId: fileId },  // Send the full filename to the server
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Session-Id': sessionId
+            }
+          }
+        );
+        
+        // Update local storage with the full filename
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+        
+        // Check that the image can be loaded with the new URL
+        const img = new Image();
+        let imageLoaded = false;
+        
+        img.onload = () => {
+          console.log("Image loaded successfully from URL:", imageUrl);
+          setProfilePicture(imageUrl);
+          toast.success("Profile picture updated successfully!");
+          imageLoaded = true;
+        };
+        
+        img.onerror = () => {
+          console.error("Failed to load image from URL:", imageUrl);
+          // The image was uploaded but we can't load it right now
+          // This could be due to CORS, caching, or other issues
+          toast.warning("Image uploaded, but might take a moment to appear. Try refreshing if needed.");
+          setProfilePicture(imageUrl); // Still set it, it might work on refresh
+        };
+        
+        img.src = imageUrl;
+        
+        // Show success even if image doesn't load immediately
+        setTimeout(() => {
+          if (!imageLoaded) {
+            toast.success("Image uploaded successfully. It may take a moment to appear.");
+          }
+        }, 2000);
+      } else {
+        console.error("Unexpected response:", response);
+        toast.warning("Image may have been uploaded, but there was an issue with the response.");
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      
+      // Check if there's a specific error message we can show
+      if (error.response?.data?.message) {
+        toast.error(`Upload error: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Upload error: ${error.message}`);
+      } else {
+        toast.error("Failed to upload profile picture. Please try again later.");
+      }
+    } finally {
+      setIsUploadingPicture(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="profile-loading">
@@ -654,8 +866,50 @@ function Profile() {
       <div className="profile-sidebar">
         <div className="profile-card">
           <div className="profile-header">
-            <div className="profile-image-container">
-              <img src={profileImage} alt="Profile" className="profile-image" />
+            <div 
+              className="profile-image-container"
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              style={{ cursor: 'pointer' }}
+              title="Click to change profile picture"
+            >
+              {isUploadingPicture && (
+                <div className="profile-image-loading">
+                  <div className="spinner"></div>
+                </div>
+              )}
+              <img 
+                src={profilePicture && profilePicture !== 'http://localhost:9000/images/undefined' 
+                  ? profilePicture 
+                  : profileImage} 
+                alt="Profile" 
+                className="profile-image"
+                onError={(e) => {
+                  console.error("Failed to load image:", e.target.src);
+                  // Add a retry attempt before falling back to default
+                  if (e.target.src !== profileImage && !e.target.dataset.retried) {
+                    console.log("Retrying image load after error");
+                    e.target.dataset.retried = "true";
+                    // Force a cache refresh by adding a timestamp
+                    setTimeout(() => {
+                      e.target.src = e.target.src + "?t=" + new Date().getTime();
+                    }, 500);
+                  } else if (e.target.src !== profileImage) {
+                    console.log("Falling back to default image after retry");
+                    e.target.src = profileImage;
+                  }
+                }}
+              />
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={handleProfilePictureUpload}
+              />
+              <div className="profile-image-overlay">
+                <span className="upload-icon">📷</span>
+                <span className="upload-text">Click to change</span>
+              </div>
             </div>
             <h2 className="name">{userData?.name || "Loading..."}</h2>
             <div className="tag-container">

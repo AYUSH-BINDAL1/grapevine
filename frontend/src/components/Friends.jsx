@@ -568,7 +568,8 @@ function Friends() {
                                     </div>
                                 </div>
                                 <div className="request-actions">
-                                    <button
+                                    <button 
+                                        aria-label={`Accept friend request from ${request.name}`} 
                                         className="accept-request-btn"
                                         onClick={() => handleAcceptRequest(request)}
                                     >

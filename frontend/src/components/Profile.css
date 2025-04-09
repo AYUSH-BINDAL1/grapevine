@@ -36,22 +36,68 @@ It also includes responsive design for different screen sizes. */
 }
 
 .profile-image-container {
-  margin: 0 auto 20px;
   position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .profile-image {
-  width: 160px;
-  height: 160px;
-  border-radius: var(--border-radius-full);
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border: 4px solid var(--primary-color);
-  box-shadow: var(--shadow-light);
-  transition: transform 0.3s;
+  transition: filter 0.3s ease;
 }
 
-.profile-image:hover {
-  transform: scale(1.03);
+.profile-image-container:hover .profile-image {
+  filter: brightness(70%);
+}
+
+.profile-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+}
+
+.profile-image-container:hover .profile-image-overlay {
+  opacity: 1;
+}
+
+.upload-icon {
+  color: white;
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.upload-text {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.profile-image-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
 }
 
 .name {
@@ -392,7 +438,7 @@ It also includes responsive design for different screen sizes. */
   height: 100%;
   background-color: #f0f0f0;
   border: 1px solid #e8e8e8;
-  transition: all 0.2s;
+  transition: background-color 0.3s, transform 0.1s;
 }
 
 .hour-block.available {
@@ -410,6 +456,10 @@ It also includes responsive design for different screen sizes. */
 
 .hour-block.updating {
   opacity: 0.7;
+}
+
+.hour-block:active {
+  transform: scale(0.95);
 }
 
 .hour-update-indicator {
@@ -748,6 +798,14 @@ It also includes responsive design for different screen sizes. */
 }
 
 @media (max-width: 768px) {
+  .profile-page {
+    flex-direction: column;
+  }
+  
+  .profile-sidebar, .profile-content {
+    width: 100%;
+  }
+
   .time-input {
     flex-direction: column;
     align-items: stretch;
