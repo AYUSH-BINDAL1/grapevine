@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="GrapeVine - Connect with study partners and enhance your academic journey" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="GrapeVine - Connect with study partners, join groups, and enhance your academic journey at your university" />
     <meta name="theme-color" content="#8ebd89" />
-    <meta name="color-scheme" content="only light">
+    <meta name="color-scheme" content="light" />
     <title>GrapeVine | Find Your Study Partners</title>
     
     <!-- Open Graph / Social Media Meta Tags -->
@@ -15,15 +15,34 @@
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/og-image.jpg" />
     
+    <!-- Preconnect to critical domains -->
+    <link rel="preconnect" href="http://localhost:8080" crossorigin />
+    <link rel="preconnect" href="http://localhost:9000" crossorigin />
+    
     <!-- Preload critical assets -->
-    <link rel="preload" href="/src/assets/logo.png" as="image">
+    <link rel="preload" href="/src/assets/logo.png" as="image" fetchpriority="high" />
+    <link rel="preload" href="/src/main.jsx" as="script" />
+    
+    <!-- Web app manifest for PWA capabilities -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     
     <!-- Initial loading style -->
     <style>
+      :root {
+        --primary-color: #8ebd89;
+        --secondary-color: #ae92c6;
+        --background-color: #f5f5f5;
+        --text-color: #333;
+      }
 
       body {
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        background-color: #f5f5f5;
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background-color: var(--background-color);
+        margin: 0;
+        padding: 0;
+        color: var(--text-color);
+        line-height: 1.5;
       }
 
       .loading-screen {
@@ -32,7 +51,7 @@
         align-items: center;
         justify-content: center;
         height: 100vh;
-        background-color: #f5f5f5;
+        background-color: var(--background-color);
       }
       
       .loading-logo {
@@ -42,35 +61,50 @@
         animation: pulse 1.5s infinite ease-in-out;
       }
       
-      .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid rgba(142, 189, 137, 0.2);
-        border-left-color: #8ebd89;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
+      /* Reduced motion for accessibility */
+      @media (prefers-reduced-motion: reduce) {
+        .loading-logo, .loading-spinner {
+          animation: none;
+        }
       }
       
-      @keyframes pulse {
-        0% { opacity: 0.6; transform: scale(0.98); }
-        50% { opacity: 1; transform: scale(1); }
-        100% { opacity: 0.6; transform: scale(0.98); }
+      /* Basic skip-link for accessibility */
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--primary-color);
+        color: white;
+        padding: 8px;
+        z-index: 100;
+        transition: top 0.2s;
       }
       
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+      .skip-link:focus {
+        top: 0;
       }
     </style>
   </head>
   <body>
+    <!-- Accessibility skip link -->
+    <a href="#root" class="skip-link">Skip to main content</a>
+    
     <div id="root">
       <!-- This will show while React is loading -->
-      <div class="loading-screen">
-        <img src="/src/assets/logo.png" alt="GrapeVine Logo" class="loading-logo">
-        <div class="loading-spinner"></div>
+      <div class="loading-screen" role="status" aria-live="polite">
+        <img src="/src/assets/logo.png" alt="GrapeVine Logo" class="loading-logo" width="100" height="100">
+        <p aria-live="assertive">Loading GrapeVine application...</p>
       </div>
     </div>
+    
+    <!-- Added noscript fallback -->
+    <noscript>
+      <div style="padding: 20px; text-align: center;">
+        <h1>JavaScript Required</h1>
+        <p>GrapeVine needs JavaScript to work. Please enable JavaScript in your browser settings to continue.</p>
+      </div>
+    </noscript>
+    
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

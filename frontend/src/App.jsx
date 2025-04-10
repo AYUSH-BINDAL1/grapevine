@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, lazy, Suspense } from 'react';
 import axios from 'axios';
 import Registration from './components/Registration';
-import Login from './components/Login';
 import Confirmation from './components/Confirmation';
 import Profile from './components/Profile';
 import Nopath from './components/Nopath';
@@ -24,6 +23,8 @@ export let searchEnabled = true;
   searchEnabled = value;
 };
 */
+
+const Login = lazy(() => import('./components/Login'));
 
 function Taskbar() {
   const navigate = useNavigate();
@@ -337,7 +338,14 @@ function App() {
   return (
       <Router>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route 
+            path="/" 
+            element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <Login />
+              </Suspense>
+            } 
+          />
           <Route path="/registration" element={<Registration />} />
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/user/:userEmail" element={<UsrProfile />} />

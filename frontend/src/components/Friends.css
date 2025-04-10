@@ -59,6 +59,7 @@ h2:hover {
   transition: transform 0.2s, box-shadow 0.2s;
   overflow: hidden;
   will-change: transform;
+  contain: content;
 }
 
 .friend-card h3 {
@@ -177,32 +178,107 @@ h2:hover {
   box-shadow: 0 0 0 3px rgba(142, 189, 137, 0.25); /* Focused input glow */
 }
 
+/* Complete replacement for search button styles */
 .search-button {
-  background-color: var(--primary-color); /* Using theme variable */
+  background-color: var(--primary-color);
   color: white;
   border: none;
-  border-radius: var(--border-radius-sm); /* Using theme variable */
+  border-radius: var(--border-radius-sm);
   padding: 12px 20px;
   font-size: 16px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s, background-color 0.2s;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-weight: 500;
-  box-shadow: 0 2px 5px rgba(142, 189, 137, 0.3); /* Subtle button shadow */
+  box-shadow: 0 2px 5px rgba(142, 189, 137, 0.3);
+  
+  /* Fixed dimensions to prevent expansion */
+  min-width: 140px;
+  max-width: 160px;
+  width: 140px;
+  height: 46px;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
 }
 
 .search-button:hover {
-  background-color: var(--primary-hover); /* Using theme variable */
-  transform: translateY(-1px); /* Slight lift on hover */
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
 .search-button:disabled {
-  background-color: #c0d9bd; /* Lighter version of primary */
+  background-color: #c0d9bd;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  width: 160px; /* Maintain consistent width */
+}
+
+.search-button:active {
+  transform: scale(0.98);
+  /* Remove width: auto that was causing the expansion */
+}
+
+.search-button.loading {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+  width: 120px; /* Keep width fixed during loading */
+  height: 46px; /* Keep height fixed during loading */
+}
+
+/* Keep the inner content from causing layout shifts */
+.search-button > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure the spinner doesn't push other content */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  min-width: 16px; /* Prevent width compression */
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  flex-shrink: 0; /* Prevent the spinner from shrinking */
+}
+
+.search-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.search-button:active {
+  transform: scale(0.98); /* Small scale down instead of translateY */
+}
+
+/* Improve loading state to prevent size changes */
+.search-button.loading {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+  min-width: 120px; /* Ensure same min-width as normal state */
+}
+
+/* Make sure the spinner doesn't cause layout shifts */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  min-width: 16px; /* Prevent width compression */
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  flex-shrink: 0; /* Prevent the spinner from shrinking */
 }
 
 .friend-search {
@@ -314,7 +390,7 @@ h2:hover {
 
 /* Search results section */
 .search-results {
-  max-width: 800px;
+  max-width: 900px; /* Match the container width */
   margin: 20px auto 0;
   background-color: white;
   border-radius: 10px;
@@ -424,7 +500,7 @@ h2:hover {
 }
 
 .no-results {
-  max-width: 600px;
+  max-width: 900px;
   margin: 20px auto 0;
   text-align: center;
   padding: 20px;
@@ -433,12 +509,6 @@ h2:hover {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   color: #666;
   font-style: italic;
-}
-
-/* Disabled state for search button */
-.search-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
 }
 
 /* Friend Requests Styles */
@@ -952,5 +1022,196 @@ h2:hover {
 .no-factors {
   color: var(--text-light);
   font-style: italic;
+}
+
+/* Skeleton loading animations */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Generic skeleton styles */
+.skeleton {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Friend card skeleton */
+.friend-card.skeleton .skeleton-image {
+  width: 80px;
+  height: 80px;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+}
+
+.friend-card.skeleton .skeleton-text {
+  width: 100%;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+/* Friend request skeleton */
+.friend-request-card.skeleton .skeleton-avatar {
+  width: 50px;
+  height: 50px;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+}
+
+.skeleton-text-short {
+  width: 70%;
+  height: 16px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-shorter {
+  width: 50%;
+  height: 12px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+}
+
+.skeleton-button {
+  width: 70px;
+  height: 32px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin: 0 5px;
+}
+
+.skeleton-button-wide {
+  width: 100px;
+  height: 32px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+}
+
+/* Search result skeleton */
+.search-result-card.skeleton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Additional responsive adjustments */
+@media (max-width: 768px) {
+  .friend-card.skeleton .skeleton-image {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .skeleton-button {
+    width: 60px;
+  }
+}
+
+/* Add these styles at the end of your file */
+
+/* Updated search and filter layout - filter below search */
+.search-filter-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 900px;
+  gap: 15px;
+  margin: 0 auto;
+}
+
+/* Make search container take full width */
+.search-container {
+  flex: 1;
+  margin-top: 0;
+  max-width: none; /* Remove the previous max-width constraint */
+  width: 100%; /* Ensure it takes full width */
+}
+
+/* Make filter panel wide and thin */
+.filter-panel {
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  padding: 12px 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  height: fit-content;
+  width: 100%;
+}
+
+/* Reorganize filter content to be horizontal */
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Arrange filter options horizontally */
+.filter-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+}
+
+.filter-group {
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 14px;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.filter-select {
+  width: auto;
+  min-width: 140px;
+}
+
+.filter-checkbox-label {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.filter-note {
+  margin-left: auto;
+  font-size: 12px;
+  font-style: italic;
+  color: #999;
+}
+
+/* Make filter components responsive on mobile */
+@media (max-width: 768px) {
+  .filter-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-select {
+    width: 100%;
+  }
+  
+  .filter-note {
+    margin-left: 0;
+    margin-top: 15px;
+    width: 100%;
+    text-align: center;
+  }
 }
 
