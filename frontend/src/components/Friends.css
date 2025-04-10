@@ -154,44 +154,55 @@ h2:hover {
   margin-left: auto;
   margin-right: auto;
   gap: 10px;
-  background-color: white;
+  background-color: var(--white); /* Using theme variable */
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius-md); /* Using theme variable */
+  box-shadow: var(--shadow-light); /* Using theme variable */
+  border: 1px solid #f0f0f0; /* Subtle border */
 }
 
 .search-bar {
   flex: 1;
   padding: 12px 15px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e8e8e8;
   width: 80%;
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm); /* Using theme variable */
   font-size: 16px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .search-bar:focus {
-  border-color: #8ebd89;
-  box-shadow: 0 0 0 2px rgba(142, 189, 137, 0.2);
+  border-color: var(--primary-color); /* Using theme variable */
+  box-shadow: 0 0 0 3px rgba(142, 189, 137, 0.25); /* Focused input glow */
 }
 
 .search-button {
-  background-color: #8ebd89;
+  background-color: var(--primary-color); /* Using theme variable */
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm); /* Using theme variable */
   padding: 12px 20px;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 8px;
+  font-weight: 500;
+  box-shadow: 0 2px 5px rgba(142, 189, 137, 0.3); /* Subtle button shadow */
 }
 
 .search-button:hover {
-  background-color: #7aa875;
+  background-color: var(--primary-hover); /* Using theme variable */
+  transform: translateY(-1px); /* Slight lift on hover */
+}
+
+.search-button:disabled {
+  background-color: #c0d9bd; /* Lighter version of primary */
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .friend-search {
@@ -294,10 +305,11 @@ h2:hover {
   margin-left: auto;
   margin-right: auto;
   gap: 10px;
-  background-color: white;
+  background-color: var(--white); /* Using theme variable */
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius-md); /* Using theme variable */
+  box-shadow: var(--shadow-light); /* Using theme variable */
+  border: 1px solid #f0f0f0; /* Subtle border */
 }
 
 /* Search results section */
@@ -322,28 +334,43 @@ h2:hover {
 .search-results-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px; /* Increased from 10px for better spacing */
   content-visibility: auto;
   contain-intrinsic-size: auto 400px;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+.search-results-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.search-results-list::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 6px;
+}
+
+.search-results-list::-webkit-scrollbar-thumb:hover {
+  background-color: #aaa;
 }
 
 .search-result-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  transition: background-color 0.2s;
-  animation: fade-in 0.3s forwards;
-  animation-delay: calc(var(--index) * 0.05s);
-  opacity: 0;
-  will-change: opacity, transform;
-  transform: translateZ(0);
+  padding: 18px; /* Increased from 15px for better spacing */
+  border-radius: var(--border-radius-md); /* Using theme variable */
+  background-color: var(--white); /* Using theme variable */
+  transition: all 0.3s ease; /* Enhanced transition */
+  border: 1px solid transparent; /* Prepare for hover effect */
+  box-shadow: var(--shadow-light); /* Using theme variable */
 }
 
 .search-result-card:hover {
-  background-color: #f0f0f0;
+  background-color: var(--background-light); /* Using theme variable */
+  border-color: var(--primary-color); /* Highlight border on hover */
+  transform: translateY(-2px); /* Slight lift effect */
 }
 
 .user-info {
@@ -358,7 +385,8 @@ h2:hover {
   height: 50px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #8ebd89;
+  border: 2px solid var(--primary-color) !important; /* Using theme variable */
+  box-shadow: 0 0 0 2px rgba(142, 189, 137, 0.2); /* Subtle glow */
 }
 
 .search-result-details {
@@ -368,28 +396,31 @@ h2:hover {
 .search-result-details h4 {
   margin: 0 0 5px;
   font-size: 16px;
-  color: #333;
+  color: var(--text-dark); /* Using theme variable */
+  font-weight: 600; /* Make names slightly bolder */
 }
 
 .search-result-details p {
   margin: 0;
   font-size: 14px;
-  color: #666;
+  color: var(--text-medium); /* Using theme variable */
 }
 
 .add-friend-btn {
-  background-color: #8ebd89;
+  background-color: var(--primary-color); /* Using theme variable */
   color: white;
   border: none;
-  border-radius: 5px;
-  padding: 8px 15px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  border-radius: var(--border-radius-sm); /* Using theme variable */
+  padding: 10px 18px; /* Slightly larger */
+  font-weight: 500; /* Medium weight */
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(142, 189, 137, 0.3); /* Subtle button shadow */
 }
 
 .add-friend-btn:hover {
-  background-color: #7aa875;
+  background-color: var(--primary-hover); /* Using theme variable */
+  transform: translateY(-1px); /* Slight lift on hover */
+  box-shadow: 0 4px 8px rgba(142, 189, 137, 0.4); /* Enhanced shadow on hover */
 }
 
 .no-results {
@@ -629,7 +660,7 @@ h2:hover {
     align-items: center;
     background-color: #f5f5f5;
     border: none;
-    border-radius: 20px;
+    border-radius: var(--border-radius-sm); /* Using theme variable */
     padding: 5px 12px;
     font-size: 0.85rem;
     color: #555;
@@ -638,7 +669,7 @@ h2:hover {
 }
 
 .search-history-item:hover {
-    background-color: #e0e0e0;
+    background-color: var(--background-light); /* Using theme variable */
 }
 
 .search-history-icon {
@@ -663,11 +694,11 @@ h2:hover {
 
 /* Add this to your CSS file */
 .already-friend-btn {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    background-color: #e0e0e0;
-    color: #757575;
+    padding: 10px 18px; /* Match add button size */
+    border: 1px solid #e0e0e0;
+    border-radius: var(--border-radius-sm); /* Using theme variable */
+    background-color: var(--background-light); /* Using theme variable */
+    color: var(--text-medium); /* Using theme variable */
     font-size: 0.9rem;
     cursor: not-allowed;
     transition: background-color 0.2s;
@@ -712,13 +743,14 @@ h2:hover {
   left: 0;
   width: 100%;
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: var(--border-radius-md); /* Using theme variable */
+  box-shadow: var(--shadow-medium); /* Using theme variable */
   margin-top: 8px;
   z-index: 10;
   max-height: 280px;
   overflow-y: auto;
   animation: dropdown-slide 0.3s ease;
+  border: 1px solid #f0f0f0;
 }
 
 @keyframes dropdown-slide {
@@ -750,7 +782,7 @@ h2:hover {
 }
 
 .search-history-item:hover {
-  background-color: #f5f5f5;
+  background-color: var(--background-light); /* Using theme variable */
 }
 
 .history-icon {
@@ -855,6 +887,70 @@ h2:hover {
   padding: 20px;
   text-align: center;
   color: #999;
+  font-style: italic;
+}
+
+/* Add this to your Friends.css file to ensure compatibility section displays properly */
+.compatibility-section {
+  background-color: var(--white);
+  border-radius: var(--border-radius-md);
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: var(--shadow-light);
+}
+
+.compatibility-score {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.score-circle {
+  width: 100px;
+  height: 100px;
+  background: var(--final-gradient, conic-gradient(#8ebd89 0%, #e0e0e0 0%));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.score-circle::before {
+  content: "";
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background-color: var(--white);
+  border-radius: 50%;
+}
+
+.score-circle span {
+  position: relative;
+  z-index: 1;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.compatibility-factors {
+  flex: 1;
+}
+
+.compatibility-factors ul {
+  margin-top: 10px;
+  padding-left: 20px;
+}
+
+.compatibility-factors li {
+  margin-bottom: 6px;
+  color: var(--text-medium);
+}
+
+.no-factors {
+  color: var(--text-light);
   font-style: italic;
 }
 

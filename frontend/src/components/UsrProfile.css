@@ -631,6 +631,7 @@
 }
 
 .user-hour-block {
+  contain: strict;
   flex: 1;
   height: 20px;
   background-color: #f0f0f0;
@@ -676,11 +677,55 @@
   opacity: 0.5;
 }
 
+/* Enhancement for availability legend */
 .availability-legend {
   display: flex;
+  flex-wrap: wrap;
   gap: 15px;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px dashed #e0e0e0;
+  font-size: 0.85rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.legend-color.available {
+  background-color: #8ebd89;
+}
+
+.legend-color.both-available {
+  background-color: #8ebd89;
+}
+
+.legend-color.they-available {
+  background-color: #ae92c6;
+}
+
+.legend-color.you-available {
+  background-color: #ffb74d;
+  opacity: 0.5;
+}
+
+/* Add a small note about hovering */
+.availability-legend::after {
+  content: "Tip: Hover over time blocks to see exact hours";
+  display: block;
+  width: 100%;
   margin-top: 10px;
   font-size: 0.8rem;
+  color: #888;
+  font-style: italic;
 }
 
 .legend-item {

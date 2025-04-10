@@ -1,14 +1,54 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import profileImage from "../assets/temp-profile.webp";
-import "./UsrProfile.css";
-//import { CSSTransition } from "react-transition-group";
+import { useState, useEffect, useCallback, memo, useMemo } from 'react';
+import PropTypes from 'prop-types';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import profileImage from "../assets/temp-profile.webp";
+import "./UsrProfile.css";
+import { debounce } from 'lodash'; // Or implement your own debounce function
 
+// Create the AvailabilityLegend component
+const AvailabilityLegend = memo(({ showComparison, userName }) => {
+  if (showComparison) {
+    return (
+      <div className="availability-legend">
+        <div className="legend-item">
+          <div className="legend-color both-available"></div>
+          <span>Both Available</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-color they-available"></div>
+          <span>{userName} Available</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-color you-available"></div>
+          <span>You Available</span>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="availability-legend">
+      <div className="legend-item">
+        <div className="legend-color available"></div>
+        <span>{userName}&apos;s Availability</span>
+      </div>
+    </div>
+  );
+});
+
+// Add display name and prop types
+AvailabilityLegend.displayName = 'AvailabilityLegend';
+AvailabilityLegend.propTypes = {
+  showComparison: PropTypes.bool,
+  userName: PropTypes.string.isRequired
+};
 
 function UsrProfile() {
+  console.log('Rendering UsrProfile component');
+  
   const { userEmail } = useParams();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
@@ -21,7 +61,17 @@ function UsrProfile() {
   const [userCourses, setUserCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [showAvailabilityComparison, setShowAvailabilityComparison] = useState(false);
-  const [requestSentTime, setRequestSentTime] = useState(null);
+
+  // Create a debounced function 
+  const toggleAvailabilityComparison = useCallback(() => {
+    setShowAvailabilityComparison(prev => !prev);
+  }, []);
+
+  // Apply debounce to the callback
+  const debouncedToggleAvailability = useMemo(() => 
+    debounce(toggleAvailabilityComparison, 300), 
+    [toggleAvailabilityComparison]
+  );
 
   // Update the fetchUserProfile function to properly get the friends list
   useEffect(() => {
@@ -124,7 +174,8 @@ function UsrProfile() {
             };
             
             setUserData(formattedUserData);
-            calculateCompatibility(formattedUserData);
+            const compatibilityResult = calculateCompatibilityScore(formattedUserData);
+            setCompatibilityScore(compatibilityResult);
           } else {
             setError('No user data returned from API');
           }
@@ -143,218 +194,137 @@ function UsrProfile() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userEmail, navigate]);
 
-  // Create a separate useEffect for the friend status check
-  useEffect(() => {
-    if (!currentUserData || !userEmail) return;
-    
-    const checkFriendStatus = async () => {
-      const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) return;
-      
-      try {
-        const currentUserEmail = currentUserData.userEmail;
-        console.log(`[FRIEND CHECK] Checking if ${currentUserEmail} and ${userEmail} are friends...`);
-        
-        const friendStatusResponse = await axios({
-          method: 'GET',
-          url: `http://localhost:8080/users/${currentUserEmail}/friendship-status/${userEmail}`,
-          headers: {
-            'Session-Id': sessionId
-          }
-        });
-        
-        console.log('[FRIEND CHECK] API response:', friendStatusResponse.data);
-        
-        if (friendStatusResponse.data) {
-          const status = friendStatusResponse.data.status || friendStatusResponse.data.friendshipStatus;
-          
-          if (status === 'FRIENDS' || status === 'friends') {
-            console.log('[FRIEND CHECK] Users are friends');
-            setIsFriend(true);
-            setFriendRequestStatus('accepted');
-          } else if (status === 'PENDING_SENT' || status === 'pending_sent') {
-            console.log('[FRIEND CHECK] Friend request is pending');
-            setIsFriend(false);
-            setFriendRequestStatus('pending');
-            setRequestSentTime(friendStatusResponse.data.sentTime || null);
-          } else if (status === 'PENDING_RECEIVED' || status === 'pending_received') {
-            console.log('[FRIEND CHECK] Friend request received');
-            setIsFriend(false);
-            setFriendRequestStatus('received');
-          } else {
-            console.log('[FRIEND CHECK] Users are not friends');
-            setIsFriend(false);
-            setFriendRequestStatus('none');
-          }
-        }
-      } catch (error) {
-        console.error('[FRIEND CHECK] API error:', error);
-        
-        // Fallback to simple friend check
-        try {
-          const simpleCheckResponse = await axios({
-            method: 'GET',
-            url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/check/${userEmail}`,
-            headers: {
-              'Session-Id': sessionId
-            }
-          });
-          
-          if (simpleCheckResponse.data && simpleCheckResponse.data.isFriend) {
-            setIsFriend(true);
-            setFriendRequestStatus('accepted');
-          } else {
-            // If not friends, check for pending requests
-            setIsFriend(false);
-            
-          }
-        } catch (simpleCheckError) {
-          console.error('[FRIEND CHECK] Simple check failed:', simpleCheckError);
-        }
-      }
-    };
-    
-    checkFriendStatus();
-  }, [currentUserData, userEmail]);
+  
 
   useEffect(() => {
     const fetchUserCourses = async () => {
       if (!userEmail) return;
       
+      // Check if we already have courses cached
+      if (userCourses.length > 0) return;
+      
       setCoursesLoading(true);
       
       try {
         const sessionId = localStorage.getItem('sessionId');
-        if (!sessionId) return;
+        if (!sessionId) {
+          setCoursesLoading(false);
+          return;
+        }
         
         const response = await axios({
           method: 'GET',
           url: `http://localhost:8080/users/${userEmail}/courses`,
-          headers: {
-            'Session-Id': sessionId
-          }
+          headers: { 'Session-Id': sessionId }
         });
-        
-        console.log('User courses API response:', response.data);
         
         if (Array.isArray(response.data)) {
           setUserCourses(response.data);
         } else if (response.data && Array.isArray(response.data.courses)) {
           setUserCourses(response.data.courses);
         } else {
-          console.warn('Unexpected courses data format:', response.data);
           setUserCourses([]);
         }
       } catch (error) {
         console.error('Error fetching user courses:', error);
+        setUserCourses([]);
       } finally {
         setCoursesLoading(false);
       }
     };
     
     fetchUserCourses();
-  }, [userEmail]);
+  }, [userEmail, userCourses.length]);
 
-  // Update the calculateCompatibility function to be more comprehensive
-  const calculateCompatibility = (profileData) => {
-    if (!currentUserData) return;
+  const calculateCompatibilityScore = useCallback((profileData) => {
+    if (!currentUserData || !profileData) {
+      console.log("Missing data for compatibility calculation");
+      return { percentage: 0, factors: [] };
+    }
   
+    console.log("Calculating compatibility with:", profileData);
+    
     let score = 0;
     const factors = [];
-    // Check for major compatibility (worth up to 30 points)
-    const currentMajors = currentUserData.majors || [];
-    const profileMajors = profileData.majors || [];
     
-    const sharedMajors = currentMajors.filter(major => 
-      profileMajors.includes(major)
+    // 1. Course matching (up to 40%)
+    const userCourseIds = userCourses.map(course => 
+      typeof course === 'string' ? course : course.courseId || course.id
     );
     
-    if (sharedMajors.length > 0) {
-      // Award points based on number of shared majors
-      const majorScore = Math.min(30, sharedMajors.length * 15);
-      score += majorScore;
-      factors.push(`You both study ${sharedMajors.join(' and ')}`);
-    }
-  
-    // Check for availability compatibility (worth up to 40 points)
-    if (currentUserData.weeklyAvailability && profileData.weeklyAvailability) {
-      let matchingHours = 0;
-      let totalPossibleHours = 0;
-      
-      // Compare each hour slot
-      for (let i = 0; i < 168; i++) {
-        // Only count hours where the current user is available
-        if (currentUserData.weeklyAvailability[i] === '1') {
-          totalPossibleHours++;
-          if (profileData.weeklyAvailability[i] === '1') {
-            matchingHours++;
-          }
-        }
-      }
-      
-      if (totalPossibleHours > 0) {
-        const matchPercentage = (matchingHours / totalPossibleHours) * 100;
-        const availabilityScore = Math.min(40, Math.round(matchPercentage * 0.4));
-        score += availabilityScore;
-        
-        if (matchingHours > 0) {
-          // Calculate how many hours per week
-          const hoursPerWeek = matchingHours;
-          factors.push(`You share ${hoursPerWeek} hours of availability each week`);
-        }
-      }
-    }
-  
-    // Check for location compatibility (worth up to 30 points)
-    const currentLocations = currentUserData.preferredLocations || [];
-    const profileLocations = profileData.preferredLocations || [];
-    
-    const sharedLocations = currentLocations.filter(loc => 
-      profileLocations.includes(loc)
+    const currentUserCourseIds = currentUserData.courses || [];
+    const commonCourses = userCourseIds.filter(course => 
+      currentUserCourseIds.includes(course)
     );
     
-    if (sharedLocations.length > 0) {
-      // Award points based on number of shared locations
-      const locationScore = Math.min(30, sharedLocations.length * 10);
+    if (commonCourses.length > 0) {
+      const courseScore = Math.min(40, commonCourses.length * 10);
+      score += courseScore;
+      factors.push(
+        `You share ${commonCourses.length} course${commonCourses.length > 1 ? 's' : ''}`
+      );
+    }
+    
+    // 2. Location matching (up to 25%)
+    const userLocations = profileData.preferredLocations || [];
+    const currentUserLocations = currentUserData.preferredLocations || [];
+    
+    const commonLocations = userLocations.filter(location => 
+      currentUserLocations.includes(location)
+    );
+    
+    if (commonLocations.length > 0) {
+      const locationScore = Math.min(25, commonLocations.length * 8);
       score += locationScore;
+      factors.push(
+        `You have ${commonLocations.length} shared preferred study location${commonLocations.length > 1 ? 's' : ''}`
+      );
+    }
+    
+    // 3. Availability matching (up to 35%)
+    if (profileData.weeklyAvailability && currentUserData.weeklyAvailability) {
+      let matchingHours = 0;
+      const userAvail = profileData.weeklyAvailability;
+      const currentUserAvail = currentUserData.weeklyAvailability;
       
-      // Get the names of the shared locations
-      const locationNames = sharedLocations.map(locId => getLocationName(locId));
+      // Count hours where both are available
+      for (let i = 0; i < Math.min(userAvail.length, currentUserAvail.length); i++) {
+        if (userAvail[i] === '1' && currentUserAvail[i] === '1') {
+          matchingHours++;
+        }
+      }
       
-      if (locationNames.length === 1) {
-        factors.push(`You both prefer studying at ${locationNames[0]}`);
-      } else if (locationNames.length === 2) {
-        factors.push(`You both prefer studying at ${locationNames[0]} and ${locationNames[1]}`);
-      } else {
-        factors.push(`You share ${locationNames.length} preferred study locations`);
+      // Calculate percentage of matching hours relative to total hours in a week
+      const availabilityScore = Math.min(35, Math.floor((matchingHours / 24) * 35));
+      
+      if (matchingHours > 0) {
+        score += availabilityScore;
+        const matchingHoursPerDay = Math.floor(matchingHours / 7);
+        factors.push(
+          `You have approximately ${matchingHours} overlapping available hours${
+            matchingHoursPerDay > 0 ? ` (about ${matchingHoursPerDay} hours/day on average)` : ''
+          }`
+        );
       }
     }
-  
-    // Check for shared courses (bonus points)
-    if (userCourses && currentUserData.courses) {
-      const userCourseIds = userCourses.map(course => 
-        typeof course === 'string' ? course : course.courseId || course.id
-      );
-      
-      const sharedCourses = userCourseIds.filter(courseId => 
-        currentUserData.courses.includes(courseId)
-      );
-      
-      if (sharedCourses.length > 0) {
-        const courseBonus = Math.min(20, sharedCourses.length * 10);
-        score += courseBonus;
-        factors.push(`You're taking ${sharedCourses.length} course${sharedCourses.length > 1 ? 's' : ''} together`);
-      }
+    
+    // If there are no factors but we have some data, add a generic factor
+    if (factors.length === 0 && score > 0) {
+      factors.push("You have some study preferences in common");
     }
-  
-    // Calculate compatibility score as percentage and ensure it doesn't exceed 100%
-    const compatibilityResult = {
+    
+    return {
       percentage: Math.min(100, Math.round(score)),
-      factors: factors
+      factors: factors.length > 0 ? factors : ["No compatibility factors found"]
     };
-  
-    setCompatibilityScore(compatibilityResult);
-  };
+  }, [currentUserData, userCourses]); // Include dependencies that the calculation needs
+
+  useEffect(() => {
+    if (userData && currentUserData && userCourses.length > 0) {
+      const score = calculateCompatibilityScore(userData);
+      setCompatibilityScore(score);
+    }
+  }, [userData, currentUserData, userCourses, calculateCompatibilityScore]);
 
   // Update the handleAddFriend function with better error handling
   const handleAddFriend = async () => {
@@ -616,16 +586,39 @@ function UsrProfile() {
     }
   };
 
-  const formatTimeSince = (timestamp) => {
-    const now = new Date();
-    const sentTime = new Date(timestamp);
-    const diffInSeconds = Math.floor((now - sentTime) / 1000);
-
-    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    return `${Math.floor(diffInSeconds / 86400)} days ago`;
-  };
+  const AvailabilityGrid = useMemo(() => {
+    if (!userData?.weeklyAvailability) return null;
+    
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
+      <div key={day} className="user-day-row">
+        <span className="user-day-name">{day}</span>
+        <div className="user-hour-blocks">
+          {Array.from({ length: 24 }, (_, hourIndex) => {
+            const stringIndex = dayIndex * 24 + hourIndex;
+            const userAvailable = userData.weeklyAvailability[stringIndex] === '1';
+            const currentUserAvailable = currentUserData?.weeklyAvailability?.[stringIndex] === '1';
+            
+            let blockClass = 'user-hour-block';
+            if (showAvailabilityComparison) {
+              if (userAvailable && currentUserAvailable) blockClass += ' both-available';
+              else if (userAvailable) blockClass += ' they-available';
+              else if (currentUserAvailable) blockClass += ' you-available';
+            } else if (userAvailable) {
+              blockClass += ' available';
+            }
+            
+            return (
+              <div 
+                key={hourIndex} 
+                className={blockClass}
+                title={`${day} ${hourIndex}:00-${hourIndex+1}:00`}
+              />
+            );
+          })}
+        </div>
+      </div>
+    ));
+  }, [userData?.weeklyAvailability, currentUserData?.weeklyAvailability, showAvailabilityComparison]);
 
   if (loading) {
     return (
@@ -765,7 +758,7 @@ function UsrProfile() {
                 <button className="cancel-request-button" onClick={handleCancelRequest}>
                   <i className="fa fa-times"></i> Cancel Request
                 </button>
-                <div className="request-time-indicator">Sent {requestSentTime ? formatTimeSince(requestSentTime) : 'recently'}</div>
+                <div className="request-time-indicator">Sent recently</div>
               </div>
             ) : (
               <div className="add-friend-container">
@@ -781,7 +774,7 @@ function UsrProfile() {
         </div>
       </div>
 
-      {compatibilityScore && (
+      {compatibilityScore ? (
         <div className="compatibility-section">
           <h3>Study Compatibility</h3>
           <div className="compatibility-score">
@@ -789,15 +782,18 @@ function UsrProfile() {
               className="score-circle" 
               style={{ 
                 '--final-gradient': `conic-gradient(
-                  #8ebd89 ${compatibilityScore.percentage}%, 
-                  #e0e0e0 ${compatibilityScore.percentage}%
-                )` 
+                  #8ebd89 ${compatibilityScore.percentage || 0}%, 
+                  #e0e0e0 ${compatibilityScore.percentage || 0}%
+                )`,
+                background: compatibilityScore.percentage > 0 ? 
+                  `conic-gradient(#8ebd89 ${compatibilityScore.percentage}%, #e0e0e0 ${compatibilityScore.percentage}%)` : 
+                  'conic-gradient(#e0e0e0 100%, #e0e0e0 100%)'
               }}
             >
-              <span>{compatibilityScore.percentage}%</span>
+              <span>{compatibilityScore.percentage || 0}%</span>
             </div>
             <div className="compatibility-factors">
-              {compatibilityScore.factors.length > 0 ? (
+              {compatibilityScore.factors && compatibilityScore.factors.length > 0 ? (
                 <>
                   <p>You and {userData.name} are compatible because:</p>
                   <ul>
@@ -812,7 +808,7 @@ function UsrProfile() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
       
       <div className="user-content-grid">
         <div className="user-description-card">
@@ -826,46 +822,23 @@ function UsrProfile() {
             {userData.weeklyAvailability && currentUserData?.weeklyAvailability && (
               <button 
                 className="comparison-toggle" 
-                onClick={() => setShowAvailabilityComparison(!showAvailabilityComparison)}
+                onClick={debouncedToggleAvailability} // Use the debounced version instead
               >
                 {showAvailabilityComparison ? 'Hide Comparison' : 'Compare With Yours'}
               </button>
             )}
           </div>
           
-          {userData.weeklyAvailability && (
-            <div className="user-availability-visual">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
-                <div key={day} className="user-day-row">
-                  <span className="user-day-name">{day}</span>
-                  <div className="user-hour-blocks">
-                    {Array.from({ length: 24 }, (_, hourIndex) => {
-                      const stringIndex = dayIndex * 24 + hourIndex;
-                      const userAvailable = userData.weeklyAvailability[stringIndex] === '1';
-                      const currentUserAvailable = currentUserData?.weeklyAvailability?.[stringIndex] === '1';
-                      
-                      let blockClass = 'user-hour-block';
-                      if (showAvailabilityComparison) {
-                        if (userAvailable && currentUserAvailable) blockClass += ' both-available';
-                        else if (userAvailable) blockClass += ' they-available';
-                        else if (currentUserAvailable) blockClass += ' you-available';
-                      } else if (userAvailable) {
-                        blockClass += ' available';
-                      }
-                      
-                      return (
-                        <div 
-                          key={hourIndex} 
-                          className={blockClass}
-                          title={`${day} ${hourIndex}:00-${hourIndex+1}:00`}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="user-availability-visual">
+            {AvailabilityGrid}
+            {userData?.weeklyAvailability && (
+              <AvailabilityLegend
+                key={`legend-${showAvailabilityComparison}`}
+                showComparison={showAvailabilityComparison}
+                userName={userData.name}
+              />
+            )}
+          </div>
         </div>
         
         <div className="user-locations-card">
@@ -926,7 +899,7 @@ function UsrProfile() {
                   );
                 })
               ) : (
-                <p className="no-data-message">No courses shared</p>
+                <p className="no-data-message">This user hasn&apos;t added any courses yet.</p>
               )}
             </div>
           )}
