@@ -1,16 +1,96 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from "react-router-dom";
+import { FixedSizeList as List } from 'react-window';
+import PropTypes from 'prop-types';
+
+// Add this custom hook at the top with other imports
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
   // Regular expression for basic email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+};
+
+// Add this component at the top of your file
+const ProfileSkeleton = () => (
+  <div className="profile-card">
+    <div className="profile-header">
+      <div className="profile-image-container skeleton"></div>
+      <div className="skeleton-text"></div>
+      <div className="skeleton-tags">
+        <div className="skeleton-tag"></div>
+        <div className="skeleton-tag"></div>
+      </div>
+    </div>
+  </div>
+);
+
+// Add this component near the top of your file with other component declarations
+const DayRow = React.memo(({ day, index, toggleHourAvailability, updatingHours }) => {
+  return (
+    <div className="day-row">
+      <span className="day-name">{day.name}</span>
+      <div className="hour-blocks">
+        {day.hours.map((isAvailable, hourIndex) => {
+          const stringIndex = index * 24 + hourIndex;
+          const isUpdating = updatingHours.has(stringIndex);
+          
+          return (
+            <div 
+              key={hourIndex} 
+              className={`hour-block ${isAvailable === '1' ? 'available' : ''} ${isUpdating ? 'updating' : ''}`}
+              title={`${day.name} ${hourIndex}:00-${hourIndex+1}:00`}
+              onClick={() => toggleHourAvailability(index, hourIndex)}
+              style={{ 
+                cursor: isUpdating ? 'wait' : 'pointer',
+                position: 'relative'
+              }}
+            >
+              {isUpdating && (
+                <div className="hour-update-indicator"></div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+
+// Add display name
+DayRow.displayName = 'DayRow';
+
+// Add prop validations
+DayRow.propTypes = {
+  day: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    hours: PropTypes.array.isRequired
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+  toggleHourAvailability: PropTypes.func.isRequired,
+  updatingHours: PropTypes.shape({
+    has: PropTypes.func.isRequired
+  }).isRequired
 };
 
 function Profile() {
@@ -50,6 +130,36 @@ function Profile() {
   const [updatingHours, setUpdatingHours] = useState(new Set());
   const [updateError, setUpdateError] = useState(null);
   const updateToastId = useRef(null);
+  const [descriptionInput, setDescriptionInput] = useState("");
+  const debouncedDescription = useDebounce(descriptionInput, 300);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+
+  // Add this near your other useMemo hooks
+  const timeIndicators = useMemo(() => {
+    return [0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
+      <div key={hour} className="time-indicator">
+        <span>{hour}:00</span>
+      </div>
+    ));
+  }, []);
+
+  // Use the effect to update the actual editedDescription
+  useEffect(() => {
+    setEditedDescription(debouncedDescription);
+  }, [debouncedDescription]);
+
+  // Format week availability for rendering (prevent recalculation on every render)
+  const formattedAvailability = useMemo(() => {
+    // Process the availabilityString into a structured format
+    if (!availabilityString) return [];
+    
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+      .map((day, index) => {
+        const dayStart = index * 24;
+        const hours = availabilityString.slice(dayStart, dayStart + 24).split('');
+        return { name: day, hours };
+      });
+  }, [availabilityString]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -283,6 +393,8 @@ function Profile() {
       return;
     }
   
+    setAvailabilityLoading(true);
+    
     // Convert day to starting index (24 hours per day)
     const dayIndices = {
       "monday": 0,
@@ -302,6 +414,7 @@ function Profile() {
     
     if (startHour >= endHour) {
       toast.warning("End time must be after start time");
+      setAvailabilityLoading(false);
       return;
     }
   
@@ -315,12 +428,16 @@ function Profile() {
     
     const updatedAvailabilityString = newAvailabilityString.join('');
   
-    if (!userData) return;
+    if (!userData) {
+      setAvailabilityLoading(false);
+      return;
+    }
   
     try {
       
       if (!sessionId) {
         toast.error("You must be logged in to save availability");
+        setAvailabilityLoading(false);
         return;
       }
   
@@ -348,42 +465,12 @@ function Profile() {
     } catch (error) {
       console.error('Error saving availability:', error);
       toast.error("Failed to save availability. Please try again.");
+    } finally {
+      setAvailabilityLoading(false);
     }
   };
 
-  const toggleHourAvailability = (dayIndex, hourIndex) => {
-    const stringIndex = dayIndex * 24 + hourIndex;
-    
-    // Don't allow toggling if this hour is already being updated
-    if (updatingHours.has(stringIndex)) return;
-    
-    // Add this hour to the updating set
-    setUpdatingHours(prev => new Set([...prev, stringIndex]));
-    
-    // Create new string with toggled value
-    let newAvailabilityString = availabilityString.split('');
-    newAvailabilityString[stringIndex] = newAvailabilityString[stringIndex] === '1' ? '0' : '1';
-    const updatedAvailabilityString = newAvailabilityString.join('');
-    
-    // Optimistically update the UI
-    setAvailabilityString(updatedAvailabilityString);
-    
-    // Show a toast notification for the update
-    if (updateToastId.current) {
-      toast.dismiss(updateToastId.current);
-    }
-    
-    updateToastId.current = toast.loading(
-      newAvailabilityString[stringIndex] === '1' 
-        ? "Adding availability..."
-        : "Removing availability..."
-    );
-    
-    // Update server
-    updateAvailabilityOnServer(updatedAvailabilityString, stringIndex);
-  };
-
-  const updateAvailabilityOnServer = async (updatedString, hourIndex = null) => {
+  const updateAvailabilityOnServer = useCallback(async (updatedString, hourIndex = null) => {
     if (!userData || !sessionId) return;
     
     try {
@@ -408,10 +495,11 @@ function Profile() {
         
         // Update toast message if we're updating a specific hour
         if (hourIndex !== null && updateToastId.current) {
+          // Use formattedAvailability to get day and hour info
           const day = Math.floor(hourIndex / 24);
           const hour = hourIndex % 24;
-          const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-          const dayName = dayNames[day];
+          const dayName = formattedAvailability[day]?.name || 
+                        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][day];
           
           toast.update(updateToastId.current, {
             render: updatedString[hourIndex] === '1' 
@@ -424,6 +512,7 @@ function Profile() {
         }
       }
     } catch (error) {
+      // Error handling code remains the same
       console.error('Error updating availability:', error);
       
       // Show error toast
@@ -454,7 +543,39 @@ function Profile() {
         });
       }
     }
-  };
+  }, [userData, sessionId, updateToastId, formattedAvailability]);
+
+  const toggleHourAvailability = useCallback((dayIndex, hourIndex) => {
+    const stringIndex = dayIndex * 24 + hourIndex;
+    
+    // Don't allow toggling if this hour is already being updated
+    if (updatingHours.has(stringIndex)) return;
+    
+    // Add this hour to the updating set
+    setUpdatingHours(prev => new Set([...prev, stringIndex]));
+    
+    // Create new string with toggled value
+    let newAvailabilityString = availabilityString.split('');
+    newAvailabilityString[stringIndex] = newAvailabilityString[stringIndex] === '1' ? '0' : '1';
+    const updatedAvailabilityString = newAvailabilityString.join('');
+    
+    // Optimistically update the UI
+    setAvailabilityString(updatedAvailabilityString);
+    
+    // Show a toast notification for the update
+    if (updateToastId.current) {
+      toast.dismiss(updateToastId.current);
+    }
+    
+    updateToastId.current = toast.loading(
+      newAvailabilityString[stringIndex] === '1' 
+        ? "Adding availability..."
+        : "Removing availability..."
+    );
+    
+    // Update server
+    updateAvailabilityOnServer(updatedAvailabilityString, stringIndex);
+  }, [availabilityString, updatingHours, updateAvailabilityOnServer]);
 
   const handleEditDescription = () => {
     setIsEditingDescription(true);
@@ -855,8 +976,7 @@ function Profile() {
   if (isLoading) {
     return (
       <div className="profile-loading">
-        <div className="spinner"></div>
-        <p>Loading your profile...</p>
+        <ProfileSkeleton />
       </div>
     );
   }
@@ -912,11 +1032,17 @@ function Profile() {
               </div>
             </div>
             <h2 className="name">{userData?.name || "Loading..."}</h2>
-            <div className="tag-container">
-              {userData?.majors?.map((major, index) => (
-                <span key={index} className="tag">{major}</span>
-              )) || <span className="tag">CS</span>}
-            </div>
+            {userData?.majors?.length > 0 ? (
+              <div className="tag-container">
+                {userData.majors.map((major, index) => (
+                  <span key={index} className="tag">{major}</span>
+                ))}
+              </div>
+            ) : (
+              <div className="tag-container">
+                <span className="tag">CS</span>
+              </div>
+            )}
           </div>
         </div>
         
@@ -936,8 +1062,8 @@ function Profile() {
           {isEditingDescription ? (
             <div className="description-edit">
               <textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
+                value={descriptionInput}
+                onChange={(e) => setDescriptionInput(e.target.value)}
                 className="description-textarea"
                 rows={4}
                 placeholder="Enter your description..."
@@ -953,7 +1079,7 @@ function Profile() {
                   className="cancel-button"
                   onClick={() => {
                     setIsEditingDescription(false);
-                    setEditedDescription(userData?.biography || "");
+                    setDescriptionInput(userData?.biography || "");
                   }}
                 >
                   Cancel
@@ -1036,7 +1162,9 @@ function Profile() {
               <option value="saturday">Saturday</option>
               <option value="sunday">Sunday</option>
             </select>
-            <button className="add-time" onClick={saveAvailability}>Add Availability</button>
+            <button className="add-time" onClick={saveAvailability} disabled={availabilityLoading}>
+              {availabilityLoading ? "Saving..." : "Add Availability"}
+            </button>
             <button 
               className="remove-time" 
               onClick={() => {
@@ -1126,41 +1254,18 @@ function Profile() {
               <div className="time-indicators-container">
                 <div className="time-indicators-spacer"></div>
                 <div className="time-indicators">
-                  {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
-                    <div key={hour} className="time-indicator">
-                      <span>{hour}:00</span>
-                    </div>
-                  ))}
+                  {timeIndicators}
                 </div>
               </div>
               <div className="availability-visual">
-                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
-                  <div key={day} className="day-row">
-                    <span className="day-name">{day}</span>
-                    <div className="hour-blocks">
-                      {Array.from({ length: 24 }, (_, hourIndex) => {
-                        const stringIndex = dayIndex * 24 + hourIndex;
-                        const isUpdating = updatingHours.has(stringIndex);
-                        
-                        return (
-                          <div 
-                            key={hourIndex} 
-                            className={`hour-block ${availabilityString[stringIndex] === '1' ? 'available' : ''} ${isUpdating ? 'updating' : ''}`}
-                            title={`${day} ${hourIndex}:00-${hourIndex+1}:00`}
-                            onClick={() => toggleHourAvailability(dayIndex, hourIndex)}
-                            style={{ 
-                              cursor: isUpdating ? 'wait' : 'pointer',
-                              position: 'relative'
-                            }}
-                          >
-                            {isUpdating && (
-                              <div className="hour-update-indicator"></div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                {formattedAvailability.map((day, index) => (
+                  <DayRow
+                    key={day.name}
+                    day={day}
+                    index={index}
+                    toggleHourAvailability={toggleHourAvailability}
+                    updatingHours={updatingHours}
+                  />
                 ))}
               </div>
               {updateError && (
@@ -1363,24 +1468,49 @@ function Profile() {
               </div>
             </div>
           ) : (
-            <div className="courses-list">
-              {coursesData && coursesData.length > 0 ? (
-                coursesData.map((course, index) => (
-                  <div key={index} className="course-item">
-                    <p className="course-name">
-                      {course.courseId || course}
-                      {course.courseName && course.courseId !== course.courseName && (
-                        <span className="course-full-name"> - {course.courseName}</span>
-                      )}
-                    </p>
+            coursesData && coursesData.length > 10 ? (
+              <div style={{ height: 250 }}>
+                <List
+                  height={250}
+                  itemCount={coursesData.length}
+                  itemSize={50}
+                  width="100%"
+                >
+                  {({ index, style }) => {
+                    const course = coursesData[index];
+                    return (
+                      <div style={style} className="course-item">
+                        <p className="course-name">
+                          {course.courseId || course}
+                          {course.courseName && course.courseId !== course.courseName && (
+                            <span className="course-full-name"> - {course.courseName}</span>
+                          )}
+                        </p>
+                      </div>
+                    );
+                  }}
+                </List>
+              </div>
+            ) : (
+              <div className="courses-list">
+                {coursesData && coursesData.length > 0 ? (
+                  coursesData.map((course, index) => (
+                    <div key={index} className="course-item">
+                      <p className="course-name">
+                        {course.courseId || course}
+                        {course.courseName && course.courseId !== course.courseName && (
+                          <span className="course-full-name"> - {course.courseName}</span>
+                        )}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-courses-message">
+                    <p>No courses added yet! Add courses on the course tab.</p>
                   </div>
-                ))
-              ) : (
-                <div className="empty-courses-message">
-                  <p>No courses added yet! Add courses on the course tab.</p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )
           )}
         </div>
       </div>

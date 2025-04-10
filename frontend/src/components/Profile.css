@@ -1207,3 +1207,44 @@ It also includes responsive design for different screen sizes. */
 .role-student .profile-sidebar {
   border-left: 4px solid #2ecc71;
 }
+
+/* Skeleton Loading Styles */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+.profile-image-container.skeleton {
+  background-color: #f0f0f0;
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  height: 24px;
+  width: 70%;
+  margin: 20px auto 15px;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-tags {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.skeleton-tag {
+  height: 26px;
+  width: 60px;
+  border-radius: 13px;
+  background-color: #f0f0f0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

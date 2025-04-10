@@ -115,14 +115,34 @@ function Friends() {
 
     // Add useEffect to load data when component mounts and set up polling interval
     useEffect(() => {
-        // Initial fetch
-        fetchFriendRequests();
-        fetchFriends();
+        // Create an async function to batch requests
+        const fetchInitialData = async () => {
+            // Show loading state if needed
+            const sessionId = localStorage.getItem('sessionId');
+            const userData = JSON.parse(localStorage.getItem('userData'));
+            
+            if (!sessionId || !userData) {
+                console.error('Missing session or user data');
+                return;
+            }
+            
+            // Execute requests in parallel
+            try {
+                await Promise.all([
+                    fetchFriendRequests(),
+                    fetchFriends()
+                ]);
+            } catch (error) {
+                console.error('Error fetching initial data:', error);
+            }
+        };
         
-        // Set up interval
+        fetchInitialData();
+        
+        // Set up interval (reduce polling frequency to 2 minutes)
         const interval = setInterval(() => {
             fetchFriendRequests();
-        }, 60000); // 60 seconds
+        }, 120000); // 120 seconds
         
         // Clean up interval on unmount
         return () => clearInterval(interval);
