@@ -97,7 +97,6 @@ public class User {
     @Column(name = "role")
     private Role role;
 
-    // Add to User.java
     @ElementCollection
     @Column(name = "incoming_friend_requests")
     private List<String> incomingFriendRequests = new ArrayList<>();
@@ -105,6 +104,10 @@ public class User {
     @ElementCollection
     @Column(name = "outgoing_friend_requests")
     private List<String> outgoingFriendRequests = new ArrayList<>();
+
+    // Add this field to the User class in User.java
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 
     //Additional Attributes: Account Creation Date, Last Online Date, Profile Picture
