@@ -74,8 +74,8 @@ h2:hover {
 }
 
 .friend-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(142, 189, 137, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Center the image */
@@ -90,11 +90,6 @@ h2:hover {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-}
-
-.friend-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px #8ebd89;
 }
 
 .friend-card img {
@@ -168,6 +163,7 @@ h2:hover {
   flex: 1;
   padding: 12px 15px;
   border: 1px solid #e0e0e0;
+  width: 80%;
   border-radius: 6px;
   font-size: 16px;
   outline: none;
@@ -336,6 +332,9 @@ h2:hover {
   border-radius: 8px;
   background-color: #f9f9f9;
   transition: background-color 0.2s;
+  animation: fade-in 0.3s forwards;
+  animation-delay: calc(var(--index) * 0.05s);
+  opacity: 0;
 }
 
 .search-result-card:hover {
@@ -463,6 +462,10 @@ h2:hover {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 }
 
+.friend-request-card.removing {
+  animation: slide-out 0.5s forwards;
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -550,7 +553,6 @@ h2:hover {
   }
 }
 
-/* Add to Friends.css */
 .friends-header {
   display: flex;
   justify-content: space-between;
@@ -563,8 +565,8 @@ h2:hover {
   border: 1px solid #e0e0e0;
   color: black;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -676,5 +678,175 @@ h2:hover {
 /* Make the search result card a bit lighter when it's already a friend */
 .search-result-card:has(.already-friend-btn) {
     background-color: #fafafa;
+}
+
+/* Friend request accept/reject animation */
+@keyframes slide-out {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+/* Search results appearance animation */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Search history dropdown styling */
+.search-input-container {
+  position: relative;
+  flex: 1;
+}
+
+.search-history-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 8px;
+  z-index: 10;
+  max-height: 280px;
+  overflow-y: auto;
+  animation: dropdown-slide 0.3s ease;
+}
+
+@keyframes dropdown-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.search-history-header {
+  padding: 12px 16px;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 1px solid #eee;
+}
+
+.search-history-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  color: #333;
+}
+
+.search-history-item:hover {
+  background-color: #f5f5f5;
+}
+
+.history-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  color: #8ebd89;
+  font-size: 16px;
+}
+
+.clear-history {
+  text-align: center;
+  padding: 10px;
+  color: #666;
+  font-size: 12px;
+  border-top: 1px solid #eee;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.clear-history:hover {
+  color: #f44336;
+  text-decoration: underline;
+}
+
+/* Add styling for the search input container */
+.search-input-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Style the search bar with a magnifying glass icon */
+.search-bar {
+  padding-left: 40px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px;
+}
+
+/* Add a pulse animation when focusing the search bar */
+@keyframes search-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(142, 189, 137, 0.3); }
+  70% { box-shadow: 0 0 0 6px rgba(142, 189, 137, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(142, 189, 137, 0); }
+}
+
+.search-bar:focus {
+  animation: search-pulse 1.5s infinite;
+}
+
+/* Make recent search item more interactive */
+.search-history-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.search-history-item::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(142, 189, 137, 0.3) 0%, rgba(142, 189, 137, 0) 70%);
+  transform: scale(0) translate(-50%, -50%);
+  transform-origin: left top;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.search-history-item:active::after {
+  transform: scale(3) translate(-50%, -50%);
+  opacity: 1;
+  transition: transform 0s, opacity 0.5s;
+}
+
+/* Improved scroll behavior for history dropdown */
+.search-history-dropdown {
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+.search-history-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-history-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-history-dropdown::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 6px;
+}
+
+/* Empty state when clearing history */
+.search-history-dropdown.empty {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
 }
 

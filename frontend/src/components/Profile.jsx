@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from "react-router-dom";
-import { searchEnabled } from '../App';
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
@@ -29,7 +28,8 @@ function Profile() {
   const [editedProfileData, setEditedProfileData] = useState({
     name: "",
     userEmail: "",
-    majors: []
+    majors: [],
+    majorsString: "" // New field to store the raw input
   });
   // Add these state variables to your component
   const [emailError, setEmailError] = useState("");
@@ -45,6 +45,9 @@ function Profile() {
   const [userRole, setUserRole] = useState('');
   const [coursesData, setCoursesData] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
+  const [updatingHours, setUpdatingHours] = useState(new Set());
+  const [updateError, setUpdateError] = useState(null);
+  const updateToastId = useRef(null);
 
   useEffect(() => {
     if (!sessionId) {
@@ -62,11 +65,12 @@ function Profile() {
       setUserData(parsedData);
       setEditedDescription(parsedData.biography || "");
       
-      // Store the majors array directly
+      // Store the majors array and create the display string
       setEditedProfileData({
         name: parsedData.name || "",
         userEmail: parsedData.userEmail || "",
-        majors: parsedData.majors || []
+        majors: parsedData.majors || [],
+        majorsString: (parsedData.majors || []).join(', ')
       });
       
       // If the user already has availability data, load it
@@ -102,7 +106,7 @@ function Profile() {
     }
     
     setTimeout(() => setIsLoading(false), 500);
-  }, []);
+  }, [sessionId]);
   
   useEffect(() => {
     const fetchUserCourses = async () => {
@@ -212,7 +216,7 @@ function Profile() {
     const { day, startTime, endTime } = availability;
     
     if (!day || !startTime || !endTime) {
-      alert("Please select a day, start time, and end time");
+      toast.warning("Please select a day, start time, and end time");
       return;
     }
   
@@ -234,7 +238,7 @@ function Profile() {
     const endHour = parseInt(endTime.split(":")[0]);
     
     if (startHour >= endHour) {
-      alert("End time must be after start time");
+      toast.warning("End time must be after start time");
       return;
     }
   
@@ -253,7 +257,7 @@ function Profile() {
     try {
       
       if (!sessionId) {
-        alert("You must be logged in to save availability");
+        toast.error("You must be logged in to save availability");
         return;
       }
   
@@ -276,12 +280,116 @@ function Profile() {
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
         
-        //alert("Availability saved successfully!");
         toast.success("Availability saved successfully!");
       }
     } catch (error) {
       console.error('Error saving availability:', error);
-      alert("Failed to save availability. Please try again.");
+      toast.error("Failed to save availability. Please try again.");
+    }
+  };
+
+  const toggleHourAvailability = (dayIndex, hourIndex) => {
+    const stringIndex = dayIndex * 24 + hourIndex;
+    
+    // Don't allow toggling if this hour is already being updated
+    if (updatingHours.has(stringIndex)) return;
+    
+    // Add this hour to the updating set
+    setUpdatingHours(prev => new Set([...prev, stringIndex]));
+    
+    // Create new string with toggled value
+    let newAvailabilityString = availabilityString.split('');
+    newAvailabilityString[stringIndex] = newAvailabilityString[stringIndex] === '1' ? '0' : '1';
+    const updatedAvailabilityString = newAvailabilityString.join('');
+    
+    // Optimistically update the UI
+    setAvailabilityString(updatedAvailabilityString);
+    
+    // Show a toast notification for the update
+    if (updateToastId.current) {
+      toast.dismiss(updateToastId.current);
+    }
+    
+    updateToastId.current = toast.loading(
+      newAvailabilityString[stringIndex] === '1' 
+        ? "Adding availability..."
+        : "Removing availability..."
+    );
+    
+    // Update server
+    updateAvailabilityOnServer(updatedAvailabilityString, stringIndex);
+  };
+
+  const updateAvailabilityOnServer = async (updatedString, hourIndex = null) => {
+    if (!userData || !sessionId) return;
+    
+    try {
+      setUpdateError(null);
+      
+      const response = await axios.put(
+        `http://localhost:8080/users/${userData.userEmail}`,
+        { weeklyAvailability: updatedString },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          }
+        }
+      );
+      
+      if (response.status === 200) {
+        // Update stored user data
+        const updatedUserData = { ...userData, weeklyAvailability: updatedString };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+        
+        // Update toast message if we're updating a specific hour
+        if (hourIndex !== null && updateToastId.current) {
+          const day = Math.floor(hourIndex / 24);
+          const hour = hourIndex % 24;
+          const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+          const dayName = dayNames[day];
+          
+          toast.update(updateToastId.current, {
+            render: updatedString[hourIndex] === '1' 
+              ? `Added availability for ${dayName} at ${hour}:00` 
+              : `Removed availability for ${dayName} at ${hour}:00`,
+            type: "success",
+            isLoading: false,
+            autoClose: 1500
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating availability:', error);
+      
+      // Show error toast
+      if (hourIndex !== null && updateToastId.current) {
+        toast.update(updateToastId.current, {
+          render: "Failed to update availability. Please try again.",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000
+        });
+      } else {
+        toast.error("Failed to update availability");
+      }
+      
+      // Revert the local state to the previous value from userData
+      if (userData?.weeklyAvailability) {
+        setAvailabilityString(userData.weeklyAvailability);
+      }
+      
+      setUpdateError("Failed to update. Please try again.");
+    } finally {
+      // Remove this hour from the updating set
+      if (hourIndex !== null) {
+        setUpdatingHours(prev => {
+          const updated = new Set([...prev]);
+          updated.delete(hourIndex);
+          return updated;
+        });
+      }
     }
   };
 
@@ -295,7 +403,7 @@ function Profile() {
     try {
       
       if (!sessionId) {
-        alert("You must be logged in to save description");
+        toast.error("You must be logged in to save description");
         return;
       }
 
@@ -317,12 +425,11 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingDescription(false);
         
-        //alert("Description saved successfully!");
         toast.success("Description saved successfully!");
       }
     } catch (error) {
       console.error('Error saving description:', error);
-      alert("Failed to save description. Please try again.");
+      toast.error("Failed to save description. Please try again.");
     }
   };
 
@@ -413,7 +520,8 @@ function Profile() {
       // Convert comma-separated string to array
       setEditedProfileData({
         ...editedProfileData,
-        [name]: value.split(',').map(item => item.trim()).filter(item => item !== "")
+        [name]: value.split(',').map(item => item.trim()).filter(item => item !== ""),
+        majorsString: value // Update the raw input string
       });
     } else if (name === "userEmail") {
       // Update the email in the state
@@ -442,7 +550,7 @@ function Profile() {
 
     // Validate email
     if (!validateEmail(editedProfileData.userEmail)) {
-      alert("Please enter a valid email address");
+      toast.error("Please enter a valid email address");
       return;
     }
     
@@ -456,7 +564,7 @@ function Profile() {
     try {
       
       if (!sessionId) {
-        alert("You must be logged in to save profile information");
+        toast.error("You must be logged in to save profile information");
         return;
       }
   
@@ -478,13 +586,57 @@ function Profile() {
         setUserData(updatedUserData);
         setIsEditingProfile(false);
         
-        //alert("Profile information saved successfully!");
         toast.success("Profile information saved successfully!");
         
       }
     } catch (error) {
       console.error('Error saving profile information:', error);
-      alert("Failed to save profile information. Please try again.");
+      toast.error("Failed to save profile information. Please try again.");
+    }
+  };
+
+  // Add this function to your Profile component
+  const handleRemoveLocation = (locationId, locationName) => {
+    if (!userData) return;
+    
+    // Ask for confirmation before removing
+    if (!window.confirm(`Remove ${locationName} from your preferred locations?`)) {
+      return;
+    }
+    
+    // Filter out the location to remove
+    const updatedLocations = userData.preferredLocations.filter(id => id !== locationId);
+    
+    // Create updated user data
+    const updatedUserData = {
+      ...userData,
+      preferredLocations: updatedLocations
+    };
+    
+    // Update local state
+    setUserData(updatedUserData);
+    
+    // Update localStorage
+    localStorage.setItem('userData', JSON.stringify(updatedUserData));
+    
+    // Update on the server
+    const sessionId = localStorage.getItem('sessionId');
+    if (sessionId) {
+      axios.put(
+        `http://localhost:8080/users/${userData.userEmail}`,
+        { preferredLocations: updatedLocations },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          }
+        }
+      ).then(() => {
+        toast.success(`Removed ${locationName} from your preferred locations.`);
+      }).catch(error => {
+        console.error('Error removing location:', error);
+        toast.error('Error removing location. Please try again.');
+      });
     }
   };
 
@@ -498,7 +650,7 @@ function Profile() {
   }
 
   return (
-    <div className="profile-page">
+    <div className={`profile-page role-${userRole.toLowerCase()}`}>
       <div className="profile-sidebar">
         <div className="profile-card">
           <div className="profile-header">
@@ -637,7 +789,7 @@ function Profile() {
                 const { day, startTime, endTime } = availability;
                 
                 if (!day || !startTime || !endTime) {
-                  alert("Please select a day, start time, and end time");
+                  toast.warning("Please select a day, start time, and end time");
                   return;
                 }
               
@@ -659,7 +811,7 @@ function Profile() {
                 const endHour = parseInt(endTime.split(":")[0]);
                 
                 if (startHour >= endHour) {
-                  alert("End time must be after start time");
+                  toast.warning("End time must be after start time");
                   return;
                 }
               
@@ -677,7 +829,7 @@ function Profile() {
               
                 try {
                   if (!sessionId) {
-                    alert("You must be logged in to update availability");
+                    toast.error("You must be logged in to update availability");
                     return;
                   }
               
@@ -699,15 +851,15 @@ function Profile() {
                       localStorage.setItem('userData', JSON.stringify(updatedUserData));
                       setUserData(updatedUserData);
                       
-                      alert("Availability removed successfully!");
+                      toast.success("Availability removed successfully!");
                     }
                   }).catch(error => {
                     console.error('Error removing availability:', error);
-                    alert("Failed to remove availability. Please try again.");
+                    toast.error("Failed to remove availability. Please try again.");
                   });
                 } catch (error) {
                   console.error('Error removing availability:', error);
-                  alert("Failed to remove availability. Please try again.");
+                  toast.error("Failed to remove availability. Please try again.");
                 }
               }}
             >
@@ -734,18 +886,41 @@ function Profile() {
                     <div className="hour-blocks">
                       {Array.from({ length: 24 }, (_, hourIndex) => {
                         const stringIndex = dayIndex * 24 + hourIndex;
+                        const isUpdating = updatingHours.has(stringIndex);
+                        
                         return (
                           <div 
                             key={hourIndex} 
-                            className={`hour-block ${availabilityString[stringIndex] === '1' ? 'available' : ''}`}
+                            className={`hour-block ${availabilityString[stringIndex] === '1' ? 'available' : ''} ${isUpdating ? 'updating' : ''}`}
                             title={`${day} ${hourIndex}:00-${hourIndex+1}:00`}
-                          />
+                            onClick={() => toggleHourAvailability(dayIndex, hourIndex)}
+                            style={{ 
+                              cursor: isUpdating ? 'wait' : 'pointer',
+                              position: 'relative'
+                            }}
+                          >
+                            {isUpdating && (
+                              <div className="hour-update-indicator"></div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
                   </div>
                 ))}
               </div>
+              {updateError && (
+                <div className="error-banner">
+                  <p className="error-message">{updateError}</p>
+                  <button 
+                    className="dismiss-error"
+                    onClick={() => setUpdateError(null)}
+                    aria-label="Dismiss error"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -793,6 +968,13 @@ function Profile() {
                 return (
                   <div key={index} className="location">
                     <p className="location-name">{locationName}</p>
+                    <button 
+                      className="remove-location-button"
+                      onClick={() => handleRemoveLocation(locationId, locationName)}
+                      title={`Remove ${locationName}`}
+                    >
+                      ×
+                    </button>
                   </div>
                 );
               })
@@ -941,7 +1123,7 @@ function Profile() {
                 ))
               ) : (
                 <div className="empty-courses-message">
-                  <p>No courses added yet</p>
+                  <p>No courses added yet! Add courses on the course tab.</p>
                 </div>
               )}
             </div>
@@ -981,7 +1163,7 @@ function Profile() {
                 type="text"
                 id="majors"
                 name="majors"
-                value={editedProfileData.majors.join(', ')}
+                value={editedProfileData.majorsString || editedProfileData.majors.join(', ')}
                 onChange={handleProfileInputChange}
                 placeholder="e.g. CS, Math, Statistics"
               />
@@ -1000,7 +1182,8 @@ function Profile() {
                   setEditedProfileData({
                     name: userData?.name || "",
                     userEmail: userData?.userEmail || "",
-                    majors: userData?.majors || []
+                    majors: userData?.majors || [],
+                    majorsString: (userData?.majors || []).join(', ')
                   });
                 }}
               >

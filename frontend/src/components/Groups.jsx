@@ -35,7 +35,6 @@ function Groups() {
   const [userRating, setUserRating] = useState(0);
   const [submittingRating, setSubmittingRating] = useState(false);
   const [myRating, setMyRating] = useState(null);
-  const [isMember, setIsMember] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [existingReview, setExistingReview] = useState(null);
 
@@ -227,12 +226,14 @@ function Groups() {
             if (myRatingResponse.data) {
               setMyRating(myRatingResponse.data.score);
               setUserRating(myRatingResponse.data.score);
-              setExistingReview(myRatingResponse.data);
-              // Pre-populate the userReview state
-              setUserReview({
-                rating: myRatingResponse.data.score,
-                comment: myRatingResponse.data.review || ''
-              });
+              if (myRatingResponse.data && myRatingResponse.data.score && myRatingResponse.data.review) {
+                setExistingReview(myRatingResponse.data);
+                // Pre-populate the userReview state
+                setUserReview({
+                  rating: myRatingResponse.data.score,
+                  comment: myRatingResponse.data.review || ''
+                });
+              }
             }
           } catch (ratingError) {
             console.error('Error fetching user rating:', ratingError);
@@ -290,8 +291,7 @@ function Groups() {
       } else {
         // Try to get the group data anyway, in case the access check API is just not implemented
         try {
-          // Your existing code to get group data
-          const groupResponse = await axios.get(
+          await axios.get(
             `http://localhost:8080/groups/${id}`,
             {
               headers: {
@@ -300,8 +300,6 @@ function Groups() {
               }
             }
           );
-          
-          // Process the response as before...
           
         } catch (fallbackError) {
           // Handle this error with your existing error handling...
@@ -333,7 +331,7 @@ function Groups() {
       const formattedReviews = reviewsResponse.data.reviews.map((review, index) => ({
         id: index,
         userEmail: 'user@example.com', // Will need to be provided by backend
-        userName: 'User', // Will need to be provided by backend
+        userName: reviewsResponse.data.userNames[index], // Will need to be provided by backend
         score: reviewsResponse.data.scores[index],
         review: review,
         date: new Date().toISOString() // Will need to be provided by backend
@@ -889,7 +887,8 @@ function Groups() {
         <div className="reviews-header">
           <h2>Reviews ({reviews ? reviews.length : 0})</h2>
           {userMembership.isMember && (
-           <button 
+           // Update the write review button section:
+            <button 
               className="write-review-button"
               onClick={() => {
                 if (!showReviewForm && existingReview) {
@@ -902,8 +901,9 @@ function Groups() {
                 setShowReviewForm(!showReviewForm);
               }}
             >
-              {showReviewForm ? 'Cancel' : (existingReview ? 'Edit Review' : 'Write a Review')}
+              {showReviewForm ? 'Cancel' : existingReview ? 'Edit Review' : 'Write a Review'}
             </button>
+
           )}
         </div>
           
@@ -927,9 +927,9 @@ function Groups() {
                     required
                   />
                 </div>
-                <button type="submit" className="submit-review-button">
-                  {existingReview ? 'Update Review' : 'Submit Review'}
-                </button>
+                  <button type="submit" className="submit-review-button">
+                    {existingReview ? 'Update Review' : 'Submit Review'}
+                  </button>
               </form>
             </div>
           )}

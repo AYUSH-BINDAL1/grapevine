@@ -584,7 +584,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(255, 152, 0, 0.1);
   color: #666;
   font-size: 0.8rem;
   padding: 4px 0;
@@ -610,7 +610,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(33, 150, 243, 0.1);
   color: #666;
   font-size: 0.8rem;
   padding: 4px 0;

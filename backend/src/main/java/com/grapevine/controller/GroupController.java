@@ -101,6 +101,19 @@ public class GroupController {
         }
     }
 
+    @PostMapping("/{groupId}/join")
+    public ResponseEntity<?> joinGroup(
+            @PathVariable Long groupId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        //Validate session
+        User currentUser = userService.validateSession(sessionId);
+
+        //Join the group (service will validate if it's public)
+        Group joinedGroup = groupService.joinPublicGroup(groupId, currentUser);
+
+        return ResponseEntity.ok(joinedGroup);
+    }
+
     @PostMapping("/create")
     public Group createGroup(
             @RequestHeader(name = "Session-Id", required = true) String sessionId,
