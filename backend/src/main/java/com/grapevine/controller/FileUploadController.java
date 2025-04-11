@@ -37,7 +37,11 @@ public class FileUploadController {
 
         // Validate session first
         User user = userService.validateSession(sessionId);
-
+        if (file.getSize() > MAX_PROFILE_PIC_SIZE) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
+                    "Profile picture must be less than 2MB");
+        }
+        
         try {
             String fileName = s3Service.uploadFile(file);
             String publicUrl = s3Service.getPublicUrl(fileName);
