@@ -174,6 +174,7 @@ function Profile() {
     
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
+      console.log("User data from localStorage:", parsedData);
       setUserData(parsedData);
       setEditedDescription(parsedData.biography || "");
       
@@ -190,28 +191,43 @@ function Profile() {
         setAvailabilityString(parsedData.weeklyAvailability);
       }
 
+      console.log("Making server request for user data:", parsedData.userEmail);
       // Important change: Fetch user data from the server to get the latest profile picture ID
       axios.get(
         `http://localhost:8080/users/${parsedData.userEmail}`,
         { headers: { 'Session-Id': sessionId } }
       ).then(response => {
-        // Update the profile picture ID from the server response
-        if (response.data && response.data.profilePictureId) {
-          console.log("Fetched profile picture ID from server:", response.data.profilePictureId);
-          
-          // Update the localStorage copy with the server value
-          const updatedUserData = {
-            ...parsedData,
-            profilePictureId: response.data.profilePictureId
-          };
-          localStorage.setItem('userData', JSON.stringify(updatedUserData));
-          
-          // Load the profile picture
-          fetchProfilePicture(response.data.profilePictureId);
-        } else if (parsedData.profilePictureId) {
-          // Fallback to local storage if server doesn't return a profile picture ID
-          console.log("Using local storage profile picture ID:", parsedData.profilePictureId);
-          fetchProfilePicture(parsedData.profilePictureId);
+        console.log("Server response for user data:", response.data);
+        // Update the profile picture from the server response
+        if (response.data) {
+          // Check for profilePictureUrl first (current field name)
+          if (response.data.profilePictureUrl) {
+            console.log("Fetched profile picture URL from server:", response.data.profilePictureUrl);
+            
+            // Update the localStorage copy with the server value
+            const updatedUserData = {
+              ...parsedData,
+              profilePictureUrl: response.data.profilePictureUrl
+            };
+            localStorage.setItem('userData', JSON.stringify(updatedUserData));
+            
+            // Load the profile picture
+            fetchProfilePicture(response.data.profilePictureUrl);
+          }
+          // Fallback to profilePictureId if url is not available
+          else if (response.data.profilePictureId) {
+            console.log("Fetched profile picture ID from server:", response.data.profilePictureId);
+            
+            // Update the localStorage copy with the server value
+            const updatedUserData = {
+              ...parsedData,
+              profilePictureId: response.data.profilePictureId
+            };
+            localStorage.setItem('userData', JSON.stringify(updatedUserData));
+            
+            // Load the profile picture
+            fetchProfilePicture(response.data.profilePictureId);
+          }
         }
         
         // Update user role from server response
@@ -228,6 +244,7 @@ function Profile() {
         }
       }).catch(error => {
         console.error('Error fetching user data:', error);
+        console.log('Error details:', error.response || 'No response data');
         
         // Still try to load picture from localStorage as fallback
         if (parsedData.profilePictureId) {
@@ -245,11 +262,16 @@ function Profile() {
         // Update global searchEnabled variable
         window.searchEnabled = isTeachingRole;
       });
+    } else {
+      console.error("No user data found in localStorage");
+      toast.error("User data not found. Please login again.");
+      setTimeout(() => window.location.href = '/', 2000);
     }
     
     setTimeout(() => setIsLoading(false), 500);
   }, [sessionId]);
 
+  // Update the fetchProfilePicture function
   const fetchProfilePicture = async (fileId) => {
     console.log("fetchProfilePicture called with ID:", fileId);
     
@@ -259,21 +281,35 @@ function Profile() {
     }
     
     try {
-      // Always use port 9000 for images
-      const imageUrl = `http://localhost:9000/images/${fileId}`;
+      // For database stored URLs, we need to check if it's a full URL or just an ID
+      let imageUrl;
+      
+      if (fileId.startsWith('http')) {
+        // If it's a full URL, use it directly
+        imageUrl = fileId;
+      } else {
+        // Otherwise construct the URL using the file ID
+        imageUrl = `http://localhost:9000/images/${fileId}`;
+      }
+      
       console.log("Setting profile picture URL:", imageUrl);
       
-      // Set the profile picture URL directly without waiting for verification
-      // This is important for persistence between sessions
+      // Set the profile picture URL
       setProfilePicture(imageUrl);
       
-      // Still verify the image loads correctly in the background
+      // Verify the image loads correctly in the background
       const img = new Image();
       img.onload = () => {
         console.log("Image loaded successfully:", imageUrl);
       };
       img.onerror = (e) => {
         console.error("Failed to load image:", imageUrl, e);
+        // Try alternative URL format if the first one fails
+        if (!fileId.startsWith('http') && !imageUrl.includes('/api/files/getImage/')) {
+          const alternativeUrl = `http://localhost:8080/api/files/getImage/${fileId}`;
+          console.log("Trying alternative URL:", alternativeUrl);
+          setProfilePicture(alternativeUrl);
+        }
       };
       img.src = imageUrl;
     } catch (error) {
@@ -836,9 +872,9 @@ function Profile() {
       return;
     }
     
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size should be less than 5MB");
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size should be less than 2MB");
       return;
     }
     
@@ -860,7 +896,7 @@ function Profile() {
       
       console.log("Uploading file:", file.name, "size:", file.size);
       
-      // Using the upload endpoint from the provided API
+      // Use the correct API endpoint for file upload
       const response = await axios.post(
         'http://localhost:8080/api/files/upload',
         formData,
@@ -874,46 +910,30 @@ function Profile() {
       
       console.log("Upload response:", response.data);
       
-      // Check if we have a response at all
       if (response.status === 200 && response.data) {
-        let fileId;
+        // Extract the file ID from the response
+        const fileId = response.data.fileName || response.data.fileId;
         
-        if (response.data.fileName) {
-          // Use the complete filename as the fileId - this is the key change
-          fileId = response.data.fileName;
-        } else if (response.data.publicUrl) {
-          // Extract the complete ID from the publicUrl
-          const urlParts = response.data.publicUrl.split('/');
-          fileId = urlParts[urlParts.length - 1];
-        } else {
-          // Legacy handling for other response formats
-          fileId = response.data.fileId || 
-                   response.data.id || 
-                   (typeof response.data === 'string' ? response.data : null);
-        }
-        
-        console.log("Extracted fileId:", fileId);
-        
-        if (!fileId || fileId === 'undefined') {
-          console.error("Invalid fileId in response:", fileId);
-          toast.error("Failed to extract valid file ID from server response");
+        if (!fileId) {
+          console.error("Invalid fileId in response");
+          toast.error("Failed to get valid file ID from server");
           return;
         }
         
-        // Use the public URL directly if available, otherwise construct it
-        const imageUrl = response.data.publicUrl || `http://localhost:9000/images/${fileId}`;
+        // Construct the image URL using the correct API endpoint
+        const imageUrl = `http://localhost:9000/images/${fileId}`;
         console.log("Setting profile picture URL:", imageUrl);
         
-        // Update profile picture in user data - store the FULL ID
+        // Update profile picture in user data - store the complete URL, not just the ID
         const updatedUserData = {
           ...userData,
-          profilePictureId: fileId
+          profilePictureUrl: fileId
         };
         
-        // Save the updated user data
+        // Save the updated profile picture URL to the server
         await axios.put(
           `http://localhost:8080/users/${userData.userEmail}`,
-          { profilePictureId: fileId },  // Send the full filename to the server
+          { profilePictureUrl: fileId },
           {
             headers: {
               'Content-Type': 'application/json',
@@ -922,49 +942,21 @@ function Profile() {
           }
         );
         
-        // Update local storage with the full filename
+        // Update local storage
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
+        setProfilePicture(imageUrl);
         
-        // Check that the image can be loaded with the new URL
-        const img = new Image();
-        let imageLoaded = false;
-        
-        img.onload = () => {
-          console.log("Image loaded successfully from URL:", imageUrl);
-          setProfilePicture(imageUrl);
-          toast.success("Profile picture updated successfully!");
-          imageLoaded = true;
-        };
-        
-        img.onerror = () => {
-          console.error("Failed to load image from URL:", imageUrl);
-          // The image was uploaded but we can't load it right now
-          // This could be due to CORS, caching, or other issues
-          toast.warning("Image uploaded, but might take a moment to appear. Try refreshing if needed.");
-          setProfilePicture(imageUrl); // Still set it, it might work on refresh
-        };
-        
-        img.src = imageUrl;
-        
-        // Show success even if image doesn't load immediately
-        setTimeout(() => {
-          if (!imageLoaded) {
-            toast.success("Image uploaded successfully. It may take a moment to appear.");
-          }
-        }, 2000);
+        toast.success("Profile picture updated successfully!");
       } else {
         console.error("Unexpected response:", response);
-        toast.warning("Image may have been uploaded, but there was an issue with the response.");
+        toast.error("Failed to upload profile picture");
       }
     } catch (error) {
       console.error('Error uploading profile picture:', error);
       
-      // Check if there's a specific error message we can show
       if (error.response?.data?.message) {
         toast.error(`Upload error: ${error.response.data.message}`);
-      } else if (error.message) {
-        toast.error(`Upload error: ${error.message}`);
       } else {
         toast.error("Failed to upload profile picture. Please try again later.");
       }
