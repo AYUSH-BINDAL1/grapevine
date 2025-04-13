@@ -87,7 +87,7 @@ public class GroupControllerTest {
     @Test
     void getAllShortGroups_FilterPublic() {
         // Arrange
-        ShortGroup group1 = new ShortGroup(1L, "Group 1", true);
+        ShortGroup group1 = new ShortGroup(1L, "Group 1", true, true);
         List<ShortGroup> publicGroups = Arrays.asList(group1);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -109,7 +109,7 @@ public class GroupControllerTest {
     @Test
     void getAllShortGroups_FilterPrivate() {
         // Arrange
-        ShortGroup group2 = new ShortGroup(2L, "Group 2", false);
+        ShortGroup group2 = new ShortGroup(2L, "Group 2", false, false);
         List<ShortGroup> privateGroups = Arrays.asList(group2);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -238,8 +238,8 @@ public class GroupControllerTest {
     void getAllShortGroups_NoFilterParameter_ReturnsAllGroups() {
         // Arrange
         List<ShortGroup> allGroups = List.of(
-            new ShortGroup(1L, "Public Group", true),
-            new ShortGroup(2L, "Private Group", false)
+            new ShortGroup(1L, "Public Group", true, false),
+            new ShortGroup(2L, "Private Group", false, false)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
