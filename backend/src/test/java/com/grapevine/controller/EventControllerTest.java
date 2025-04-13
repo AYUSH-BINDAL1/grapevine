@@ -107,6 +107,7 @@ public class EventControllerTest {
         verify(eventService).getAllShortEvents(any(EventFilter.class));
     }
 
+    //STORY11 As a user, I would like to be redirected to an event details page after creating an event
     @Test
     void getEvent_Success() {
         // Arrange
@@ -298,6 +299,7 @@ public class EventControllerTest {
         verify(eventService).deleteEvent(1L, testUser);
     }
 
+    //STORY9 As a user I would like to see a collection of upcoming events on the events page
     @Test
     void getAllShortEvents_NoFilters_ReturnsEventsInChronologicalOrder() {
         // Arrange
@@ -332,6 +334,7 @@ public class EventControllerTest {
         verify(eventService).getAllShortEvents(any(EventFilter.class));
     }
 
+    //STORY10 As a user, I would like be filter through upcoming events
     @Test
     void getAllShortEvents_WithSearchFilter_FiltersCorrectly() {
         // Arrange

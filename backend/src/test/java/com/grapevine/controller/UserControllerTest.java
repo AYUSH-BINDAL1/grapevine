@@ -169,12 +169,13 @@ class UserControllerTest {
         verifyNoMoreInteractions(userService);
     }
 
+    //STORY4 As an instructor, I would like to be able to set what courses I am teaching.
     @Test
     void updateUserProfile_Success() {
         // Arrange
         User updatedUser = new User();
         updatedUser.setName("Updated Name");
-        updatedUser.setBiography("New bio");
+        updatedUser.setRole(User.Role.GTA);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
         when(userService.updateUser("test@example.com", updatedUser)).thenReturn(updatedUser);
@@ -185,7 +186,29 @@ class UserControllerTest {
         // Assert
         assertNotNull(result);
         assertEquals("Updated Name", result.getName());
-        assertEquals("New bio", result.getBiography());
+        assertEquals(User.Role.GTA, result.getRole());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).updateUser("test@example.com", updatedUser);
+    }
+
+
+    @Test
+    void addCourse_Success() {
+        // Arrange
+        User updatedUser = new User();
+        List<String> newCourses = List.of(new String[]{"CS180", "CS250"});
+        updatedUser.setCourses(newCourses);
+
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.updateUser("test@example.com", updatedUser)).thenReturn(updatedUser);
+
+        // Act
+        User result = userController.updateUserProfile("test@example.com", testSessionId, updatedUser);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(List.of(new String[]{"CS180", "CS250"}), result.getCourses());
         verify(userService).validateSession(testSessionId);
         verify(userService).updateUser("test@example.com", updatedUser);
     }
@@ -317,6 +340,7 @@ class UserControllerTest {
         verify(userService).validateSession(testSessionId);
     }
 
+    //STORY7 As a user I would like to be able to delete my account and all information tied to it.
     @Test
     void deleteUser_Success() {
         // Arrange
@@ -423,7 +447,7 @@ class UserControllerTest {
         verify(userService).deleteUser("test@example.com");
         verify(userService, never()).logout(anyString());
     }
-
+    // STORY1 As a student, I would like to be able to set my current friends
     @Test
     void sendFriendRequest_Success() {
         // Arrange
@@ -569,7 +593,7 @@ class UserControllerTest {
         verify(userService).validateSession(testSessionId);
         verify(userService).getOutgoingFriendRequests("test@example.com");
     }
-
+    // STORY2 As a user, I would like to be able to connect (make friends/view profile) with other users
     @Test
     void acceptFriendRequest_Success() {
         // Arrange
@@ -675,6 +699,62 @@ class UserControllerTest {
         assertEquals("You can only modify your own friends list", exception.getReason());
         verify(userService).validateSession(testSessionId);
         verify(userService, never()).removeFriend(anyString(), anyString());
+    }
+
+    // STORY3 As a user I would like to be able to search for other users based on my profile
+    @Test
+    void searchUsers_Success() {
+        // Arrange
+        String query = "test";
+        List<User> foundUsers = Arrays.asList(testUser);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.searchUsersByName(query)).thenReturn(foundUsers);
+
+        // Act
+        ResponseEntity<List<User>> response = userController.searchUsers(query, testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(foundUsers, response.getBody());
+        assertEquals(1, response.getBody().size());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).searchUsersByName(query);
+    }
+
+    @Test
+    void searchUsers_NoResults() {
+        // Arrange
+        String query = "nonexistent";
+        List<User> emptyList = Collections.emptyList();
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.searchUsersByName(query)).thenReturn(emptyList);
+
+        // Act
+        ResponseEntity<List<User>> response = userController.searchUsers(query, testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody().isEmpty());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).searchUsersByName(query);
+    }
+
+    @Test
+    void searchUsers_InvalidSession() {
+        // Arrange
+        String query = "test";
+
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class, () ->
+                userController.searchUsers(query, testSessionId));
+
+        verify(userService).validateSession(testSessionId);
+        verifyNoMoreInteractions(userService);
     }
 
 }

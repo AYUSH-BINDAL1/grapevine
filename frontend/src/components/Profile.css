@@ -203,22 +203,58 @@ It also includes responsive design for different screen sizes. */
   gap: 15px;
 }
 
+/* Update the location styling to accommodate the remove button */
 .location {
   display: flex;
   align-items: center;
-  padding: 12px 15px;
-  border-radius: var(--border-radius-sm);
-  background-color: #f0f8ee;
-  border-left: 3px solid var(--primary-color);
-  transition: transform 0.2s;
+  justify-content: space-between;
+  background-color: #def3d9dc;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.location:hover {
+  background-color: #e8e8e8;
 }
 
 .location-name {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-dark);
   margin: 0;
-  text-align: left;
+  font-size: 14px;
+}
+
+.remove-location-button {
+  background-color: transparent;
+  border: none;
+  color: #666;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 5px;
+  line-height: 1;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.remove-location-button:hover {
+  background-color: #ff5252;
+  color: white;
+}
+
+/* Add a subtle animation for removal */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.location.removing {
+  animation: fadeOut 0.3s forwards;
 }
 
 .location-select {
@@ -360,13 +396,54 @@ It also includes responsive design for different screen sizes. */
 }
 
 .hour-block.available {
-  background-color: var(--primary-color);
-  border-color: var(--primary-hover);
+  background-color: #8ebd89;
+  border-color: #7aa875;
 }
 
-.hour-block:hover {
-  opacity: 0.85;
-  cursor: pointer;
+.hour-block.available:hover {
+  background-color: #7aa875;
+}
+
+.hour-block:not(.available):hover {
+  background-color: #e0e0e0;
+}
+
+.hour-block.updating {
+  opacity: 0.7;
+}
+
+.hour-update-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  animation: pulse-animation 1.5s infinite;
+}
+
+@keyframes pulse-animation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.5;
+  }
+}
+
+/* Add visual feedback on hover */
+.hour-block:not(.updating):hover {
+  transform: scale(1.1);
+  z-index: 1;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
 }
 
 /* Add these styles to Profile.css for the time indicators */
@@ -607,6 +684,49 @@ It also includes responsive design for different screen sizes. */
   font-size: 0.8rem;
   margin-top: 5px;
   display: block;
+}
+
+/* Error Banner */
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background-color: #fee;
+  border-left: 4px solid #f44336;
+  margin: 10px 0;
+  border-radius: 4px;
+  animation: slidein 0.3s ease-out;
+}
+
+.error-message {
+  color: #d32f2f;
+  margin: 0;
+  font-size: 14px;
+}
+
+.dismiss-error {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 5px;
+}
+
+.dismiss-error:hover {
+  color: #555;
+}
+
+@keyframes slidein {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Responsive adjustments */
@@ -1008,4 +1128,24 @@ It also includes responsive design for different screen sizes. */
   0% { opacity: 0.6; }
   50% { opacity: 1; }
   100% { opacity: 0.6; }
+}
+
+/* Instructor styling */
+.role-instructor .profile-sidebar {
+  border-left: 4px solid #8e44ad;
+}
+
+/* GTA styling */
+.role-gta .profile-sidebar {
+  border-left: 4px solid #e67e22;
+}
+
+/* UTA styling */
+.role-uta .profile-sidebar {
+  border-left: 4px solid #3498db;
+}
+
+/* Student styling (default) */
+.role-student .profile-sidebar {
+  border-left: 4px solid #2ecc71;
 }

@@ -56,6 +56,7 @@ public class GroupControllerTest {
         testEvent.setName("Test Event");
     }
 
+    //STORY8 As a user, I would like to be able to see public study groups
     @Test
     void getAllGroups_Success() {
         // Arrange
@@ -434,6 +435,8 @@ public class GroupControllerTest {
         verifyNoInteractions(eventService);
     }
 
+    //STORY14 As a user I would like to see private study groups. If they are private I would like to be able to
+    //send a request to the host to join the study group.
     @Test
     void requestGroupAccess_Success() {
         // Arrange
