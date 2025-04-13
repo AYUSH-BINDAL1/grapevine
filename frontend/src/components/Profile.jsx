@@ -935,6 +935,12 @@ function Profile() {
         };
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
+        setProfilePicture(imageUrl);
+
+        // Dispatch event to notify other components
+        window.dispatchEvent(new Event('storage'));
+
+        toast.success("Profile picture updated successfully!");
         
         // Try one field at a time to find which one works
         const updateMethods = [

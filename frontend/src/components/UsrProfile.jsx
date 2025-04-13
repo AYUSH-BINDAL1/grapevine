@@ -61,6 +61,7 @@ function UsrProfile() {
   const [userCourses, setUserCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [showAvailabilityComparison, setShowAvailabilityComparison] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState(profileImage);
 
   // Create a debounced function 
   const toggleAvailabilityComparison = useCallback(() => {
@@ -72,6 +73,42 @@ function UsrProfile() {
     debounce(toggleAvailabilityComparison, 300), 
     [toggleAvailabilityComparison]
   );
+
+  // Add this useEffect to handle the profile picture after userData is loaded
+  useEffect(() => {
+    if (!userData) return;
+    
+    // Check for profile picture URL in user data
+    if (userData.profilePictureUrl) {
+      // Try to load the image
+      const img = new Image();
+      img.onload = () => {
+        setProfileImageUrl(userData.profilePictureUrl);
+      };
+      img.onerror = () => {
+        console.warn("Failed to load profile picture URL:", userData.profilePictureUrl);
+        
+        // Try alternate URL formats if available
+        if (userData.profilePictureId) {
+          const alternateUrl = `http://localhost:9000/images/${userData.profilePictureId}`;
+          const altImg = new Image();
+          altImg.onload = () => {
+            setProfileImageUrl(alternateUrl);
+          };
+          altImg.onerror = () => {
+            const apiUrl = `http://localhost:8080/api/files/getImage/${userData.profilePictureId}`;
+            const apiImg = new Image();
+            apiImg.onload = () => {
+              setProfileImageUrl(apiUrl);
+            };
+            apiImg.src = apiUrl;
+          };
+          altImg.src = alternateUrl;
+        }
+      };
+      img.src = userData.profilePictureUrl;
+    }
+  }, [userData]);
 
   // Update the fetchUserProfile function to properly get the friends list
   useEffect(() => {
@@ -171,6 +208,8 @@ function UsrProfile() {
               biography: response.data.biography || response.data.bio || response.data.description,
               weeklyAvailability: response.data.weeklyAvailability,
               preferredLocations: response.data.preferredLocations || [],
+              profilePictureUrl: response.data.profilePictureUrl,
+              profilePictureId: response.data.profilePictureId
             };
             
             setUserData(formattedUserData);
@@ -716,7 +755,16 @@ function UsrProfile() {
       
       <div className="user-profile-header">
         <div className="user-profile-image-container">
-          <img src={profileImage} alt={userData.name} className="user-profile-image" />
+          <img 
+            src={profileImageUrl} 
+            alt={userData.name} 
+            className="user-profile-image" 
+            onError={(e) => {
+              console.warn('Failed to load profile image, falling back to default');
+              e.target.onerror = null; // Prevent infinite error loop
+              e.target.src = profileImage; // Fall back to default
+            }}
+          />
         </div>
         
         <div className="user-profile-top-info">

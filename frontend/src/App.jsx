@@ -31,17 +31,61 @@ function Taskbar() {
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userProfileImage, setUserProfileImage] = useState(profileImage);
+  // Add this state to track userData changes
+  const [userDataVersion, setUserDataVersion] = useState(0);
 
   useEffect(() => {
+    // Add event listener to detect localStorage changes
+    const handleStorageChange = () => {
+      setUserDataVersion(prev => prev + 1);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Initial load and reload on userDataVersion change
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    if (userData.profilePictureId) {
-      const userImageUrl = `http://localhost:9000/images/${userData.profilePictureId}`;
+
+    // Check for profilePictureUrl first (preferred)
+    if (userData.profilePictureUrl) {
       const img = new Image();
-      img.onload = () => setUserProfileImage(userImageUrl);
-      img.onerror = () => console.log("Failed to load profile image, using default");
-      img.src = userImageUrl;
+      img.onload = () => setUserProfileImage(userData.profilePictureUrl);
+      img.onerror = (error) => {
+        console.error("Failed to load profile image URL:", error);
+        // Fall back to ID-based URL if URL fails
+        if (userData.profilePictureId) {
+          tryLoadIdBasedImage(userData.profilePictureId);
+        }
+      };
+      img.src = userData.profilePictureUrl;
+    } 
+    // Fall back to profilePictureId if URL isn't available
+    else if (userData.profilePictureId) {
+      tryLoadIdBasedImage(userData.profilePictureId);
     }
-  }, []);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [userDataVersion]); // Re-run when userDataVersion changes
+
+  // Helper function to try different image URL formats
+  const tryLoadIdBasedImage = (profilePictureId) => {
+    // Try the standard URL format first
+    const userImageUrl = `http://localhost:9000/images/${profilePictureId}`;
+    const img = new Image();
+    
+    img.onload = () => setUserProfileImage(userImageUrl);
+    img.onerror = () => {
+      // If that fails, try the API format
+      const apiImageUrl = `http://localhost:8080/api/files/getImage/${profilePictureId}`;
+      const imgApi = new Image();
+      imgApi.onload = () => setUserProfileImage(apiImageUrl);
+      imgApi.onerror = () => {
+        console.error("Failed to load profile image with both URL formats");
+      };
+      imgApi.src = apiImageUrl;
+    };
+    img.src = userImageUrl;
+  };
 
   const isActive = (path) => {
     if (path === '/home') return location.pathname === '/home' || location.pathname.startsWith('/group/');
