@@ -860,7 +860,7 @@ function Profile() {
     }
   };
 
-  // Update the handleProfilePictureUpload function to store the complete filename
+  // Update the handleProfilePictureUpload function with proper field name handling
   const handleProfilePictureUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -896,7 +896,7 @@ function Profile() {
       
       console.log("Uploading file:", file.name, "size:", file.size);
       
-      // Use the correct API endpoint for file upload
+      // Step 1: Upload the file
       const response = await axios.post(
         'http://localhost:8080/api/files/upload',
         formData,
@@ -911,8 +911,9 @@ function Profile() {
       console.log("Upload response:", response.data);
       
       if (response.status === 200 && response.data) {
-        // Extract the file ID from the response
+        // Extract the file ID and URL from the response
         const fileId = response.data.fileName || response.data.fileId;
+        const publicUrl = response.data.publicUrl;
         
         if (!fileId) {
           console.error("Invalid fileId in response");
@@ -920,46 +921,89 @@ function Profile() {
           return;
         }
         
-        // Construct the image URL using the correct API endpoint
-        const imageUrl = `http://localhost:9000/images/${fileId}`;
+        // Use the public URL if available, otherwise construct it
+        const imageUrl = publicUrl || `http://localhost:9000/images/${fileId}`;
         console.log("Setting profile picture URL:", imageUrl);
         
-        // Update profile picture in user data - store the complete URL, not just the ID
-        const updatedUserData = {
-          ...userData,
-          profilePictureUrl: fileId
-        };
-        
-        // Save the updated profile picture URL to the server
-        await axios.put(
-          `http://localhost:8080/users/${userData.userEmail}`,
-          { profilePictureUrl: fileId },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Session-Id': sessionId
-            }
-          }
-        );
-        
-        // Update local storage
-        localStorage.setItem('userData', JSON.stringify(updatedUserData));
-        setUserData(updatedUserData);
+        // Update local state first for immediate feedback
         setProfilePicture(imageUrl);
         
-        toast.success("Profile picture updated successfully!");
+        // Update local storage
+        const updatedUserData = {
+          ...userData,
+          profilePictureUrl: imageUrl
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+        
+        // Try one field at a time to find which one works
+        const updateMethods = [
+          // Method 1: Just use the field name as is
+          async () => {
+            console.log("Trying update with profilePictureUrl field");
+            return await axios.put(
+              `http://localhost:8080/users/${userData.userEmail}`,
+              { profilePictureUrl: imageUrl },
+              { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
+            );
+          },
+          
+          // Method 2: Try with snake_case
+          async () => {
+            console.log("Trying update with profile_picture_url field");
+            return await axios.put(
+              `http://localhost:8080/users/${userData.userEmail}`,
+              { profile_picture_url: imageUrl },
+              { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
+            );
+          },
+          
+          // Method 3: Try with just the file ID
+          async () => {
+            console.log("Trying update with profilePictureId field");
+            return await axios.put(
+              `http://localhost:8080/users/${userData.userEmail}`,
+              { profilePictureId: fileId },
+              { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
+            );
+          }
+        ];
+        
+        let success = false;
+        
+        // Try each method until one works
+        for (const method of updateMethods) {
+          try {
+            const updateResponse = await method();
+            console.log("Update response:", updateResponse.status, updateResponse.data);
+            
+            // Verify if it worked by checking the response data
+            if (updateResponse.data && 
+                (updateResponse.data.profilePictureUrl || updateResponse.data.profile_picture_url)) {
+              console.log("Update successful!");
+              success = true;
+              break;
+            }
+          } catch (error) {
+            console.log("Update attempt failed:", error.message);
+            // Continue to the next method
+          }
+        }
+        
+        // Show toast based on success
+        if (success) {
+          toast.success("Profile picture updated successfully!");
+        } else {
+          // The update might have failed server-side but still show it client-side
+          toast.warning("Profile picture updated locally but may not be saved on the server.");
+        }
       } else {
         console.error("Unexpected response:", response);
         toast.error("Failed to upload profile picture");
       }
     } catch (error) {
-      console.error('Error uploading profile picture:', error);
-      
-      if (error.response?.data?.message) {
-        toast.error(`Upload error: ${error.response.data.message}`);
-      } else {
-        toast.error("Failed to upload profile picture. Please try again later.");
-      }
+      console.error('Error in profile picture upload process:', error);
+      toast.error("Failed to upload profile picture. Please try again later.");
     } finally {
       setIsUploadingPicture(false);
     }

@@ -171,6 +171,9 @@ public class UserService {
         if (updatedUser.getWeeklyAvailability() != null) {
             existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
         }
+        if (updatedUser.getProfilePictureUrl() != null) {
+            existingUser.setProfilePictureUrl(updatedUser.getProfilePictureUrl());
+        }
         if (updatedUser.getRole() != null) {
             existingUser.setRole(updatedUser.getRole());
         }
