@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" href="/grapes-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="GrapeVine - Connect with study partners, join groups, and enhance your academic journey at your university" />
     <meta name="theme-color" content="#8ebd89" />
@@ -20,12 +20,11 @@
     <link rel="preconnect" href="http://localhost:9000" crossorigin />
     
     <!-- Preload critical assets -->
-    <link rel="preload" href="/src/assets/logo.png" as="image" fetchpriority="high" />
-    <link rel="preload" href="/src/main.jsx" as="script" />
+    <link rel="preload" href="/grapes-icon.png" as="image" fetchpriority="high" />
+    <link rel="modulepreload" href="/src/main.jsx" />
     
     <!-- Web app manifest for PWA capabilities -->
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     
     <!-- Initial loading style -->
     <style>
@@ -92,7 +91,7 @@
     <div id="root">
       <!-- This will show while React is loading -->
       <div class="loading-screen" role="status" aria-live="polite">
-        <img src="/src/assets/logo.png" alt="GrapeVine Logo" class="loading-logo" width="100" height="100">
+        <img src="/grapes-icon.png" alt="GrapeVine Logo" class="loading-logo" width="100" height="100">
         <p aria-live="assertive">Loading GrapeVine application...</p>
       </div>
     </div>

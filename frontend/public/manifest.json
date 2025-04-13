@@ -1,0 +1,8 @@
+{
+  "name": "GrapeVine",
+  "short_name": "GrapeVine",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#8ebd89"
+}
