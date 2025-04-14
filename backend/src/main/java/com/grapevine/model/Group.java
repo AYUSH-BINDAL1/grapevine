@@ -69,4 +69,8 @@ public class Group {
     @Column(name = "event_ids")
     private List<Long> events;
 
+    @NotNull
+    @Column(name = "is_instructor_led", nullable = false)
+    private boolean isInstructorLed = false;
+
 }

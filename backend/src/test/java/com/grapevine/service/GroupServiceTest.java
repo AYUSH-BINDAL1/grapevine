@@ -351,6 +351,7 @@ public class GroupServiceTest {
         verify(groupRepository).findAll();
     }
 
+    //STORY12 As a user, I would like to rate groups I am in. AND STORY13 As a user, I would like to provide a written review for groups I am in.
     @Test
     void getGroupRatings_WithExistingRatings_ReturnsRatingsData() {
         // Arrange

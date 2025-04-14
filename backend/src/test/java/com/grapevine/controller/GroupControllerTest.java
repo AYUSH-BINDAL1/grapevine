@@ -56,6 +56,7 @@ public class GroupControllerTest {
         testEvent.setName("Test Event");
     }
 
+    //STORY8 As a user, I would like to be able to see public study groups
     @Test
     void getAllGroups_Success() {
         // Arrange
@@ -87,7 +88,7 @@ public class GroupControllerTest {
     @Test
     void getAllShortGroups_FilterPublic() {
         // Arrange
-        ShortGroup group1 = new ShortGroup(1L, "Group 1", true);
+        ShortGroup group1 = new ShortGroup(1L, "Group 1", true, true);
         List<ShortGroup> publicGroups = Arrays.asList(group1);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -109,7 +110,7 @@ public class GroupControllerTest {
     @Test
     void getAllShortGroups_FilterPrivate() {
         // Arrange
-        ShortGroup group2 = new ShortGroup(2L, "Group 2", false);
+        ShortGroup group2 = new ShortGroup(2L, "Group 2", false, false);
         List<ShortGroup> privateGroups = Arrays.asList(group2);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -238,8 +239,8 @@ public class GroupControllerTest {
     void getAllShortGroups_NoFilterParameter_ReturnsAllGroups() {
         // Arrange
         List<ShortGroup> allGroups = List.of(
-            new ShortGroup(1L, "Public Group", true),
-            new ShortGroup(2L, "Private Group", false)
+            new ShortGroup(1L, "Public Group", true, false),
+            new ShortGroup(2L, "Private Group", false, false)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -434,6 +435,8 @@ public class GroupControllerTest {
         verifyNoInteractions(eventService);
     }
 
+    //STORY14 As a user I would like to see private study groups. If they are private I would like to be able to
+    //send a request to the host to join the study group.
     @Test
     void requestGroupAccess_Success() {
         // Arrange
