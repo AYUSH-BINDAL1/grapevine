@@ -17,13 +17,13 @@ import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import './App.css';
 import './components/Groups.css';
+import {base_url, image_url} from './config.js';
 
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
   searchEnabled = value;
 };
 */
-
 const Login = lazy(() => import('./components/Login'));
 
 function Taskbar() {
@@ -31,17 +31,61 @@ function Taskbar() {
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userProfileImage, setUserProfileImage] = useState(profileImage);
+  // Add this state to track userData changes
+  const [userDataVersion, setUserDataVersion] = useState(0);
 
   useEffect(() => {
+    // Add event listener to detect localStorage changes
+    const handleStorageChange = () => {
+      setUserDataVersion(prev => prev + 1);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Initial load and reload on userDataVersion change
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    if (userData.profilePictureId) {
-      const userImageUrl = `http://localhost:9000/images/${userData.profilePictureId}`;
+
+    // Check for profilePictureUrl first (preferred)
+    if (userData.profilePictureUrl) {
       const img = new Image();
-      img.onload = () => setUserProfileImage(userImageUrl);
-      img.onerror = () => console.log("Failed to load profile image, using default");
-      img.src = userImageUrl;
+      img.onload = () => setUserProfileImage(userData.profilePictureUrl);
+      img.onerror = (error) => {
+        console.error("Failed to load profile image URL:", error);
+        // Fall back to ID-based URL if URL fails
+        if (userData.profilePictureId) {
+          tryLoadIdBasedImage(userData.profilePictureId);
+        }
+      };
+      img.src = userData.profilePictureUrl;
+    } 
+    // Fall back to profilePictureId if URL isn't available
+    else if (userData.profilePictureId) {
+      tryLoadIdBasedImage(userData.profilePictureId);
     }
-  }, []);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [userDataVersion]); // Re-run when userDataVersion changes
+
+  // Helper function to try different image URL formats
+  const tryLoadIdBasedImage = (profilePictureId) => {
+    // Try the standard URL format first
+    const userImageUrl = `${image_url}/images/${profilePictureId}`;
+    const img = new Image();
+    
+    img.onload = () => setUserProfileImage(userImageUrl);
+    img.onerror = () => {
+      // If that fails, try the API format
+      const apiImageUrl = `${base_url}/api/files/getImage/${profilePictureId}`;
+      const imgApi = new Image();
+      imgApi.onload = () => setUserProfileImage(apiImageUrl);
+      imgApi.onerror = () => {
+        console.error("Failed to load profile image with both URL formats");
+      };
+      imgApi.src = apiImageUrl;
+    };
+    img.src = userImageUrl;
+  };
 
   const isActive = (path) => {
     if (path === '/home') return location.pathname === '/home' || location.pathname.startsWith('/group/');
@@ -60,7 +104,7 @@ function Taskbar() {
         navigate("/");
         return;
       }
-      await axios.delete('http://localhost:8080/users/logout', {
+      await axios.delete(`${base_url}/users/logout`, {
         headers: { 'Session-Id': sessionId }
       });
       localStorage.clear();
@@ -162,7 +206,7 @@ function Home() {
         const userEmail = parsedUser.userEmail;
         try {
           const response = await axios.get(
-              `http://localhost:8080/users/${userEmail}/all-groups-short`,
+              `${base_url}/users/${userEmail}/all-groups-short`,
               { headers: { 'Session-Id': sessionId }
           });
           setGroups(response.data);
@@ -175,7 +219,7 @@ function Home() {
         }
 
         try {
-          const allRes = await axios.get("http://localhost:8080/groups/all", {
+          const allRes = await axios.get(`${base_url}/groups/all`, {
             headers: { 'Session-Id': sessionId }
           });
           setAllGroups(allRes.data);
@@ -183,6 +227,10 @@ function Home() {
           setFilteredGroups(publicGroups);
         } catch (error) {
           console.error('Error fetching all groups:', error);
+          if (error.response?.status === 401) {
+            alert('Session expired. Please login again.');
+            navigate('/');
+          }
         }
       } else {
         alert('No user information or session found. Please login again.');
