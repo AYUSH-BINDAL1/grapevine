@@ -251,7 +251,7 @@ class UserControllerTest {
     @Test
     void getAllShortGroups_Success() {
         // Arrange
-        ShortGroup shortGroup = new ShortGroup(1L, "Test Group", true);
+        ShortGroup shortGroup = new ShortGroup(1L, "Test Group", true, false);
         List<ShortGroup> shortGroups = Arrays.asList(shortGroup);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
