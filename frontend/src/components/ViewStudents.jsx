@@ -151,7 +151,7 @@ function ViewStudents() {
                     <div className="no-friends-message">
                         <div className="empty-state-icon">👥</div>
                         <h3>No students found</h3>
-                        <p>You don't have any students enrolled in your courses yet.</p>
+                        <p>You don&apos;t have any students enrolled in your courses yet.</p>
                     </div>
                 )}
             </div>

@@ -7,6 +7,94 @@ import './Friends.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Friend skeleton component
+const FriendSkeleton = () => (
+    <div className="friend-card skeleton">
+        <div className="friend-card-content">
+            <div className="skeleton-image"></div>
+            <div className="skeleton-text"></div>
+        </div>
+    </div>
+);
+
+// Friend request skeleton component
+const FriendRequestSkeleton = () => (
+    <div className="friend-request-card skeleton">
+        <div className="user-info">
+            <div className="skeleton-avatar"></div>
+            <div className="request-details">
+                <div className="skeleton-text-short"></div>
+                <div className="skeleton-text-shorter"></div>
+            </div>
+        </div>
+        <div className="request-actions">
+            <div className="skeleton-button"></div>
+            <div className="skeleton-button"></div>
+        </div>
+    </div>
+);
+
+// Search result skeleton
+const SearchResultSkeleton = () => (
+    <div className="search-result-card skeleton">
+        <div className="user-info">
+            <div className="skeleton-avatar"></div>
+            <div className="search-result-details">
+                <div className="skeleton-text-short"></div>
+                <div className="skeleton-text-shorter"></div>
+            </div>
+        </div>
+        <div className="skeleton-button-wide"></div>
+    </div>
+);
+
+// Updated Filter Panel component for horizontal layout
+const FilterPanel = () => {
+  return (
+    <div className="filter-panel">
+      <div className="filter-header">
+        <h4>Filter Results</h4>
+        <button className="reset-filters-btn" disabled>Reset All</button>
+      </div>
+      
+      <div className="filter-content">
+        <div className="filter-group">
+          <label className="filter-label">Major:</label>
+          <select className="filter-select" disabled>
+            <option value="">All Majors</option>
+            <option value="cs">Computer Science</option>
+            <option value="engineering">Engineering</option>
+            <option value="business">Business</option>
+          </select>
+        </div>
+        
+        <div className="filter-group">
+          <label className="filter-label">Sort By:</label>
+          <select className="filter-select" disabled>
+            <option value="name">Name (A-Z)</option>
+            <option value="name_desc">Name (Z-A)</option>
+            <option value="recent">Recently Added</option>
+          </select>
+        </div>
+        
+        <div className="filter-group">
+          <label className="filter-checkbox-label">
+            <input type="checkbox" disabled />
+            <span>Match Interests</span>
+          </label>
+        </div>
+        
+        <div className="filter-group">
+          <label className="filter-checkbox-label">
+            <input type="checkbox" disabled />
+            <span>Same Courses</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function Friends() {
     const friendsListRef = useRef(null);
     const navigate = useNavigate();
@@ -15,12 +103,14 @@ function Friends() {
     const [isSearching, setIsSearching] = useState(false);
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
-    // eslint-disable-next-line no-unused-vars
     const [searchHistory, setSearchHistory] = useState([]);
     const [noResultsFound, setNoResultsFound] = useState(false);
+    const [loadingFriends, setLoadingFriends] = useState(true);
+    const [loadingRequests, setLoadingRequests] = useState(true);
 
     // Function to fetch friend requests from the API
     const fetchFriendRequests = async () => {
+        setLoadingRequests(true);
         try {
             const sessionId = localStorage.getItem('sessionId');
             const userData = JSON.parse(localStorage.getItem('userData'));
@@ -72,11 +162,14 @@ function Friends() {
             }
         } catch (error) {
             console.error('Error fetching friend requests:', error);
+        } finally {
+            setLoadingRequests(false);
         }
     };
 
     // Function to fetch friends list from the API
     const fetchFriends = async () => {
+        setLoadingFriends(true);
         try {
             const sessionId = localStorage.getItem('sessionId');
             const userData = JSON.parse(localStorage.getItem('userData'));
@@ -111,19 +204,41 @@ function Friends() {
             }
         } catch (error) {
             console.error('Error fetching friends:', error);
+        } finally {
+            setLoadingFriends(false);
         }
     };
 
     // Add useEffect to load data when component mounts and set up polling interval
     useEffect(() => {
-        // Initial fetch
-        fetchFriendRequests();
-        fetchFriends();
+        // Create an async function to batch requests
+        const fetchInitialData = async () => {
+            // Show loading state if needed
+            const sessionId = localStorage.getItem('sessionId');
+            const userData = JSON.parse(localStorage.getItem('userData'));
+            
+            if (!sessionId || !userData) {
+                console.error('Missing session or user data');
+                return;
+            }
+            
+            // Execute requests in parallel
+            try {
+                await Promise.all([
+                    fetchFriendRequests(),
+                    fetchFriends()
+                ]);
+            } catch (error) {
+                console.error('Error fetching initial data:', error);
+            }
+        };
         
-        // Set up interval
+        fetchInitialData();
+        
+        // Set up interval (reduce polling frequency to 2 minutes)
         const interval = setInterval(() => {
             fetchFriendRequests();
-        }, 60000); // 60 seconds
+        }, 120000); // 120 seconds
         
         // Clean up interval on unmount
         return () => clearInterval(interval);
@@ -487,19 +602,52 @@ function Friends() {
         );
     };
 
-    // Add a refresh function to manually refresh friend requests and friends
+    // Update the refreshData function
     const refreshData = () => {
+        // Set loading states first to show skeletons
+        setLoadingFriends(true);
+        setLoadingRequests(true);
+        
+        // Then fetch the data
         fetchFriendRequests();
         fetchFriends();
+        
         toast.info("Refreshing your friends data...");
+    };
+
+    // Add this to your search handling
+    const handleSearch = (e) => {
+        e.preventDefault();
+        
+        if (searchQuery.trim().length < 2) {
+            toast.warning("Please enter at least 2 characters to search");
+            return;
+        }
+        
+        performSearch(searchQuery);
+        
+        // Save to search history in localStorage
+        const existingHistory = JSON.parse(localStorage.getItem('friendSearchHistory') || '[]');
+        const updatedHistory = [
+            searchQuery, 
+            ...existingHistory.filter(item => item !== searchQuery)
+        ].slice(0, 5);
+        
+        localStorage.setItem('friendSearchHistory', JSON.stringify(updatedHistory));
+        setSearchHistory(updatedHistory);
     };
 
     return (
         <div className="friends-page">
+            {/* Updated friends section */}
             <div className="friends-container">
                 <h2>My Friends</h2>
 
-                {friends.length > 0 ? (
+                {loadingFriends ? (
+                    <div className="friends-list">
+                        {[1, 2, 3, 4].map(i => <FriendSkeleton key={i} />)}
+                    </div>
+                ) : friends.length > 0 ? (
                     <div className="friends-list" ref={friendsListRef}>
                         {friends.map(user => (
                             <div className="friend-card" key={user.userEmail}>
@@ -532,14 +680,19 @@ function Friends() {
                 )}
             </div>
 
+            {/* Updated friend requests section */}
             <div className="friend-requests-container">
                 <h2>Friend Requests {friendRequests.length > 0 && <span className="request-count">{friendRequests.length}</span>}</h2>
 
-                {friendRequests.length > 0 ? (
+                {loadingRequests ? (
+                    <div className="friend-requests-list">
+                        {[1, 2].map(i => <FriendRequestSkeleton key={i} />)}
+                    </div>
+                ) : friendRequests.length > 0 ? (
                     <div className="friend-requests-list">
                         {friendRequests.map(request => (
                             <div className="friend-request-card" key={request.id}>
-                                <div className="user-info" onClick={() => handleFriendClick(request.id)}>
+                                <div className="user-info" onClick={() => handleFriendClick(request.userEmail)}>
                                     <img src={request.image} alt={request.name} className="request-avatar" />
                                     <div className="request-details">
                                         <h4>{request.name}</h4>
@@ -547,7 +700,8 @@ function Friends() {
                                     </div>
                                 </div>
                                 <div className="request-actions">
-                                    <button
+                                    <button 
+                                        aria-label={`Accept friend request from ${request.name}`} 
                                         className="accept-request-btn"
                                         onClick={() => handleAcceptRequest(request)}
                                     >
@@ -571,21 +725,83 @@ function Friends() {
             </div>
 
             <div className="search-section">
-                <form className="search-container" onSubmit={(e) => e.preventDefault()}>
-                    <input
-                        type="text"
-                        className="search-bar"
-                        placeholder="Search to add friends..."
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                    />
-                    <button type="submit" className="search-button" disabled={isSearching}>
-                        <i className="friend-search"></i>
-                        {isSearching ? 'Searching...' : 'Search'}
-                    </button>
-                </form>
+                <div className="search-filter-container">
+                    <form className="search-container" onSubmit={(e) => e.preventDefault()}>
+                        <div className="search-input-container">
+                            <input
+                                type="text"
+                                className="search-bar"
+                                placeholder="Search to add friends..."
+                                value={searchQuery}
+                                onChange={handleSearchChange}
+                                onFocus={() => {
+                                    // Load history from localStorage
+                                    const savedHistory = JSON.parse(localStorage.getItem('friendSearchHistory') || '[]');
+                                    setSearchHistory(savedHistory);
+                                }}
+                            />
+                            
+                            {searchHistory.length > 0 && searchQuery.length === 0 && document.activeElement === document.querySelector('.search-bar') && (
+                                <div className="search-history-dropdown">
+                                    <div className="search-history-header">Recent Searches</div>
+                                    {searchHistory.map((query, index) => (
+                                        <div 
+                                            key={index} 
+                                            className="search-history-item"
+                                            onClick={() => {
+                                                setSearchQuery(query);
+                                                performSearch(query);
+                                            }}
+                                        >
+                                            <i className="history-icon">↩️</i>
+                                            <span>{query}</span>
+                                        </div>
+                                    ))}
+                                    <div 
+                                        className="clear-history"
+                                        onClick={() => {
+                                            localStorage.removeItem('friendSearchHistory');
+                                            setSearchHistory([]);
+                                        }}
+                                    >
+                                        Clear History
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            className={`search-button ${isSearching ? 'loading' : ''}`} 
+                            onClick={handleSearch} 
+                            disabled={isSearching}
+                        >
+                            {isSearching ? (
+                                <>
+                                    <span className="loading-spinner"></span>
+                                    <span>Searching...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <i className="friend-search"></i>
+                                    <span>Search</span>
+                                </>
+                            )}
+                        </button>
+                    </form>
+                    
+                    <FilterPanel />
+                </div>
 
-                {searchResults.length > 0 && (
+                {/* Rest of your search results section remains unchanged */}
+                {isSearching ? (
+                    <div className="search-results">
+                        <h3>Loading Results...</h3>
+                        <div className="search-results-list">
+                            {[1, 2, 3].map(i => <SearchResultSkeleton key={i} />)}
+                        </div>
+                    </div>
+                ) : searchResults.length > 0 ? (
                     <div className="search-results">
                         <h3>Search Results</h3>
                         <div className="search-results-list">
@@ -617,13 +833,11 @@ function Friends() {
                             ))}
                         </div>
                     </div>
-                )}
-
-                {noResultsFound && (
+                ) : noResultsFound ? (
                     <div className="no-results">
                         <p>No users found matching &#34;{searchQuery}&#34;</p>
                     </div>
-                )}
+                ) : null}
             </div>
 
             <button onClick={refreshData} className="refresh-button">

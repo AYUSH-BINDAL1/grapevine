@@ -101,6 +101,19 @@ public class GroupController {
         }
     }
 
+    @PostMapping("/{groupId}/join")
+    public ResponseEntity<?> joinGroup(
+            @PathVariable Long groupId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        //Validate session
+        User currentUser = userService.validateSession(sessionId);
+
+        //Join the group (service will validate if it's public)
+        Group joinedGroup = groupService.joinPublicGroup(groupId, currentUser);
+
+        return ResponseEntity.ok(joinedGroup);
+    }
+
     @PostMapping("/create")
     public Group createGroup(
             @RequestHeader(name = "Session-Id", required = true) String sessionId,
@@ -281,54 +294,23 @@ public class GroupController {
         return ResponseEntity.ok(group);
     }
 
-
-    //TODO: Needs to be fixed
-    /*
-    @GetMapping("/search")
-    public ResponseEntity<List<Group>> searchGroups(
-            @RequestParam String keyword,
-            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
-        List<Group> groups = groupService.searchGroups(keyword);
-        return ResponseEntity.ok(groups);
-    }
-
-    @PutMapping("/{groupId}")
-    public ResponseEntity<Group> updateGroup(
-            @PathVariable Long groupId,
-            @RequestBody Group group,
-            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
-        Group updatedGroup = groupService.updateGroup(groupId, group, sessionId);
-        return ResponseEntity.ok(updatedGroup);
-    }
-
-    @DeleteMapping("/{groupId}")
-    public ResponseEntity<Void> deleteGroup(
+    // Add this endpoint to GroupController
+    @PutMapping("/{groupId}/toggle-instructor-led")
+    public ResponseEntity<?> toggleInstructorLed(
             @PathVariable Long groupId,
             @RequestHeader(name = "Session-Id", required = true) String sessionId) {
-        groupService.deleteGroup(groupId, sessionId);
-        return ResponseEntity.noContent().build();
-    }
 
-    @PostMapping("/{groupId}/join")
-    public ResponseEntity<Group> joinGroup()
-            @PathVariable Long groupId,
-            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
-        Group group = groupService.joinGroup(groupId, sessionId);
-        return ResponseEntity.ok(group);
-    }
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
 
-    @PostMapping("/{groupId}/leave")
-    public ResponseEntity<?> leaveGroup(
-            @PathVariable Long groupId,
-            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
-        Group group = groupService.leaveGroup(groupId, sessionId);
-        if (group == null) {
-            return ResponseEntity.noContent().build();
+        try {
+            // Toggle instructor-led status
+            Group updatedGroup = groupService.toggleInstructorLedStatus(groupId, currentUser);
+            return ResponseEntity.ok(updatedGroup);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         }
-        return ResponseEntity.ok(group);
     }
-
-     */
 
 
 }

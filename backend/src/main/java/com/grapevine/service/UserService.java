@@ -171,6 +171,9 @@ public class UserService {
         if (updatedUser.getWeeklyAvailability() != null) {
             existingUser.setWeeklyAvailability(updatedUser.getWeeklyAvailability());
         }
+        if (updatedUser.getProfilePictureUrl() != null) {
+            existingUser.setProfilePictureUrl(updatedUser.getProfilePictureUrl());
+        }
         if (updatedUser.getRole() != null) {
             existingUser.setRole(updatedUser.getRole());
         }
@@ -265,7 +268,7 @@ public class UserService {
         if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
             for (Long groupId : currentUser.getHostedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
+                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic(), group.isInstructorLed())));
             }
         }
 
@@ -273,7 +276,7 @@ public class UserService {
         if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
             for (Long groupId : currentUser.getJoinedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
+                        .ifPresent(group -> allShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic(), group.isInstructorLed())));
             }
         }
 
@@ -301,7 +304,7 @@ public class UserService {
         if (currentUser.getHostedGroups() != null && !currentUser.getHostedGroups().isEmpty()) {
             for (Long groupId : currentUser.getHostedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> hostedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
+                        .ifPresent(group -> hostedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic(), group.isInstructorLed())));
             }
         }
 
@@ -330,7 +333,7 @@ public class UserService {
         if (currentUser.getJoinedGroups() != null && !currentUser.getJoinedGroups().isEmpty()) {
             for (Long groupId : currentUser.getJoinedGroups()) {
                 groupRepository.findById(groupId)
-                        .ifPresent(group -> joinedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic())));
+                        .ifPresent(group -> joinedShortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic(), group.isInstructorLed())));
             }
         }
 
@@ -488,6 +491,34 @@ public class UserService {
     // Add to UserService.java
     public List<User> searchUsersByName(String query) {
         return userRepository.findByNameContainingIgnoreCase(query);
+    }
+
+    public List<User> searchUsersByNameWithFilters(String query, List<String> majors, User.Role role, List<Long> locationIds) {
+        // Start with basic name search
+        List<User> users = userRepository.findByNameContainingIgnoreCase(query);
+
+        // Apply filters if provided
+        if (majors != null && !majors.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getMajors() != null &&
+                            user.getMajors().stream().anyMatch(majors::contains))
+                    .collect(Collectors.toList());
+        }
+
+        if (role != null) {
+            users = users.stream()
+                    .filter(user -> role.equals(user.getRole()))
+                    .collect(Collectors.toList());
+        }
+
+        if (locationIds != null && !locationIds.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getPreferredLocations() != null &&
+                            user.getPreferredLocations().stream().anyMatch(locationIds::contains))
+                    .collect(Collectors.toList());
+        }
+
+        return users;
     }
 
     public User sendFriendRequest(String senderEmail, String receiverEmail) {

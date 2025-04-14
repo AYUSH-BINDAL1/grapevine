@@ -58,6 +58,8 @@ h2:hover {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
   overflow: hidden;
+  will-change: transform;
+  contain: content;
 }
 
 .friend-card h3 {
@@ -74,8 +76,8 @@ h2:hover {
 }
 
 .friend-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(142, 189, 137, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Center the image */
@@ -90,11 +92,6 @@ h2:hover {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-}
-
-.friend-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px #8ebd89;
 }
 
 .friend-card img {
@@ -158,43 +155,130 @@ h2:hover {
   margin-left: auto;
   margin-right: auto;
   gap: 10px;
-  background-color: white;
+  background-color: var(--white); /* Using theme variable */
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius-md); /* Using theme variable */
+  box-shadow: var(--shadow-light); /* Using theme variable */
+  border: 1px solid #f0f0f0; /* Subtle border */
 }
 
 .search-bar {
   flex: 1;
   padding: 12px 15px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  width: 80%;
+  border-radius: var(--border-radius-sm); /* Using theme variable */
   font-size: 16px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .search-bar:focus {
-  border-color: #8ebd89;
-  box-shadow: 0 0 0 2px rgba(142, 189, 137, 0.2);
+  border-color: var(--primary-color); /* Using theme variable */
+  box-shadow: 0 0 0 3px rgba(142, 189, 137, 0.25); /* Focused input glow */
 }
 
+/* Complete replacement for search button styles */
 .search-button {
-  background-color: #8ebd89;
+  background-color: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
   padding: 12px 20px;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: transform 0.2s, background-color 0.2s;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  font-weight: 500;
+  box-shadow: 0 2px 5px rgba(142, 189, 137, 0.3);
+  
+  /* Fixed dimensions to prevent expansion */
+  min-width: 140px;
+  max-width: 160px;
+  width: 140px;
+  height: 46px;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
 }
 
 .search-button:hover {
-  background-color: #7aa875;
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.search-button:disabled {
+  background-color: #c0d9bd;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  width: 160px; /* Maintain consistent width */
+}
+
+.search-button:active {
+  transform: scale(0.98);
+  /* Remove width: auto that was causing the expansion */
+}
+
+.search-button.loading {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+  width: 120px; /* Keep width fixed during loading */
+  height: 46px; /* Keep height fixed during loading */
+}
+
+/* Keep the inner content from causing layout shifts */
+.search-button > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure the spinner doesn't push other content */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  min-width: 16px; /* Prevent width compression */
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  flex-shrink: 0; /* Prevent the spinner from shrinking */
+}
+
+.search-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.search-button:active {
+  transform: scale(0.98); /* Small scale down instead of translateY */
+}
+
+/* Improve loading state to prevent size changes */
+.search-button.loading {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+  min-width: 120px; /* Ensure same min-width as normal state */
+}
+
+/* Make sure the spinner doesn't cause layout shifts */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  min-width: 16px; /* Prevent width compression */
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  flex-shrink: 0; /* Prevent the spinner from shrinking */
 }
 
 .friend-search {
@@ -297,15 +381,16 @@ h2:hover {
   margin-left: auto;
   margin-right: auto;
   gap: 10px;
-  background-color: white;
+  background-color: var(--white); /* Using theme variable */
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius-md); /* Using theme variable */
+  box-shadow: var(--shadow-light); /* Using theme variable */
+  border: 1px solid #f0f0f0; /* Subtle border */
 }
 
 /* Search results section */
 .search-results {
-  max-width: 800px;
+  max-width: 900px; /* Match the container width */
   margin: 20px auto 0;
   background-color: white;
   border-radius: 10px;
@@ -325,21 +410,43 @@ h2:hover {
 .search-results-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px; /* Increased from 10px for better spacing */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 400px;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+.search-results-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.search-results-list::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 6px;
+}
+
+.search-results-list::-webkit-scrollbar-thumb:hover {
+  background-color: #aaa;
 }
 
 .search-result-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  transition: background-color 0.2s;
+  padding: 18px; /* Increased from 15px for better spacing */
+  border-radius: var(--border-radius-md); /* Using theme variable */
+  background-color: var(--white); /* Using theme variable */
+  transition: all 0.3s ease; /* Enhanced transition */
+  border: 1px solid transparent; /* Prepare for hover effect */
+  box-shadow: var(--shadow-light); /* Using theme variable */
 }
 
 .search-result-card:hover {
-  background-color: #f0f0f0;
+  background-color: var(--background-light); /* Using theme variable */
+  border-color: var(--primary-color); /* Highlight border on hover */
+  transform: translateY(-2px); /* Slight lift effect */
 }
 
 .user-info {
@@ -354,7 +461,8 @@ h2:hover {
   height: 50px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #8ebd89;
+  border: 2px solid var(--primary-color) !important; /* Using theme variable */
+  box-shadow: 0 0 0 2px rgba(142, 189, 137, 0.2); /* Subtle glow */
 }
 
 .search-result-details {
@@ -364,32 +472,35 @@ h2:hover {
 .search-result-details h4 {
   margin: 0 0 5px;
   font-size: 16px;
-  color: #333;
+  color: var(--text-dark); /* Using theme variable */
+  font-weight: 600; /* Make names slightly bolder */
 }
 
 .search-result-details p {
   margin: 0;
   font-size: 14px;
-  color: #666;
+  color: var(--text-medium); /* Using theme variable */
 }
 
 .add-friend-btn {
-  background-color: #8ebd89;
+  background-color: var(--primary-color); /* Using theme variable */
   color: white;
   border: none;
-  border-radius: 5px;
-  padding: 8px 15px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  border-radius: var(--border-radius-sm); /* Using theme variable */
+  padding: 10px 18px; /* Slightly larger */
+  font-weight: 500; /* Medium weight */
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(142, 189, 137, 0.3); /* Subtle button shadow */
 }
 
 .add-friend-btn:hover {
-  background-color: #7aa875;
+  background-color: var(--primary-hover); /* Using theme variable */
+  transform: translateY(-1px); /* Slight lift on hover */
+  box-shadow: 0 4px 8px rgba(142, 189, 137, 0.4); /* Enhanced shadow on hover */
 }
 
 .no-results {
-  max-width: 600px;
+  max-width: 900px;
   margin: 20px auto 0;
   text-align: center;
   padding: 20px;
@@ -398,12 +509,6 @@ h2:hover {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   color: #666;
   font-style: italic;
-}
-
-/* Disabled state for search button */
-.search-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
 }
 
 /* Friend Requests Styles */
@@ -446,6 +551,8 @@ h2:hover {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
 }
 
 .friend-request-card {
@@ -456,11 +563,16 @@ h2:hover {
   border-radius: 8px;
   padding: 12px 15px;
   transition: transform 0.2s;
+  transform: translateZ(0);
 }
 
 .friend-request-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.friend-request-card.removing {
+  animation: slide-out 0.5s forwards;
 }
 
 .user-info {
@@ -550,7 +662,6 @@ h2:hover {
   }
 }
 
-/* Add to Friends.css */
 .friends-header {
   display: flex;
   justify-content: space-between;
@@ -563,8 +674,8 @@ h2:hover {
   border: 1px solid #e0e0e0;
   color: black;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -619,7 +730,7 @@ h2:hover {
     align-items: center;
     background-color: #f5f5f5;
     border: none;
-    border-radius: 20px;
+    border-radius: var(--border-radius-sm); /* Using theme variable */
     padding: 5px 12px;
     font-size: 0.85rem;
     color: #555;
@@ -628,7 +739,7 @@ h2:hover {
 }
 
 .search-history-item:hover {
-    background-color: #e0e0e0;
+    background-color: var(--background-light); /* Using theme variable */
 }
 
 .search-history-icon {
@@ -653,11 +764,11 @@ h2:hover {
 
 /* Add this to your CSS file */
 .already-friend-btn {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    background-color: #e0e0e0;
-    color: #757575;
+    padding: 10px 18px; /* Match add button size */
+    border: 1px solid #e0e0e0;
+    border-radius: var(--border-radius-sm); /* Using theme variable */
+    background-color: var(--background-light); /* Using theme variable */
+    color: var(--text-medium); /* Using theme variable */
     font-size: 0.9rem;
     cursor: not-allowed;
     transition: background-color 0.2s;
@@ -676,5 +787,431 @@ h2:hover {
 /* Make the search result card a bit lighter when it's already a friend */
 .search-result-card:has(.already-friend-btn) {
     background-color: #fafafa;
+}
+
+/* Friend request accept/reject animation */
+@keyframes slide-out {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+/* Search results appearance animation */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Search history dropdown styling */
+.search-input-container {
+  position: relative;
+  flex: 1;
+}
+
+.search-history-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border-radius: var(--border-radius-md); /* Using theme variable */
+  box-shadow: var(--shadow-medium); /* Using theme variable */
+  margin-top: 8px;
+  z-index: 10;
+  max-height: 280px;
+  overflow-y: auto;
+  animation: dropdown-slide 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+@keyframes dropdown-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.search-history-header {
+  padding: 12px 16px;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 1px solid #eee;
+}
+
+.search-history-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  color: #333;
+}
+
+.search-history-item:hover {
+  background-color: var(--background-light); /* Using theme variable */
+}
+
+.history-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  color: #8ebd89;
+  font-size: 16px;
+}
+
+.clear-history {
+  text-align: center;
+  padding: 10px;
+  color: #666;
+  font-size: 12px;
+  border-top: 1px solid #eee;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.clear-history:hover {
+  color: #f44336;
+  text-decoration: underline;
+}
+
+/* Add styling for the search input container */
+.search-input-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Style the search bar with a magnifying glass icon */
+.search-bar {
+  padding-left: 40px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px;
+}
+
+/* Add a pulse animation when focusing the search bar */
+@keyframes search-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(142, 189, 137, 0.3); }
+  70% { box-shadow: 0 0 0 6px rgba(142, 189, 137, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(142, 189, 137, 0); }
+}
+
+.search-bar:focus {
+  animation: search-pulse 1.5s infinite;
+}
+
+/* Make recent search item more interactive */
+.search-history-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.search-history-item::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(142, 189, 137, 0.3) 0%, rgba(142, 189, 137, 0) 70%);
+  transform: scale(0) translate(-50%, -50%);
+  transform-origin: left top;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.search-history-item:active::after {
+  transform: scale(3) translate(-50%, -50%);
+  opacity: 1;
+  transition: transform 0s, opacity 0.5s;
+}
+
+/* Improved scroll behavior for history dropdown */
+.search-history-dropdown {
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+.search-history-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-history-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-history-dropdown::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 6px;
+}
+
+/* Empty state when clearing history */
+.search-history-dropdown.empty {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+/* Add this to your Friends.css file to ensure compatibility section displays properly */
+.compatibility-section {
+  background-color: var(--white);
+  border-radius: var(--border-radius-md);
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: var(--shadow-light);
+}
+
+.compatibility-score {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.score-circle {
+  width: 100px;
+  height: 100px;
+  background: var(--final-gradient, conic-gradient(#8ebd89 0%, #e0e0e0 0%));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.score-circle::before {
+  content: "";
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background-color: var(--white);
+  border-radius: 50%;
+}
+
+.score-circle span {
+  position: relative;
+  z-index: 1;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.compatibility-factors {
+  flex: 1;
+}
+
+.compatibility-factors ul {
+  margin-top: 10px;
+  padding-left: 20px;
+}
+
+.compatibility-factors li {
+  margin-bottom: 6px;
+  color: var(--text-medium);
+}
+
+.no-factors {
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* Skeleton loading animations */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Generic skeleton styles */
+.skeleton {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Friend card skeleton */
+.friend-card.skeleton .skeleton-image {
+  width: 80px;
+  height: 80px;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+}
+
+.friend-card.skeleton .skeleton-text {
+  width: 100%;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+/* Friend request skeleton */
+.friend-request-card.skeleton .skeleton-avatar {
+  width: 50px;
+  height: 50px;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+}
+
+.skeleton-text-short {
+  width: 70%;
+  height: 16px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-shorter {
+  width: 50%;
+  height: 12px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+}
+
+.skeleton-button {
+  width: 70px;
+  height: 32px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin: 0 5px;
+}
+
+.skeleton-button-wide {
+  width: 100px;
+  height: 32px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+}
+
+/* Search result skeleton */
+.search-result-card.skeleton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Additional responsive adjustments */
+@media (max-width: 768px) {
+  .friend-card.skeleton .skeleton-image {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .skeleton-button {
+    width: 60px;
+  }
+}
+
+/* Add these styles at the end of your file */
+
+/* Updated search and filter layout - filter below search */
+.search-filter-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 900px;
+  gap: 15px;
+  margin: 0 auto;
+}
+
+/* Make search container take full width */
+.search-container {
+  flex: 1;
+  margin-top: 0;
+  max-width: none; /* Remove the previous max-width constraint */
+  width: 100%; /* Ensure it takes full width */
+}
+
+/* Make filter panel wide and thin */
+.filter-panel {
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  padding: 12px 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  height: fit-content;
+  width: 100%;
+}
+
+/* Reorganize filter content to be horizontal */
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Arrange filter options horizontally */
+.filter-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+}
+
+.filter-group {
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 14px;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.filter-select {
+  width: auto;
+  min-width: 140px;
+}
+
+.filter-checkbox-label {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.filter-note {
+  margin-left: auto;
+  font-size: 12px;
+  font-style: italic;
+  color: #999;
+}
+
+/* Make filter components responsive on mobile */
+@media (max-width: 768px) {
+  .filter-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-select {
+    width: 100%;
+  }
+  
+  .filter-note {
+    margin-left: 0;
+    margin-top: 15px;
+    width: 100%;
+    text-align: center;
+  }
 }
 

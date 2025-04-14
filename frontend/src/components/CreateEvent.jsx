@@ -1,7 +1,9 @@
-import './CreateEvent.css';
-import { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from "axios";
+import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './CreateEvent.css';
 
 function CreateEvent() {
     const [formData, setFormData] = useState({
@@ -78,11 +80,11 @@ function CreateEvent() {
         try {
             const sessionId = localStorage.getItem('sessionId');
             if (!sessionId) {
-                alert('You must be logged in to create an event.');
+                toast.error('You must be logged in to create an event.');
                 return;
             }
             if (!formData.groupId) {
-                alert('Please select a group.');
+                toast.warning('Please select a group.');
                 return;
             }
 
@@ -110,11 +112,12 @@ function CreateEvent() {
 
             if (response.status === 200) {
                 console.log('Event Created:', response.data);
+                toast.success('Event created successfully!');
                 navigate(`/event/${response.data.eventId}`);
             }
         } catch (error) {
             console.error('Error creating event:', error);
-            alert('Failed to create event. Please try again.');
+            toast.error('Failed to create event. Please try again.');
         }
     };
 
@@ -211,6 +214,7 @@ function CreateEvent() {
                     Cancel
                 </button>
             </form>
+            <ToastContainer />
         </div>
     );
 }

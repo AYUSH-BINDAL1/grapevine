@@ -31,7 +31,8 @@ public class GroupService {
         List<ShortGroup> shortGroups = new ArrayList<>();
 
         for (Group group : groups) {
-            shortGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic()));
+            shortGroups.add(new ShortGroup(group.getGroupId(), group.getName(),
+                    group.isPublic(), group.isInstructorLed()));
         }
 
         return shortGroups;
@@ -43,7 +44,8 @@ public class GroupService {
 
         for (Group group : groups) {
             if (group.isPublic() == isPublic) {
-                filteredGroups.add(new ShortGroup(group.getGroupId(), group.getName(), group.isPublic()));
+                filteredGroups.add(new ShortGroup(group.getGroupId(), group.getName(),
+                        group.isPublic(), group.isInstructorLed()));
             }
         }
 
@@ -151,14 +153,15 @@ public class GroupService {
         // Set isPublic explicitly (handling the default if not specified)
         group.setPublic(group.isPublic());
 
-        // Initialize rating
-        //Rating rating = new Rating();
-        //group.setRating(rating);
+        // Only allow setting isInstructorLed to true if user is an instructor
+        if (group.isInstructorLed() && !isInstructor(currentUser)) {
+            group.setInstructorLed(false); // Force to false if not an instructor
+        }
 
         // Save the group first to get the ID
         Group savedGroup = groupRepository.save(group);
 
-        // Update user's hostedGroups list (assuming User has a hostedGroups field)
+        // Update user's hostedGroups list
         if (currentUser.getHostedGroups() == null) {
             currentUser.setHostedGroups(new ArrayList<>());
         }
@@ -169,6 +172,33 @@ public class GroupService {
 
         return savedGroup;
     }
+
+    private boolean isInstructor(User user) {
+        return user.getRole() == User.Role.INSTRUCTOR ||
+                user.getRole() == User.Role.GTA ||
+                user.getRole() == User.Role.UTA;
+    }
+
+    public Group toggleInstructorLedStatus(Long groupId, User currentUser) {
+        Group group = getGroupById(groupId);
+
+        // Check if user is a host of this group
+        if (!group.getHosts().contains(currentUser.getUserEmail())) {
+            throw new IllegalStateException("Only hosts can change instructor-led status");
+        }
+
+        // Check if user is an instructor
+        if (!isInstructor(currentUser)) {
+            throw new IllegalStateException("Only instructors can set instructor-led status");
+        }
+
+        // Toggle the status
+        group.setInstructorLed(!group.isInstructorLed());
+
+        // Save and return the updated group
+        return groupRepository.save(group);
+    }
+
 
     public Group getGroupById(Long groupId) {
         return groupRepository.findById(groupId)
@@ -194,6 +224,41 @@ public class GroupService {
         result.put("userNames", rating.getUserNames());
 
         return result;
+    }
+
+    public Group joinPublicGroup(Long groupId, User currentUser) {
+        Group group = getGroupById(groupId);
+
+        // Check if the group is public
+        if (!group.isPublic()) {
+            throw new IllegalStateException("Cannot directly join a private group. Please request access instead.");
+        }
+
+        // Check if user is already a participant or host
+        if (group.getParticipants().contains(currentUser.getUserEmail()) ||
+                group.getHosts().contains(currentUser.getUserEmail())) {
+            return group; // User is already in the group
+        }
+
+        // Add user to participants
+        if (group.getParticipants() == null) {
+            group.setParticipants(new ArrayList<>());
+        }
+        group.getParticipants().add(currentUser.getUserEmail());
+
+        // Update user's joinedGroups list
+        if (currentUser.getJoinedGroups() == null) {
+            currentUser.setJoinedGroups(new ArrayList<>());
+        }
+        if (!currentUser.getJoinedGroups().contains(groupId)) {
+            currentUser.getJoinedGroups().add(groupId);
+        }
+
+        // Save the user
+        userRepository.save(currentUser);
+
+        // Save and return the updated group
+        return groupRepository.save(group);
     }
 
     /**
