@@ -16,6 +16,7 @@ import CourseSearch from './components/CourseSearch.jsx';
 import EventDetails from "./components/EventDetails";
 import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
+import Messaging from './components/Messaging.jsx';
 import './App.css';
 import './components/Groups.css';
 
@@ -84,8 +85,8 @@ function Taskbar() {
           Forum
         </h3>
         <h3 
-          onClick={() => navigate("/messages")} 
-          className={`elem ${isActive('/messages') ? 'active' : ''}`}
+          onClick={() => navigate("/messaging")} 
+          className={`elem ${isActive('/messaging') ? 'active' : ''}`}
         >
           Messages
         </h3>
@@ -343,6 +344,7 @@ function App() {
             <Route path="/view-students" element={<ViewStudents />} />
             <Route path="/group/:id" element={<Groups />} />
             <Route path="/event/:eventId" element={<EventDetails />} />
+            <Route path="/messaging" element={<Messaging />} />
           </Route>
         </Routes>
       </Router>
