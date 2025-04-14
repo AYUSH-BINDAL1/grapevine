@@ -49,7 +49,7 @@ const SearchResultSkeleton = () => (
     </div>
 );
 
-// Updated Filter Panel component for horizontal layout
+// Updated Filter Panel component to include role and locations
 const FilterPanel = () => {
   return (
     <div className="filter-panel">
@@ -69,6 +69,32 @@ const FilterPanel = () => {
           </select>
         </div>
         
+        {/* New Role filter */}
+        <div className="filter-group">
+          <label className="filter-label">Role:</label>
+          <select className="filter-select" disabled>
+            <option value="">All Roles</option>
+            <option value="STUDENT">Student</option>
+            <option value="INSTRUCTOR">Instructor</option>
+            <option value="GTA">Graduate TA</option>
+            <option value="UTA">Undergraduate TA</option>
+          </select>
+        </div>
+        
+        {/* New Locations filter */}
+        <div className="filter-group">
+          <label className="filter-label">Study Location:</label>
+          <select className="filter-select" disabled>
+            <option value="">All Locations</option>
+            <option value="1">Wilmeth Active Learning Center</option>
+            <option value="2">Hicks Undergraduate Library</option>
+            <option value="3">Stewart Center</option>
+            <option value="4">Lawson Computer Science Building</option>
+            <option value="5">Memorial Union</option>
+            <option value="6">Armstrong Hall</option>
+          </select>
+        </div>
+        
         <div className="filter-group">
           <label className="filter-label">Sort By:</label>
           <select className="filter-select" disabled>
@@ -76,13 +102,6 @@ const FilterPanel = () => {
             <option value="name_desc">Name (Z-A)</option>
             <option value="recent">Recently Added</option>
           </select>
-        </div>
-        
-        <div className="filter-group">
-          <label className="filter-checkbox-label">
-            <input type="checkbox" disabled />
-            <span>Match Interests</span>
-          </label>
         </div>
         
         <div className="filter-group">
