@@ -7,6 +7,7 @@ import PropTypes from 'prop-types';
 import './Friends.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { base_url, image_url } from '../config';
 
 // Friend skeleton component
 const FriendSkeleton = () => (
@@ -168,7 +169,7 @@ const ProfileImage = ({ user, altText }) => {
     
     const tryLoadImageById = (id) => {
       // Try standard format
-      const standardUrl = `http://localhost:9000/images/${id}`;
+      const standardUrl = `${image_url}/images/${id}`;
       const img = new Image();
       img.onload = () => {
         setImageUrl(standardUrl);
@@ -176,7 +177,7 @@ const ProfileImage = ({ user, altText }) => {
       };
       img.onerror = () => {
         // Try API format
-        const apiUrl = `http://localhost:8080/api/files/getImage/${id}`;
+        const apiUrl = `${base_url}/api/files/getImage/${id}`;
         const apiImg = new Image();
         apiImg.onload = () => {
           setImageUrl(apiUrl);
@@ -251,7 +252,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/incoming`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/incoming`,
                     headers: {
                         'Session-Id': sessionId
                     }
@@ -310,7 +311,7 @@ function Friends() {
             try {
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friends`,
+                    url: `${base_url}/users/${userData.userEmail}/friends`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -426,7 +427,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/search?query=${encodeURIComponent(query)}`,
+                    url: `${base_url}/users/search?query=${encodeURIComponent(query)}`,
                     headers: {
                         'Session-Id': sessionId
                     }
@@ -514,7 +515,7 @@ function Friends() {
             try {
                 await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/send`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/send`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -556,7 +557,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/accept`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/accept`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -614,7 +615,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/deny`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/deny`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -666,7 +667,7 @@ function Friends() {
                     // Updated to exactly match the curl example format
                     await axios({
                         method: 'DELETE',
-                        url: `http://localhost:8080/users/${userData.userEmail}/friends/${friendEmail}`,
+                        url: `${base_url}/users/${userData.userEmail}/friends/${friendEmail}`,
                         headers: {
                             'Session-Id': sessionId,
                             'Content-Type': 'application/json'

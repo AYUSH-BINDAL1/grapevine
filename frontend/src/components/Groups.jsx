@@ -2,11 +2,12 @@ import './Groups.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useCallback, memo } from 'react';
 import axios from 'axios';
-import profileImage from '../assets/temp-profile.webp'; // Import the profile image for review avatars
-import PropTypes from 'prop-types'; // Add this import
-import { toast, ToastContainer } from 'react-toastify'; // Import toast for notifications
+import profileImage from '../assets/temp-profile.webp';
+import PropTypes from 'prop-types';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FixedSizeList as List } from 'react-window'; // Import react-window for virtualized list
+import { FixedSizeList as List } from 'react-window';
+import { base_url, image_url } from '../config';
 
 // Optimize the ProfileImage component
 const ProfileImage = memo(({ user, altText }) => {
@@ -24,7 +25,7 @@ const ProfileImage = memo(({ user, altText }) => {
     }
     
     // Try standard format
-    const standardUrl = `http://localhost:9000/images/${id}`;
+    const standardUrl = `${image_url}/images/${id}`;
     const img = new Image();
     img.onload = () => {
       setImageUrl(standardUrl);
@@ -37,7 +38,7 @@ const ProfileImage = memo(({ user, altText }) => {
     };
     img.onerror = () => {
       // Try API format
-      const apiUrl = `http://localhost:8080/api/files/getImage/${id}`;
+      const apiUrl = `${base_url}/api/files/getImage/${id}`;
       const apiImg = new Image();
       apiImg.onload = () => {
         setImageUrl(apiUrl);
@@ -344,7 +345,7 @@ function Groups() {
       }
       
       const userPromises = batch.map(email => 
-        axios.get(`http://localhost:8080/users/${encodeURIComponent(email)}`, {
+        axios.get(`${base_url}/users/${encodeURIComponent(email)}`, {
           headers: { 'Session-Id': sessionId }
         })
         .then(response => ({
@@ -457,10 +458,10 @@ function Groups() {
     try {
       // Run access check and group data in parallel
       const [accessResponse, groupDataPromise] = await Promise.allSettled([
-        axios.get(`http://localhost:8080/groups/${id}/check-access`, {
+        axios.get(`${base_url}/groups/${id}/check-access`, {
           headers: { 'Session-Id': sessionId }
         }),
-        axios.get(`http://localhost:8080/groups/${id}`, {
+        axios.get(`${base_url}/groups/${id}`, {
           headers: { 'Session-Id': sessionId }
         }).catch(err => {
           // Only treat as error if not a 403 (which is expected)
@@ -491,13 +492,13 @@ function Groups() {
           // Fetch ratings and reviews in parallel if user is a member
           if (isUserHost || isUserMember) {
             const [myRatingPromise, ratingDataPromise, reviewsPromise] = await Promise.allSettled([
-              axios.get(`http://localhost:8080/groups/${id}/my-rating`, {
+              axios.get(`${base_url}/groups/${id}/my-rating`, {
                 headers: { 'Session-Id': sessionId }
               }),
-              axios.get(`http://localhost:8080/groups/${id}/average-rating`, {
+              axios.get(`${base_url}/groups/${id}/average-rating`, {
                 headers: { 'Session-Id': sessionId }
               }),
-              axios.get(`http://localhost:8080/groups/${id}/ratings-reviews`, {
+              axios.get(`${base_url}/groups/${id}/ratings-reviews`, {
                 headers: { 'Session-Id': sessionId }
               })
             ]);
@@ -544,7 +545,7 @@ function Groups() {
             // Still get average rating
             try {
               const ratingResponse = await axios.get(
-                `http://localhost:8080/groups/${id}/average-rating`,
+                `${base_url}/groups/${id}/average-rating`,
                 { headers: { 'Session-Id': sessionId }
               });
               setRatingData(ratingResponse.data);
@@ -567,7 +568,7 @@ function Groups() {
         setAccessDenied(true);
         try {
           const basicInfoResponse = await axios.get(
-            `http://localhost:8080/groups/${id}/basic-info`,
+            `${base_url}/groups/${id}/basic-info`,
             { headers: { 'Session-Id': sessionId }
           });
           
@@ -634,7 +635,7 @@ function Groups() {
   
     try {
       await axios.delete(
-        `http://localhost:8080/groups/${id}/delete-rating`,
+        `${base_url}/groups/${id}/delete-rating`,
         {
           headers: {
             'Session-Id': sessionId
@@ -644,7 +645,7 @@ function Groups() {
   
       // Refresh the average rating
       const ratingResponse = await axios.get(
-        `http://localhost:8080/groups/${id}/average-rating`,
+        `${base_url}/groups/${id}/average-rating`,
         { headers: { 'Session-Id': sessionId }
       });
       setRatingData(ratingResponse.data);
@@ -685,7 +686,7 @@ function Groups() {
       if (existingReview) {
         // Update existing review
         await axios.put(
-          `http://localhost:8080/groups/${id}/update-rating`,
+          `${base_url}/groups/${id}/update-rating`,
           {
             score: userReview.rating,
             review: userReview.comment
@@ -700,7 +701,7 @@ function Groups() {
       } else {
         // Create new review
         await axios.post(
-          `http://localhost:8080/groups/${id}/add-rating`,
+          `${base_url}/groups/${id}/add-rating`,
           {
             score: userReview.rating,
             review: userReview.comment
@@ -750,7 +751,7 @@ function Groups() {
       try {
         // Submit the new rating
         await axios.post(
-          `http://localhost:8080/groups/${id}/add-rating`,
+          `${base_url}/groups/${id}/add-rating`,
           { score: userRating },
           {
             headers: {
@@ -762,7 +763,7 @@ function Groups() {
 
         // Get updated average rating
         const ratingResponse = await axios.get(
-          `http://localhost:8080/groups/${id}/average-rating`,
+          `${base_url}/groups/${id}/average-rating`,
           { headers: { 'Session-Id': sessionId }
         });
         
@@ -793,7 +794,7 @@ function Groups() {
       try {
         // Try to call the real API
         const response = await axios.post(
-          `http://localhost:8080/groups/${id}/request-access`,
+          `${base_url}/groups/${id}/request-access`,
           {
             message: `${userData.name} (${userData.userEmail}) would like to join this group.`
           },
@@ -844,7 +845,7 @@ function Groups() {
         toast.info("Joining group...", { autoClose: false, toastId: 'join-group' });
         
         const response = await axios.post(
-          `http://localhost:8080/groups/${id}/join`,
+          `${base_url}/groups/${id}/join`,
           {},
           {
             headers: {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import profileImage from '../assets/temp-profile.webp';
 import './Friends.css';
+import { base_url } from '../config';
 
 function ViewStudents() {
     const [students, setStudents] = useState([]);
@@ -35,7 +36,7 @@ function ViewStudents() {
             try {
                 // First get the instructor's courses
                 const userResponse = await axios.get(
-                    `http://localhost:8080/users/${userEmail}`,
+                    `${base_url}/users/${userEmail}`,
                     { headers: { 'Session-Id': sessionId } }
                 );
 
@@ -53,7 +54,7 @@ function ViewStudents() {
                 for (const courseCode of courses) {
                     try {
                         const courseResponse = await axios.get(
-                            `http://localhost:8080/courses/${courseCode}/enrolled-students`,
+                            `${base_url}/courses/${courseCode}/enrolled-students`,
                             { headers: { 'Session-Id': sessionId } }
                         );
                         

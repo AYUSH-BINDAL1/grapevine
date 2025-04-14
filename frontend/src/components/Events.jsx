@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Events.css';
+import { base_url } from '../config';
 
 function Events() {
     const [myEvents, setMyEvents] = useState([]);
@@ -59,7 +60,7 @@ function Events() {
                 const email = userData.userEmail;
 
                 const response = await axios.get(
-                    `http://localhost:8080/events/all`,
+                    `${base_url}/events/all`,
                     { headers: { 'Session-Id': sessionId } }
                 );
 
@@ -115,7 +116,7 @@ function Events() {
                     query.append(key, val);
                 }
             });
-            const url = `http://localhost:8080/events/all-short?${query.toString()}`;
+            const url = `${base_url}/events/all-short?${query.toString()}`;
             console.log("Requesting:", url);
             const response = await axios.get(url, {
                 headers: { 'Session-Id': sessionId }

@@ -6,7 +6,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import profileImage from "../assets/temp-profile.webp";
 import "./UsrProfile.css";
-import { debounce } from 'lodash'; // Or implement your own debounce function
+import { debounce } from 'lodash';
+import { base_url, image_url } from '../config';
 
 // Create the AvailabilityLegend component
 const AvailabilityLegend = memo(({ showComparison, userName }) => {
@@ -90,13 +91,13 @@ function UsrProfile() {
         
         // Try alternate URL formats if available
         if (userData.profilePictureId) {
-          const alternateUrl = `http://localhost:9000/images/${userData.profilePictureId}`;
+          const alternateUrl = `${image_url}/images/${userData.profilePictureId}`;
           const altImg = new Image();
           altImg.onload = () => {
             setProfileImageUrl(alternateUrl);
           };
           altImg.onerror = () => {
-            const apiUrl = `http://localhost:8080/api/files/getImage/${userData.profilePictureId}`;
+            const apiUrl = `${base_url}/api/files/getImage/${userData.profilePictureId}`;
             const apiImg = new Image();
             apiImg.onload = () => {
               setProfileImageUrl(apiUrl);
@@ -152,7 +153,7 @@ function UsrProfile() {
             console.log(`Fetching friends list for ${currentUser.userEmail}...`);
             const friendsResponse = await axios({
               method: 'GET',
-              url: `http://localhost:8080/users/${currentUser.userEmail}/friends`,
+              url: `${base_url}/users/${currentUser.userEmail}/friends`,
               headers: {
                 'Session-Id': sessionId
               }
@@ -192,7 +193,7 @@ function UsrProfile() {
         try {
           const response = await axios({
             method: 'GET',
-            url: `http://localhost:8080/users/${userEmail}`,
+            url: `${base_url}/users/${userEmail}`,
             headers: {
               'Session-Id': sessionId
             }
@@ -253,7 +254,7 @@ function UsrProfile() {
         
         const response = await axios({
           method: 'GET',
-          url: `http://localhost:8080/users/${userEmail}/courses`,
+          url: `${base_url}/users/${userEmail}/courses`,
           headers: { 'Session-Id': sessionId }
         });
         
@@ -383,7 +384,7 @@ function UsrProfile() {
       try {
         await axios({
           method: 'POST',
-          url: `http://localhost:8080/users/${currentUserData.userEmail}/friend-requests/send`,
+          url: `${base_url}/users/${currentUserData.userEmail}/friend-requests/send`,
           headers: {
             'Content-Type': 'application/json',
             'Session-Id': sessionId
@@ -468,7 +469,7 @@ function UsrProfile() {
         try {
           await axios({
             method: 'DELETE',
-            url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
+            url: `${base_url}/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
             headers: {
               'Content-Type': 'application/json',
               'Session-Id': sessionId
@@ -574,7 +575,7 @@ function UsrProfile() {
       try {
         await axios({
           method: 'DELETE',
-          url: `http://localhost:8080/users/${currentUserData.userEmail}/friend-requests/cancel`,
+          url: `${base_url}/users/${currentUserData.userEmail}/friend-requests/cancel`,
           headers: {
             'Content-Type': 'application/json',
             'Session-Id': sessionId

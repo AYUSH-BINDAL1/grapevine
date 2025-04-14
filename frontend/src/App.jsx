@@ -17,13 +17,13 @@ import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import './App.css';
 import './components/Groups.css';
+import {base_url, image_url} from './config.js';
 
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
   searchEnabled = value;
 };
 */
-
 const Login = lazy(() => import('./components/Login'));
 
 function Taskbar() {
@@ -70,13 +70,13 @@ function Taskbar() {
   // Helper function to try different image URL formats
   const tryLoadIdBasedImage = (profilePictureId) => {
     // Try the standard URL format first
-    const userImageUrl = `http://localhost:9000/images/${profilePictureId}`;
+    const userImageUrl = `${image_url}/images/${profilePictureId}`;
     const img = new Image();
     
     img.onload = () => setUserProfileImage(userImageUrl);
     img.onerror = () => {
       // If that fails, try the API format
-      const apiImageUrl = `http://localhost:8080/api/files/getImage/${profilePictureId}`;
+      const apiImageUrl = `${base_url}/api/files/getImage/${profilePictureId}`;
       const imgApi = new Image();
       imgApi.onload = () => setUserProfileImage(apiImageUrl);
       imgApi.onerror = () => {
@@ -104,7 +104,7 @@ function Taskbar() {
         navigate("/");
         return;
       }
-      await axios.delete('http://localhost:8080/users/logout', {
+      await axios.delete(`${base_url}/users/logout`, {
         headers: { 'Session-Id': sessionId }
       });
       localStorage.clear();
@@ -206,7 +206,7 @@ function Home() {
         const userEmail = parsedUser.userEmail;
         try {
           const response = await axios.get(
-              `http://localhost:8080/users/${userEmail}/all-groups-short`,
+              `${base_url}/users/${userEmail}/all-groups-short`,
               { headers: { 'Session-Id': sessionId }
           });
           setGroups(response.data);
@@ -219,7 +219,7 @@ function Home() {
         }
 
         try {
-          const allRes = await axios.get("http://localhost:8080/groups/all", {
+          const allRes = await axios.get(`${base_url}/groups/all`, {
             headers: { 'Session-Id': sessionId }
           });
           setAllGroups(allRes.data);
@@ -227,6 +227,10 @@ function Home() {
           setFilteredGroups(publicGroups);
         } catch (error) {
           console.error('Error fetching all groups:', error);
+          if (error.response?.status === 401) {
+            alert('Session expired. Please login again.');
+            navigate('/');
+          }
         }
       } else {
         alert('No user information or session found. Please login again.');

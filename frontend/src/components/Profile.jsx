@@ -6,6 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from "react-router-dom";
 import { FixedSizeList as List } from 'react-window';
 import PropTypes from 'prop-types';
+import { base_url, image_url } from "../config";
 
 // Add this custom hook at the top with other imports
 function useDebounce(value, delay) {
@@ -194,7 +195,7 @@ function Profile() {
       console.log("Making server request for user data:", parsedData.userEmail);
       // Important change: Fetch user data from the server to get the latest profile picture ID
       axios.get(
-        `http://localhost:8080/users/${parsedData.userEmail}`,
+        `${base_url}/users/${parsedData.userEmail}`,
         { headers: { 'Session-Id': sessionId } }
       ).then(response => {
         console.log("Server response for user data:", response.data);
@@ -289,7 +290,7 @@ function Profile() {
         imageUrl = fileId;
       } else {
         // Otherwise construct the URL using the file ID
-        imageUrl = `http://localhost:9000/images/${fileId}`;
+        imageUrl = `${image_url}/images/${fileId}`;
       }
       
       console.log("Setting profile picture URL:", imageUrl);
@@ -306,7 +307,7 @@ function Profile() {
         console.error("Failed to load image:", imageUrl, e);
         // Try alternative URL format if the first one fails
         if (!fileId.startsWith('http') && !imageUrl.includes('/api/files/getImage/')) {
-          const alternativeUrl = `http://localhost:8080/api/files/getImage/${fileId}`;
+          const alternativeUrl = `${base_url}/api/files/getImage/${fileId}`;
           console.log("Trying alternative URL:", alternativeUrl);
           setProfilePicture(alternativeUrl);
         }
@@ -327,7 +328,7 @@ function Profile() {
         const sessionId = localStorage.getItem('sessionId');
         
         const response = await axios.get(
-          `http://localhost:8080/users/${userData.userEmail}/courses`,
+          `${base_url}/users/${userData.userEmail}/courses`,
           {
             headers: {
               'Session-Id': sessionId
@@ -380,7 +381,7 @@ function Profile() {
     
     try {
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { role: newRole },
         {
           headers: {
@@ -478,7 +479,7 @@ function Profile() {
       }
   
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { weeklyAvailability: updatedAvailabilityString },
         {
           headers: {
@@ -513,7 +514,7 @@ function Profile() {
       setUpdateError(null);
       
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { weeklyAvailability: updatedString },
         {
           headers: {
@@ -628,7 +629,7 @@ function Profile() {
       }
 
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { biography: editedDescription },
         {
           headers: {
@@ -681,7 +682,7 @@ function Profile() {
       
       const response = await axios({
         method: 'DELETE',
-        url: `http://localhost:8080/users/${userData.userEmail}`,
+        url: `${base_url}/users/${userData.userEmail}`,
         headers: {
           'Content-Type': 'application/json',
           'Session-Id': sessionId
@@ -789,7 +790,7 @@ function Profile() {
       }
   
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         editedProfileData,
         {
           headers: {
@@ -843,7 +844,7 @@ function Profile() {
     const sessionId = localStorage.getItem('sessionId');
     if (sessionId) {
       axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { preferredLocations: updatedLocations },
         {
           headers: {
@@ -922,7 +923,7 @@ function Profile() {
         }
         
         // Use the public URL if available, otherwise construct it
-        const imageUrl = publicUrl || `http://localhost:9000/images/${fileId}`;
+        const imageUrl = publicUrl || `${image_url}/images/${fileId}`;
         console.log("Setting profile picture URL:", imageUrl);
         
         // Update local state first for immediate feedback
@@ -948,7 +949,7 @@ function Profile() {
           async () => {
             console.log("Trying update with profilePictureUrl field");
             return await axios.put(
-              `http://localhost:8080/users/${userData.userEmail}`,
+              `${base_url}/users/${userData.userEmail}`,
               { profilePictureUrl: imageUrl },
               { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
             );
@@ -958,7 +959,7 @@ function Profile() {
           async () => {
             console.log("Trying update with profile_picture_url field");
             return await axios.put(
-              `http://localhost:8080/users/${userData.userEmail}`,
+              `${base_url}/users/${userData.userEmail}`,
               { profile_picture_url: imageUrl },
               { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
             );
@@ -968,7 +969,7 @@ function Profile() {
           async () => {
             console.log("Trying update with profilePictureId field");
             return await axios.put(
-              `http://localhost:8080/users/${userData.userEmail}`,
+              `${base_url}/users/${userData.userEmail}`,
               { profilePictureId: fileId },
               { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
             );
@@ -1040,7 +1041,7 @@ function Profile() {
                 </div>
               )}
               <img 
-                src={profilePicture && profilePicture !== 'http://localhost:9000/images/undefined' 
+                src={profilePicture && profilePicture !== `${image_url}/images/undefined` 
                   ? profilePicture 
                   : profileImage} 
                 alt="Profile" 
@@ -1258,7 +1259,7 @@ function Profile() {
                   }
               
                   axios.put(
-                    `http://localhost:8080/users/${userData.userEmail}`,
+                    `${base_url}/users/${userData.userEmail}`,
                     { weeklyAvailability: updatedAvailabilityString },
                     {
                       headers: {
@@ -1452,7 +1453,7 @@ function Profile() {
                 const sessionId = localStorage.getItem('sessionId');
                 if (sessionId) {
                   axios.put(
-                    `http://localhost:8080/users/${userData.userEmail}`,
+                    `${base_url}/users/${userData.userEmail}`,
                     { preferredLocations: currentLocationIds },
                     {
                       headers: {
