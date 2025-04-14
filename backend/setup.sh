@@ -22,10 +22,47 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# EC2 specific settings
+export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+export HOME=${HOME:-/home/ubuntu}  # Ensure HOME is set
+
+# Detect which docker compose command is available
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo -e "${RED}Neither docker-compose nor docker compose is available. Please install Docker and Docker Compose.${NC}"
+    echo -e "${YELLOW}Run: sudo apt update && sudo apt install -y docker.io docker-compose${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Using $DOCKER_COMPOSE for container orchestration${NC}"
+
+# Check if Docker is running
+if command -v systemctl &> /dev/null && ! systemctl is-active --quiet docker; then
+    echo -e "${YELLOW}Docker is not running. Attempting to start...${NC}"
+    sudo systemctl start docker
+    sleep 2
+    if ! systemctl is-active --quiet docker; then
+        echo -e "${RED}Failed to start Docker. Please check Docker installation.${NC}"
+        exit 1
+    fi
+fi
+
+# Check if user can access Docker socket
+if ! docker info &>/dev/null; then
+    echo -e "${YELLOW}Cannot connect to Docker daemon. Adding current user to docker group...${NC}"
+    sudo usermod -aG docker $USER
+    echo -e "${RED}Please log out and log back in, then run this script again.${NC}"
+    echo -e "${YELLOW}Or run: exec su -l $USER${NC}"
+    exit 1
+fi
+
 # Function to clean up
 cleanup() {
   echo -e "${YELLOW}Stopping Docker containers...${NC}"
-  docker compose down
+  $DOCKER_COMPOSE down
   exit 0
 }
 
@@ -57,7 +94,7 @@ redeploy_app() {
   ./mvnw clean package -DskipTests
 
   # Restart just the backend container
-  docker compose up -d --build backend
+  $DOCKER_COMPOSE up -d --build backend
 
   # Fixed delay instead of checking readiness
   echo -e "${GREEN}Waiting 10 seconds for Spring Boot application to initialize...${NC}"
@@ -139,7 +176,7 @@ fi
 
 # Start Docker containers
 echo -e "${GREEN}Starting Docker containers...${NC}"
-docker compose up -d --build
+$DOCKER_COMPOSE up -d --build
 
 # Set the backend URL
 BACKEND_URL="http://localhost:8080"

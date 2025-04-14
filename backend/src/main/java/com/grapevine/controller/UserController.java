@@ -347,10 +347,13 @@ public class UserController {
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(
             @RequestParam String query,
+            @RequestParam(required = false) List<String> majors,
+            @RequestParam(required = false) User.Role role,
+            @RequestParam(required = false) List<Long> locationIds,
             @RequestHeader(name = "Session-Id", required = true) String sessionId) {
 
         userService.validateSession(sessionId);
-        List<User> users = userService.searchUsersByName(query);
+        List<User> users = userService.searchUsersByNameWithFilters(query, majors, role, locationIds);
         return ResponseEntity.ok(users);
     }
 

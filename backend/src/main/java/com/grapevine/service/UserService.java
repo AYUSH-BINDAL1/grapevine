@@ -490,6 +490,34 @@ public class UserService {
         return userRepository.findByNameContainingIgnoreCase(query);
     }
 
+    public List<User> searchUsersByNameWithFilters(String query, List<String> majors, User.Role role, List<Long> locationIds) {
+        // Start with basic name search
+        List<User> users = userRepository.findByNameContainingIgnoreCase(query);
+
+        // Apply filters if provided
+        if (majors != null && !majors.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getMajors() != null &&
+                            user.getMajors().stream().anyMatch(majors::contains))
+                    .collect(Collectors.toList());
+        }
+
+        if (role != null) {
+            users = users.stream()
+                    .filter(user -> role.equals(user.getRole()))
+                    .collect(Collectors.toList());
+        }
+
+        if (locationIds != null && !locationIds.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getPreferredLocations() != null &&
+                            user.getPreferredLocations().stream().anyMatch(locationIds::contains))
+                    .collect(Collectors.toList());
+        }
+
+        return users;
+    }
+
     public User sendFriendRequest(String senderEmail, String receiverEmail) {
         if (senderEmail.equals(receiverEmail)) {
             throw new IllegalArgumentException("Cannot send friend request to yourself");
