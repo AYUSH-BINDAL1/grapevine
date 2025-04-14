@@ -10,6 +10,9 @@ function EventDetails() {
     const [groupName, setGroupName] = useState('');
     const [editMode, setEditMode] = useState(false);
     const [editedData, setEditedData] = useState({});
+    const [reminderTime, setReminderTime] = useState("");
+    const [registrationMessage, setRegistrationMessage] = useState("");
+    const [hostNames, setHostNames] = useState({});
 
     const hardcodedLocations = [
         { id: 1, shortName: "WALC" },
@@ -40,8 +43,6 @@ function EventDetails() {
         { id: 26, shortName: "STEW" }
     ];
 
-    const [hostNames, setHostNames] = useState({});
-
     useEffect(() => {
         const fetchEventDetails = async () => {
             try {
@@ -51,17 +52,18 @@ function EventDetails() {
                     navigate("/");
                     return;
                 }
-
                 const response = await axios.get(`http://localhost:8080/events/${eventId}`, {
                     headers: { "Session-Id": sessionId }
                 });
                 setEventData(response.data);
                 setEditedData(response.data);
 
-                const groupResponse = await axios.get(`http://localhost:8080/groups/${response.data.groupId}`, {
-                    headers: { "Session-Id": sessionId }
-                });
-                setGroupName(groupResponse.data.name);
+                if (response.data.groupId) {
+                    const groupResponse = await axios.get(`http://localhost:8080/groups/${response.data.groupId}`, {
+                        headers: { "Session-Id": sessionId }
+                    });
+                    setGroupName(groupResponse.data.name);
+                }
 
                 const hosts = response.data.hosts || [];
                 const names = {};
@@ -79,7 +81,7 @@ function EventDetails() {
                 );
                 setHostNames(names);
             } catch (error) {
-                console.error("Failed to fetch event:", error);
+                console.error("Error fetching event details:", error);
                 navigate("/events");
             }
         };
@@ -102,7 +104,7 @@ function EventDetails() {
             setEventData(editedData);
             setEditMode(false);
         } catch (error) {
-            console.error("Failed to update:", error);
+            console.error("Failed to update event:", error);
             alert("Update failed.");
         }
     };
@@ -118,17 +120,24 @@ function EventDetails() {
             navigate("/events");
         } catch (error) {
             console.error("Delete failed:", error);
-            alert("Could not delete.");
+            alert("Could not delete event.");
         }
     };
 
+    const handleReminderChange = (e) => {
+        setReminderTime(e.target.value);
+    };
+
+    const handleRegistration = () => {
+        alert(`Registered for event with reminder: ${reminderTime ? reminderTime + " minutes before" : "no reminder"}`);
+        setRegistrationMessage("You have successfully registered for this event.");
+    };
+
+    const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
     if (!eventData) {
         return <div className="event-details-loading">Loading...</div>;
     }
 
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    const currentUserEmail = userData?.userEmail || "";
-    const isHost = eventData.hosts && eventData.hosts.includes(currentUserEmail);
     const locationLabel = hardcodedLocations.find(
         (loc) => loc.id === parseInt(editedData.locationId)
     )?.shortName || "Not specified";
@@ -150,18 +159,12 @@ function EventDetails() {
                 ) : (
                     <h1 className="event-details-title">{eventData.name}</h1>
                 )}
-
                 <div className="event-details-meta">
                     {editMode ? (
                         <>
                             <label>
                                 Location:
-                                <select
-                                    name="locationId"
-                                    value={editedData.locationId}
-                                    onChange={handleInputChange}
-                                >
-                                    <option value="">Select Location</option>
+                                <select name="locationId" value={editedData.locationId} onChange={handleInputChange}>
                                     {hardcodedLocations.map((loc) => (
                                         <option key={loc.id} value={loc.id}>
                                             {loc.shortName}
@@ -171,21 +174,11 @@ function EventDetails() {
                             </label>
                             <label>
                                 Max Users:
-                                <input
-                                    type="number"
-                                    name="maxUsers"
-                                    value={editedData.maxUsers}
-                                    onChange={handleInputChange}
-                                />
+                                <input type="number" name="maxUsers" value={editedData.maxUsers} onChange={handleInputChange} />
                             </label>
                             <label>
                                 Event Time:
-                                <input
-                                    type="datetime-local"
-                                    name="eventTime"
-                                    value={editedData.eventTime}
-                                    onChange={handleInputChange}
-                                />
+                                <input type="datetime-local" name="eventTime" value={editedData.eventTime} onChange={handleInputChange} />
                             </label>
                         </>
                     ) : (
@@ -193,11 +186,9 @@ function EventDetails() {
                             <div className="event-details-meta-item">📍 {locationLabel}</div>
                             <div className="event-details-meta-item">🕒 {new Date(eventData.eventTime).toLocaleString()}</div>
                             <div className="event-details-meta-item">👥 Max Participants: {eventData.maxUsers}</div>
-                            {eventData.groupId && (
-                                <div className="event-details-meta-item event-details-link" onClick={() => navigate(`/group/${eventData.groupId}`)}>
-                                    🔗 {groupName}
-                                </div>
-                            )}
+                            <div className="event-details-meta-item event-details-link" onClick={() => navigate(`/group/${eventData.groupId}`)}>
+                                🔗 {groupName}
+                            </div>
                         </>
                     )}
                 </div>
@@ -207,16 +198,11 @@ function EventDetails() {
                 <div className="event-details-section">
                     <h2>Description</h2>
                     {editMode ? (
-                        <textarea
-                            name="description"
-                            value={editedData.description}
-                            onChange={handleInputChange}
-                        />
+                        <textarea name="description" value={editedData.description} onChange={handleInputChange} />
                     ) : (
                         <p>{eventData.description}</p>
                     )}
                 </div>
-
                 <div className="event-details-section">
                     <h2>Members</h2>
                     <div className="members-list">
@@ -239,24 +225,35 @@ function EventDetails() {
                 </div>
             </div>
 
-            {isHost && (
-                <div className="event-details-actions">
-                    {editMode ? (
+            <div className="event-details-actions">
+                <div className="event-reminder-registration">
+                    <div className="reminder-setting">
+                        <label htmlFor="reminder-time">Set Reminder:</label>
+                        <select id="reminder-time" name="reminderTime" value={reminderTime} onChange={handleReminderChange}>
+                            <option value="">None</option>
+                            <option value="15">15 minutes before</option>
+                            <option value="30">30 minutes before</option>
+                            <option value="60">1 hour before</option>
+                        </select>
+                    </div>
+                    <button className="register-button" onClick={handleRegistration}>Register</button>
+                </div>
+
+                {editMode ? (
+                    <>
+                        <button className="save-button" onClick={handleSave}>Save</button>
+                        <button className="cancel-button" onClick={() => setEditMode(false)}>Cancel</button>
+                    </>
+                ) : (
+                    eventData.hosts?.includes(currentUserEmail) && (
                         <>
-                            <button className="save-button" onClick={handleSave}>Save</button>
-                            <button className="cancel-button" onClick={() => setEditMode(false)}>Cancel</button>
-                        </>
-                    ) : (
-                        <>
-                            {/* Only show Edit button if event is not expired */}
-                            {new Date(eventData.eventTime) > new Date() && (
-                                <button className="edit-button" onClick={() => setEditMode(true)}>Edit</button>
-                            )}
+                            <button className="edit-button" onClick={() => setEditMode(true)}>Edit</button>
                             <button className="delete-button" onClick={handleDelete}>Delete</button>
                         </>
-                    )}
-                </div>
-            )}
+                    )
+                )}
+            </div>
+            {registrationMessage && <p className="registration-message">{registrationMessage}</p>}
         </div>
     );
 }
