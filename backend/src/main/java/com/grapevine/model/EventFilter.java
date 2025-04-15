@@ -15,18 +15,15 @@ public class EventFilter {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private Long locationId;
-    private Boolean isPublic;
     private Boolean includePastEvents;
     private Boolean onlyFullEvents;
 
     public EventFilter(String search, Integer minUsers, Integer maxUsers,
-                       String startTime, String endTime, Long locationId,
-                       Boolean isPublic, Boolean includePastEvents, Boolean onlyFullEvents) {
+                       String startTime, String endTime, Long locationId, Boolean includePastEvents, Boolean onlyFullEvents) {
         this.search = search;
         this.minUsers = minUsers;
         this.maxUsers = maxUsers;
         this.locationId = locationId;
-        this.isPublic = isPublic;
         this.includePastEvents = includePastEvents;
         this.onlyFullEvents = onlyFullEvents;
 
