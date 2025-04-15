@@ -290,7 +290,7 @@ class UserControllerTest {
     @Test
     void getAllShortEvents_Success() {
         // Arrange
-        ShortEvent shortEvent = new ShortEvent(1L, "Test Event", 1L);
+        ShortEvent shortEvent = new ShortEvent(1L, "Test Event", 1L, true);
         List<ShortEvent> shortEvents = Arrays.asList(shortEvent);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);

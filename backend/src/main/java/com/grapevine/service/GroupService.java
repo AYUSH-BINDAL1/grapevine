@@ -7,11 +7,13 @@ import com.grapevine.model.Group;
 import com.grapevine.model.Rating;
 import com.grapevine.model.ShortGroup;
 import com.grapevine.model.User;
+import com.grapevine.repository.EventRepository;
 import com.grapevine.repository.GroupRepository;
 import com.grapevine.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -21,6 +23,7 @@ public class GroupService {
     private final UserService userService;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final EventRepository eventRepository;
 
     public List<Group> getAllGroups() {
         return groupRepository.findAll();
@@ -115,6 +118,36 @@ public class GroupService {
                 }
                 if (!requestingUser.getJoinedGroups().contains(groupId)) {
                     requestingUser.getJoinedGroups().add(groupId);
+                }
+
+                // Auto-enroll user in all upcoming events for this group
+                if (group.getEvents() != null && !group.getEvents().isEmpty()) {
+                    if (requestingUser.getJoinedEvents() == null) {
+                        requestingUser.setJoinedEvents(new ArrayList<>());
+                    }
+
+                    LocalDateTime now = LocalDateTime.now();
+                    for (Long eventId : group.getEvents()) {
+                        eventRepository.findById(eventId).ifPresent(event -> {
+                            // Only add user to future events
+                            if (event.getEventTime().isAfter(now)) {
+                                // Check if the event isn't full
+                                if (event.getHosts().size() + event.getParticipants().size() < event.getMaxUsers()) {
+                                    // Add user to event participants if not already there
+                                    if (!event.getParticipants().contains(userEmail)) {
+                                        event.getParticipants().add(userEmail);
+
+                                        // Add event to user's joinedEvents if not already there
+                                        if (!requestingUser.getJoinedEvents().contains(eventId)) {
+                                            requestingUser.getJoinedEvents().add(eventId);
+                                        }
+
+                                        eventRepository.save(event);
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }
 
                 // Save changes
@@ -252,6 +285,36 @@ public class GroupService {
         }
         if (!currentUser.getJoinedGroups().contains(groupId)) {
             currentUser.getJoinedGroups().add(groupId);
+        }
+
+        // Auto-enroll user in all upcoming events for this group
+        if (group.getEvents() != null && !group.getEvents().isEmpty()) {
+            if (currentUser.getJoinedEvents() == null) {
+                currentUser.setJoinedEvents(new ArrayList<>());
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            for (Long eventId : group.getEvents()) {
+                eventRepository.findById(eventId).ifPresent(event -> {
+                    // Only add user to future events
+                    if (event.getEventTime().isAfter(now)) {
+                        // Check if the event isn't full
+                        if (event.getHosts().size() + event.getParticipants().size() < event.getMaxUsers()) {
+                            // Add user to event participants if not already there
+                            if (!event.getParticipants().contains(currentUser.getUserEmail())) {
+                                event.getParticipants().add(currentUser.getUserEmail());
+
+                                // Add event to user's joinedEvents if not already there
+                                if (!currentUser.getJoinedEvents().contains(eventId)) {
+                                    currentUser.getJoinedEvents().add(eventId);
+                                }
+
+                                eventRepository.save(event);
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         // Save the user
