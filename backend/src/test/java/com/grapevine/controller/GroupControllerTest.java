@@ -291,8 +291,8 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         List<ShortEvent> events = List.of(
-                new ShortEvent(1L, "Upcoming Event", 1L),
-                new ShortEvent(2L, "Another Event", 2L)
+                new ShortEvent(1L, "Upcoming Event", 1L, true),
+                new ShortEvent(2L, "Another Event", 2L, true)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -313,7 +313,7 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         String searchTerm = "Party";
-        List<ShortEvent> filteredEvents = List.of(new ShortEvent(3L, "Party Event", 3L));
+        List<ShortEvent> filteredEvents = List.of(new ShortEvent(3L, "Party Event", 3L, true));
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
         when(eventService.getShortEventsByGroupId(groupId)).thenReturn(filteredEvents);
@@ -336,8 +336,8 @@ public class GroupControllerTest {
         Long endTime = 1704067199L; // 2023-12-31T23:59:59
 
         List<ShortEvent> filteredEvents = List.of(
-                new ShortEvent(1L, "Event in December 1", 1L),
-                new ShortEvent(2L, "Event in December 2", 2L)
+                new ShortEvent(1L, "Event in December 1", 1L, true),
+                new ShortEvent(2L, "Event in December 2", 2L, true)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -358,8 +358,8 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         List<ShortEvent> filteredEvents = List.of(
-                new ShortEvent(1L, "Public Event 1", 1L),
-                new ShortEvent(3L, "Public Event 2", 3L)
+                new ShortEvent(1L, "Public Event 1", 1L, true),
+                new ShortEvent(3L, "Public Event 2", 3L, true)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -380,9 +380,9 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         List<ShortEvent> allEvents = List.of(
-                new ShortEvent(1L, "Past Event", 1L),
-                new ShortEvent(2L, "Current Event", 2L),
-                new ShortEvent(3L, "Future Event", 3L)
+                new ShortEvent(1L, "Past Event", 1L, true),
+                new ShortEvent(2L, "Current Event", 2L,true),
+                new ShortEvent(3L, "Future Event", 3L, true)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -403,7 +403,7 @@ public class GroupControllerTest {
         // Arrange
         Long groupId = 1L;
         List<ShortEvent> filteredEvents = List.of(
-                new ShortEvent(5L, "Event with combined filters", 5L)
+                new ShortEvent(5L, "Event with combined filters", 5L, true)
         );
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);

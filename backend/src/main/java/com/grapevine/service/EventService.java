@@ -3,6 +3,7 @@ package com.grapevine.service;
 import com.grapevine.exception.EventNotFoundException;
 import com.grapevine.exception.GroupNotFoundException;
 import com.grapevine.exception.UnauthorizedException;
+import com.grapevine.exception.UserNotFoundException;
 import com.grapevine.model.*;
 import com.grapevine.repository.EventRepository;
 import com.grapevine.repository.GroupRepository;
@@ -25,10 +26,14 @@ public class EventService {
     private final GroupRepository groupRepository;
 
     public List<Event> getAllEvents() {
-        List<Event> events = eventRepository.findAll();
-        // Sort events by time - upcoming events first
+        List<Event> events = eventRepository.findAll().stream()
+                .filter(event -> Boolean.TRUE.equals(event.getIsPublic()))
+                .collect(Collectors.toList());
+
+        // Sort events by time - upcoming events first (maintain existing behavior)
         events.sort(Comparator.comparing(Event::getEventTime,
                 Comparator.nullsLast(Comparator.naturalOrder())));
+
         return events;
     }
 
@@ -45,6 +50,11 @@ public class EventService {
         // Filter events based on criteria
         List<Event> filteredEvents = events.stream()
                 .filter(event -> {
+                    // Exclude private events by default
+                    if (!Boolean.TRUE.equals(event.getIsPublic())) {
+                        return false;
+                    }
+
                     // Name search filter
                     if (filter.getSearch() != null && !filter.getSearch().trim().isEmpty()) {
                         if (!event.getName().toLowerCase().startsWith(filter.getSearch().toLowerCase().trim())) {
@@ -80,11 +90,7 @@ public class EventService {
                         return false;
                     }
 
-                    // Public/private filter
-                    if (filter.getIsPublic() != null &&
-                            (event.getIsPublic() == null || !event.getIsPublic().equals(filter.getIsPublic()))) {
-                        return false;
-                    }
+                    // Public/private filter is now handled at the top - we only show public events
 
                     // Past events filter (exclude past events by default)
                     if (!Boolean.TRUE.equals(filter.getIncludePastEvents()) &&
@@ -110,13 +116,13 @@ public class EventService {
 
         // Convert to ShortEvent objects
         return filteredEvents.stream()
-                .map(event -> new ShortEvent(event.getEventId(), event.getName(), event.getLocationId()))
+                .map(event -> new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic()))
                 .collect(Collectors.toList());
     }
 
     // Keep the existing method for backward compatibility
     public List<ShortEvent> getAllShortEvents() {
-        return getAllShortEvents(new EventFilter(null, null, null, null, null, null, null, null, null));
+        return getAllShortEvents(new EventFilter( null, null, null, null, null, null, null, null));
     }
 
     /**
@@ -144,19 +150,13 @@ public class EventService {
     }
 
     public Event createEvent(Event event, Long groupId, User currentUser) {
-        // Get the group
+        // Get the associated group
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found with id: " + groupId));
 
-        // Validate that the user is a host of the group
+        // Check if user is a host of this group
         if (!group.getHosts().contains(currentUser.getUserEmail())) {
-            throw new UnauthorizedException("Only group hosts can create events");
-        }
-
-
-        // Validate event time - must be in the future
-        if (event.getEventTime() != null && event.getEventTime().isBefore(LocalDateTime.now())) {
-          throw new IllegalArgumentException("Event time must be in the future");
+            throw new IllegalStateException("Only hosts can create events for this group");
         }
 
         // Initialize lists if null
@@ -167,11 +167,14 @@ public class EventService {
             event.setParticipants(new ArrayList<>());
         }
 
-        // Set the group ID
-        event.setGroupId(groupId);
-
         // Add current user as host
         event.getHosts().add(currentUser.getUserEmail());
+
+        // Set public status based on group's status
+        event.setIsPublic(group.isPublic());
+
+        // Set group id
+        event.setGroupId(groupId);
 
         // Save the event first to get the ID
         Event savedEvent = eventRepository.save(event);
@@ -181,16 +184,41 @@ public class EventService {
             currentUser.setHostedEvents(new ArrayList<>());
         }
         currentUser.getHostedEvents().add(savedEvent.getEventId());
-        userRepository.save(currentUser);
 
-        // Update group's events list
+        // Add event to the group's events list
         if (group.getEvents() == null) {
             group.setEvents(new ArrayList<>());
         }
         group.getEvents().add(savedEvent.getEventId());
-        groupRepository.save(group);
 
-        return savedEvent;
+        // Add all group participants to the event automatically
+        if (group.getParticipants() != null && !group.getParticipants().isEmpty()) {
+            for (String participantEmail : group.getParticipants()) {
+                User participant = userRepository.findById(participantEmail)
+                        .orElseThrow(() -> new UserNotFoundException("User not found: " + participantEmail));
+
+                // Only add if the event is in the future
+                if (savedEvent.getEventTime().isAfter(LocalDateTime.now())) {
+                    savedEvent.getParticipants().add(participantEmail);
+
+                    // Update user's joinedEvents list
+                    if (participant.getJoinedEvents() == null) {
+                        participant.setJoinedEvents(new ArrayList<>());
+                    }
+                    if (!participant.getJoinedEvents().contains(savedEvent.getEventId())) {
+                        participant.getJoinedEvents().add(savedEvent.getEventId());
+                    }
+
+                    userRepository.save(participant);
+                }
+            }
+        }
+
+        // Save updated group and user
+        groupRepository.save(group);
+        userRepository.save(currentUser);
+
+        return eventRepository.save(savedEvent);
     }
 
     public Event updateEvent(Long eventId, Event updatedEvent, User currentUser) {
@@ -315,10 +343,55 @@ public class EventService {
         if (group.getEvents() != null) {
             for (Long eventId : group.getEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> shortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> shortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
         return shortEvents;
+    }
+
+    public Event joinEvent(Long eventId, User currentUser) {
+        Event event = getEventById(eventId);
+
+        // Check if event is public
+        if (!event.getIsPublic()) {
+            throw new IllegalStateException("Cannot join a private event. Join the group first.");
+        }
+
+        // Check if user is already a participant or host
+        if (event.getParticipants().contains(currentUser.getUserEmail()) ||
+                event.getHosts().contains(currentUser.getUserEmail())) {
+            return event; // User is already in the event
+        }
+
+        // Check if event is full
+        if (event.getHosts().size() + event.getParticipants().size() >= event.getMaxUsers()) {
+            throw new IllegalStateException("Event has reached maximum capacity");
+        }
+
+        // Check if event has already passed
+        if (event.getEventTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Cannot join an event that has already started");
+        }
+
+        // Add user to participants
+        if (event.getParticipants() == null) {
+            event.setParticipants(new ArrayList<>());
+        }
+        event.getParticipants().add(currentUser.getUserEmail());
+
+        // Update user's joinedEvents list
+        if (currentUser.getJoinedEvents() == null) {
+            currentUser.setJoinedEvents(new ArrayList<>());
+        }
+        if (!currentUser.getJoinedEvents().contains(eventId)) {
+            currentUser.getJoinedEvents().add(eventId);
+        }
+
+        // Save the user
+        userRepository.save(currentUser);
+
+        // Save and return the updated event
+        return eventRepository.save(event);
     }
 }
