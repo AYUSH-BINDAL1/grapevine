@@ -1,14 +1,55 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import profileImage from "../assets/temp-profile.webp";
-import "./UsrProfile.css";
-//import { CSSTransition } from "react-transition-group";
+import { useState, useEffect, useCallback, memo, useMemo } from 'react';
+import PropTypes from 'prop-types';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import profileImage from "../assets/temp-profile.webp";
+import "./UsrProfile.css";
+import { debounce } from 'lodash';
+import { base_url, image_url } from '../config';
 
+// Create the AvailabilityLegend component
+const AvailabilityLegend = memo(({ showComparison, userName }) => {
+  if (showComparison) {
+    return (
+      <div className="availability-legend">
+        <div className="legend-item">
+          <div className="legend-color both-available"></div>
+          <span>Both Available</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-color they-available"></div>
+          <span>{userName} Available</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-color you-available"></div>
+          <span>You Available</span>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="availability-legend">
+      <div className="legend-item">
+        <div className="legend-color available"></div>
+        <span>{userName}&apos;s Availability</span>
+      </div>
+    </div>
+  );
+});
+
+// Add display name and prop types
+AvailabilityLegend.displayName = 'AvailabilityLegend';
+AvailabilityLegend.propTypes = {
+  showComparison: PropTypes.bool,
+  userName: PropTypes.string.isRequired
+};
 
 function UsrProfile() {
+  console.log('Rendering UsrProfile component');
+  
   const { userEmail } = useParams();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
@@ -16,11 +57,59 @@ function UsrProfile() {
   const [error, setError] = useState(null);
   const [currentUserData, setCurrentUserData] = useState(null);
   const [isFriend, setIsFriend] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [compatibilityScore, setCompatibilityScore] = useState(null);
   const [friendRequestStatus, setFriendRequestStatus] = useState('none'); // 'none', 'pending', 'accepted'
   const [userCourses, setUserCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
+  const [showAvailabilityComparison, setShowAvailabilityComparison] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState(profileImage);
+
+  // Create a debounced function 
+  const toggleAvailabilityComparison = useCallback(() => {
+    setShowAvailabilityComparison(prev => !prev);
+  }, []);
+
+  // Apply debounce to the callback
+  const debouncedToggleAvailability = useMemo(() => 
+    debounce(toggleAvailabilityComparison, 300), 
+    [toggleAvailabilityComparison]
+  );
+
+  // Add this useEffect to handle the profile picture after userData is loaded
+  useEffect(() => {
+    if (!userData) return;
+    
+    // Check for profile picture URL in user data
+    if (userData.profilePictureUrl) {
+      // Try to load the image
+      const img = new Image();
+      img.onload = () => {
+        setProfileImageUrl(userData.profilePictureUrl);
+      };
+      img.onerror = () => {
+        console.warn("Failed to load profile picture URL:", userData.profilePictureUrl);
+        
+        // Try alternate URL formats if available
+        if (userData.profilePictureId) {
+          const alternateUrl = `${image_url}/images/${userData.profilePictureId}`;
+          const altImg = new Image();
+          altImg.onload = () => {
+            setProfileImageUrl(alternateUrl);
+          };
+          altImg.onerror = () => {
+            const apiUrl = `${base_url}/api/files/getImage/${userData.profilePictureId}`;
+            const apiImg = new Image();
+            apiImg.onload = () => {
+              setProfileImageUrl(apiUrl);
+            };
+            apiImg.src = apiUrl;
+          };
+          altImg.src = alternateUrl;
+        }
+      };
+      img.src = userData.profilePictureUrl;
+    }
+  }, [userData]);
 
   // Update the fetchUserProfile function to properly get the friends list
   useEffect(() => {
@@ -64,7 +153,7 @@ function UsrProfile() {
             console.log(`Fetching friends list for ${currentUser.userEmail}...`);
             const friendsResponse = await axios({
               method: 'GET',
-              url: `http://localhost:8080/users/${currentUser.userEmail}/friends`,
+              url: `${base_url}/users/${currentUser.userEmail}/friends`,
               headers: {
                 'Session-Id': sessionId
               }
@@ -104,7 +193,7 @@ function UsrProfile() {
         try {
           const response = await axios({
             method: 'GET',
-            url: `http://localhost:8080/users/${userEmail}`,
+            url: `${base_url}/users/${userEmail}`,
             headers: {
               'Session-Id': sessionId
             }
@@ -120,10 +209,13 @@ function UsrProfile() {
               biography: response.data.biography || response.data.bio || response.data.description,
               weeklyAvailability: response.data.weeklyAvailability,
               preferredLocations: response.data.preferredLocations || [],
+              profilePictureUrl: response.data.profilePictureUrl,
+              profilePictureId: response.data.profilePictureId
             };
             
             setUserData(formattedUserData);
-            calculateCompatibility(formattedUserData);
+            const compatibilityResult = calculateCompatibilityScore(formattedUserData);
+            setCompatibilityScore(compatibilityResult);
           } else {
             setError('No user data returned from API');
           }
@@ -142,173 +234,137 @@ function UsrProfile() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userEmail, navigate]);
 
-  // Create a separate useEffect for the friend status check
-  useEffect(() => {
-    if (!currentUserData || !userEmail) return;
-    
-    const checkFriendStatus = async () => {
-      const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) return;
-      
-      try {
-        const currentUserEmail = currentUserData.userEmail;
-        console.log(`[FRIEND CHECK] Checking if ${currentUserEmail} and ${userEmail} are friends...`);
-        
-        const friendStatusResponse = await axios({
-          method: 'GET',
-          url: `http://localhost:8080/users/${currentUserEmail}/friendship-status/${userEmail}`,
-          headers: {
-            'Session-Id': sessionId
-          }
-        });
-        
-        console.log('[FRIEND CHECK] API response:', friendStatusResponse.data);
-        
-        if (friendStatusResponse.data) {
-          const status = friendStatusResponse.data.status || friendStatusResponse.data.friendshipStatus;
-          
-          if (status === 'FRIENDS' || status === 'friends') {
-            console.log('[FRIEND CHECK] Users are friends');
-            setIsFriend(true);
-            setFriendRequestStatus('accepted');
-          } else if (status === 'PENDING_SENT' || status === 'pending_sent') {
-            console.log('[FRIEND CHECK] Friend request is pending');
-            setIsFriend(false);
-            setFriendRequestStatus('pending');
-          } else if (status === 'PENDING_RECEIVED' || status === 'pending_received') {
-            console.log('[FRIEND CHECK] Friend request received');
-            setIsFriend(false);
-            setFriendRequestStatus('received');
-          } else {
-            console.log('[FRIEND CHECK] Users are not friends');
-            setIsFriend(false);
-            setFriendRequestStatus('none');
-          }
-        }
-      } catch (error) {
-        console.error('[FRIEND CHECK] API error:', error);
-        
-        // Fallback to simple friend check
-        try {
-          const simpleCheckResponse = await axios({
-            method: 'GET',
-            url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/check/${userEmail}`,
-            headers: {
-              'Session-Id': sessionId
-            }
-          });
-          
-          if (simpleCheckResponse.data && simpleCheckResponse.data.isFriend) {
-            setIsFriend(true);
-            setFriendRequestStatus('accepted');
-          } else {
-            // If not friends, check for pending requests
-            setIsFriend(false);
-            
-          }
-        } catch (simpleCheckError) {
-          console.error('[FRIEND CHECK] Simple check failed:', simpleCheckError);
-        }
-      }
-    };
-    
-    checkFriendStatus();
-  }, [currentUserData, userEmail]);
+  
 
   useEffect(() => {
     const fetchUserCourses = async () => {
       if (!userEmail) return;
       
+      // Check if we already have courses cached
+      if (userCourses.length > 0) return;
+      
       setCoursesLoading(true);
       
       try {
         const sessionId = localStorage.getItem('sessionId');
-        if (!sessionId) return;
+        if (!sessionId) {
+          setCoursesLoading(false);
+          return;
+        }
         
         const response = await axios({
           method: 'GET',
-          url: `http://localhost:8080/users/${userEmail}/courses`,
-          headers: {
-            'Session-Id': sessionId
-          }
+          url: `${base_url}/users/${userEmail}/courses`,
+          headers: { 'Session-Id': sessionId }
         });
-        
-        console.log('User courses API response:', response.data);
         
         if (Array.isArray(response.data)) {
           setUserCourses(response.data);
         } else if (response.data && Array.isArray(response.data.courses)) {
           setUserCourses(response.data.courses);
         } else {
-          console.warn('Unexpected courses data format:', response.data);
           setUserCourses([]);
         }
       } catch (error) {
         console.error('Error fetching user courses:', error);
+        setUserCourses([]);
       } finally {
         setCoursesLoading(false);
       }
     };
     
     fetchUserCourses();
-  }, [userEmail]);
+  }, [userEmail, userCourses.length]);
 
-  const calculateCompatibility = (profileData) => {
-    if (!currentUserData) return;
-
+  const calculateCompatibilityScore = useCallback((profileData) => {
+    if (!currentUserData || !profileData) {
+      console.log("Missing data for compatibility calculation");
+      return { percentage: 0, factors: [] };
+    }
+  
+    console.log("Calculating compatibility with:", profileData);
+    
     let score = 0;
     const factors = [];
-
-    const currentMajors = currentUserData.majors || [];
-    const profileMajors = profileData.majors || [];
     
-    const sharedMajors = currentMajors.filter(major => 
-      profileMajors.includes(major)
+    // 1. Course matching (up to 40%)
+    const userCourseIds = userCourses.map(course => 
+      typeof course === 'string' ? course : course.courseId || course.id
     );
     
-    if (sharedMajors.length > 0) {
-      score += 40;
-      factors.push(`Same major: +40%`);
+    const currentUserCourseIds = currentUserData.courses || [];
+    const commonCourses = userCourseIds.filter(course => 
+      currentUserCourseIds.includes(course)
+    );
+    
+    if (commonCourses.length > 0) {
+      const courseScore = Math.min(40, commonCourses.length * 10);
+      score += courseScore;
+      factors.push(
+        `You share ${commonCourses.length} course${commonCourses.length > 1 ? 's' : ''}`
+      );
     }
-
-    if (currentUserData.weeklyAvailability && profileData.weeklyAvailability) {
-      const currentAvail = currentUserData.weeklyAvailability;
-      const profileAvail = profileData.weeklyAvailability;
-      
+    
+    // 2. Location matching (up to 25%)
+    const userLocations = profileData.preferredLocations || [];
+    const currentUserLocations = currentUserData.preferredLocations || [];
+    
+    const commonLocations = userLocations.filter(location => 
+      currentUserLocations.includes(location)
+    );
+    
+    if (commonLocations.length > 0) {
+      const locationScore = Math.min(25, commonLocations.length * 8);
+      score += locationScore;
+      factors.push(
+        `You have ${commonLocations.length} shared preferred study location${commonLocations.length > 1 ? 's' : ''}`
+      );
+    }
+    
+    // 3. Availability matching (up to 35%)
+    if (profileData.weeklyAvailability && currentUserData.weeklyAvailability) {
       let matchingHours = 0;
-      for (let i = 0; i < currentAvail.length; i++) {
-        if (currentAvail[i] === '1' && profileAvail[i] === '1') {
+      const userAvail = profileData.weeklyAvailability;
+      const currentUserAvail = currentUserData.weeklyAvailability;
+      
+      // Count hours where both are available
+      for (let i = 0; i < Math.min(userAvail.length, currentUserAvail.length); i++) {
+        if (userAvail[i] === '1' && currentUserAvail[i] === '1') {
           matchingHours++;
         }
       }
       
+      // Calculate percentage of matching hours relative to total hours in a week
+      const availabilityScore = Math.min(35, Math.floor((matchingHours / 24) * 35));
+      
       if (matchingHours > 0) {
-        const availScore = Math.min(30, matchingHours * 2);
-        score += availScore;
-        factors.push(`${matchingHours} hours of matching availability: +${availScore}%`);
+        score += availabilityScore;
+        const matchingHoursPerDay = Math.floor(matchingHours / 7);
+        factors.push(
+          `You have approximately ${matchingHours} overlapping available hours${
+            matchingHoursPerDay > 0 ? ` (about ${matchingHoursPerDay} hours/day on average)` : ''
+          }`
+        );
       }
     }
-
-    const currentLocations = currentUserData.preferredLocations || [];
-    const profileLocations = profileData.preferredLocations || [];
     
-    const sharedLocations = currentLocations.filter(loc => 
-      profileLocations.includes(loc)
-    );
-    
-    if (sharedLocations.length > 0) {
-      const locationScore = Math.min(20, sharedLocations.length * 5);
-      score += locationScore;
-      factors.push(`${sharedLocations.length} shared study locations: +${locationScore}%`);
+    // If there are no factors but we have some data, add a generic factor
+    if (factors.length === 0 && score > 0) {
+      factors.push("You have some study preferences in common");
     }
-
-    const compatibilityResult = {
-      percentage: Math.min(100, score),
-      factors: factors
+    
+    return {
+      percentage: Math.min(100, Math.round(score)),
+      factors: factors.length > 0 ? factors : ["No compatibility factors found"]
     };
+  }, [currentUserData, userCourses]); // Include dependencies that the calculation needs
 
-    setCompatibilityScore(compatibilityResult);
-  };
+  useEffect(() => {
+    if (userData && currentUserData && userCourses.length > 0) {
+      const score = calculateCompatibilityScore(userData);
+      setCompatibilityScore(score);
+    }
+  }, [userData, currentUserData, userCourses, calculateCompatibilityScore]);
 
   // Update the handleAddFriend function with better error handling
   const handleAddFriend = async () => {
@@ -328,7 +384,7 @@ function UsrProfile() {
       try {
         await axios({
           method: 'POST',
-          url: `http://localhost:8080/users/${currentUserData.userEmail}/friend-requests/send`,
+          url: `${base_url}/users/${currentUserData.userEmail}/friend-requests/send`,
           headers: {
             'Content-Type': 'application/json',
             'Session-Id': sessionId
@@ -413,7 +469,7 @@ function UsrProfile() {
         try {
           await axios({
             method: 'DELETE',
-            url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
+            url: `${base_url}/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
             headers: {
               'Content-Type': 'application/json',
               'Session-Id': sessionId
@@ -502,9 +558,107 @@ function UsrProfile() {
     };
   };
 
-  const handleBackClick = () => {
-    navigate('/friends');
+  const handleCancelRequest = async () => {
+    if (!currentUserData || !userData) return;
+
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        toast.error("You need to be logged in to cancel friend requests");
+        navigate('/');
+        return;
+      }
+
+      // Show loading toast
+      const loadingToastId = toast.loading(`Cancelling friend request to ${userData.name}...`);
+      
+      try {
+        await axios({
+          method: 'DELETE',
+          url: `${base_url}/users/${currentUserData.userEmail}/friend-requests/cancel`,
+          headers: {
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
+          },
+          data: {
+            receiverEmail: userData.userEmail
+          }
+        });
+
+        console.log(`Friend request to ${userData.name} successfully cancelled`);
+        
+        // Update state
+        setFriendRequestStatus('none');
+        
+        // Update toast to success
+        toast.update(loadingToastId, {
+          render: `Friend request to ${userData.name} has been cancelled.`,
+          type: toast.TYPE.SUCCESS,
+          isLoading: false,
+          autoClose: 3000,
+          closeButton: true
+        });
+      } catch (error) {
+        console.error('Error cancelling friend request:', error);
+        
+        // Update toast to error
+        toast.update(loadingToastId, {
+          render: `Failed to cancel friend request to ${userData.name}. Please try again later.`,
+          type: toast.TYPE.ERROR,
+          isLoading: false,
+          autoClose: 3000,
+          closeButton: true
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error in handleCancelRequest:', error);
+      toast.error('Something went wrong. Please try again later.');
+    }
   };
+
+  // Update handleBackClick function to use history if available
+  const handleBackClick = () => {
+    // Check if we came from somewhere in the app
+    if (window.history.length > 2) {
+      navigate(-1); // Go back one page in history
+    } else {
+      navigate('/friends'); // Fall back to friends page
+    }
+  };
+
+  const AvailabilityGrid = useMemo(() => {
+    if (!userData?.weeklyAvailability) return null;
+    
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
+      <div key={day} className="user-day-row">
+        <span className="user-day-name">{day}</span>
+        <div className="user-hour-blocks">
+          {Array.from({ length: 24 }, (_, hourIndex) => {
+            const stringIndex = dayIndex * 24 + hourIndex;
+            const userAvailable = userData.weeklyAvailability[stringIndex] === '1';
+            const currentUserAvailable = currentUserData?.weeklyAvailability?.[stringIndex] === '1';
+            
+            let blockClass = 'user-hour-block';
+            if (showAvailabilityComparison) {
+              if (userAvailable && currentUserAvailable) blockClass += ' both-available';
+              else if (userAvailable) blockClass += ' they-available';
+              else if (currentUserAvailable) blockClass += ' you-available';
+            } else if (userAvailable) {
+              blockClass += ' available';
+            }
+            
+            return (
+              <div 
+                key={hourIndex} 
+                className={blockClass}
+                title={`${day} ${hourIndex}:00-${hourIndex+1}:00`}
+              />
+            );
+          })}
+        </div>
+      </div>
+    ));
+  }, [userData?.weeklyAvailability, currentUserData?.weeklyAvailability, showAvailabilityComparison]);
 
   if (loading) {
     return (
@@ -602,7 +756,16 @@ function UsrProfile() {
       
       <div className="user-profile-header">
         <div className="user-profile-image-container">
-          <img src={profileImage} alt={userData.name} className="user-profile-image" />
+          <img 
+            src={profileImageUrl} 
+            alt={userData.name} 
+            className="user-profile-image" 
+            onError={(e) => {
+              console.warn('Failed to load profile image, falling back to default');
+              e.target.onerror = null; // Prevent infinite error loop
+              e.target.src = profileImage; // Fall back to default
+            }}
+          />
         </div>
         
         <div className="user-profile-top-info">
@@ -613,36 +776,88 @@ function UsrProfile() {
                 <span key={index} className="user-tag">{major}</span>
               )) || <span className="user-tag">No major listed</span>}
             </div>
+            
+            {/* Friend relationship status indicator */}
+            {isFriend && (
+              <div className="friend-status-indicator">
+                <i className="fa fa-check-circle"></i>
+                <span>Friends since {new Date().toLocaleDateString()}</span>
+              </div>
+            )}
+            {friendRequestStatus === 'pending' && (
+              <div className="friend-request-indicator">
+                <i className="fa fa-clock-o"></i>
+                <span>Request pending</span>
+              </div>
+            )}
           </div>
           
           <div className="user-actions">
-            {console.log('isFriend state in render:', isFriend)}
-            {console.log('friendRequestStatus in render:', friendRequestStatus)}
-            
             {isFriend ? (
-              <>
-                <button className="already-friends-button" disabled>
-                  <i className="fa fa-check"></i> Already Friends
+              <div className="friend-actions-container">
+                <button className="message-button">
+                  <i className="fa fa-envelope"></i> Message
                 </button>
                 <button className="remove-friend-button" onClick={handleRemoveFriend}>
                   <i className="fa fa-user-times"></i> Remove Friend
                 </button>
-              </>
+              </div>
             ) : friendRequestStatus === 'pending' ? (
-              <button className="pending-request-button" disabled>
-                <i className="fa fa-clock-o"></i> Friend Request Pending
-              </button>
+              <div className="pending-request-container">
+                <button className="cancel-request-button" onClick={handleCancelRequest}>
+                  <i className="fa fa-times"></i> Cancel Request
+                </button>
+                <div className="request-time-indicator">Sent recently</div>
+              </div>
             ) : (
-              <button className="add-friend-button" onClick={handleAddFriend}>
-                <i className="fa fa-user-plus"></i> Add Friend
-              </button>
+              <div className="add-friend-container">
+                <button className="add-friend-button" onClick={handleAddFriend}>
+                  <i className="fa fa-user-plus"></i> Add Friend
+                </button>
+                <button className="message-button">
+                  <i className="fa fa-envelope"></i> Message
+                </button>
+              </div>
             )}
-            <button className="message-button">
-              <i className="fa fa-envelope"></i> Send Message
-            </button>
           </div>
         </div>
       </div>
+
+      {compatibilityScore ? (
+        <div className="compatibility-section">
+          <h3>Study Compatibility</h3>
+          <div className="compatibility-score">
+            <div 
+              className="score-circle" 
+              style={{ 
+                '--final-gradient': `conic-gradient(
+                  #8ebd89 ${compatibilityScore.percentage || 0}%, 
+                  #e0e0e0 ${compatibilityScore.percentage || 0}%
+                )`,
+                background: compatibilityScore.percentage > 0 ? 
+                  `conic-gradient(#8ebd89 ${compatibilityScore.percentage}%, #e0e0e0 ${compatibilityScore.percentage}%)` : 
+                  'conic-gradient(#e0e0e0 100%, #e0e0e0 100%)'
+              }}
+            >
+              <span>{compatibilityScore.percentage || 0}%</span>
+            </div>
+            <div className="compatibility-factors">
+              {compatibilityScore.factors && compatibilityScore.factors.length > 0 ? (
+                <>
+                  <p>You and {userData.name} are compatible because:</p>
+                  <ul>
+                    {compatibilityScore.factors.map((factor, index) => (
+                      <li key={index}>{factor}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="no-factors">You don&apos;t have any matching study preferences yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
       
       <div className="user-content-grid">
         <div className="user-description-card">
@@ -651,30 +866,28 @@ function UsrProfile() {
         </div>
         
         <div className="user-availability-card">
-          <h3>Availability</h3>
-          {userData.weeklyAvailability ? (
-            <div className="user-availability-visual">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
-                <div key={day} className="user-day-row">
-                  <span className="user-day-name">{day}</span>
-                  <div className="user-hour-blocks">
-                    {Array.from({ length: 24 }, (_, hourIndex) => {
-                      const stringIndex = dayIndex * 24 + hourIndex;
-                      return (
-                        <div 
-                          key={hourIndex} 
-                          className={`user-hour-block ${userData.weeklyAvailability[stringIndex] === '1' ? 'available' : ''}`}
-                          title={`${day} ${hourIndex}:00-${hourIndex+1}:00`}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="no-data-message">No availability information shared</p>
-          )}
+          <div className="availability-header">
+            <h3>Availability</h3>
+            {userData.weeklyAvailability && currentUserData?.weeklyAvailability && (
+              <button 
+                className="comparison-toggle" 
+                onClick={debouncedToggleAvailability} // Use the debounced version instead
+              >
+                {showAvailabilityComparison ? 'Hide Comparison' : 'Compare With Yours'}
+              </button>
+            )}
+          </div>
+          
+          <div className="user-availability-visual">
+            {AvailabilityGrid}
+            {userData?.weeklyAvailability && (
+              <AvailabilityLegend
+                key={`legend-${showAvailabilityComparison}`}
+                showComparison={showAvailabilityComparison}
+                userName={userData.name}
+              />
+            )}
+          </div>
         </div>
         
         <div className="user-locations-card">
@@ -713,19 +926,29 @@ function UsrProfile() {
           ) : (
             <div className="user-courses-list">
               {userCourses.length > 0 ? (
-                userCourses.map((course, index) => (
-                  <div key={index} className="user-course-item">
-                    <span className="course-icon">📚</span>
-                    <p className="user-course-name">
-                      {course.courseId || course.id || course}
-                      {course.courseName && course.courseId !== course.courseName && (
-                        <span className="user-course-full-name"> - {course.courseName}</span>
+                userCourses.map((course, index) => {
+                  const courseId = typeof course === 'string' ? course : course.courseId || course.id;
+                  const isCommon = currentUserData?.courses?.includes(courseId);
+                  
+                  return (
+                    <div key={index} className={`user-course-item ${isCommon ? 'common-course' : ''}`}>
+                      <span className="course-icon">📚</span>
+                      <p className="user-course-name">
+                        {courseId}
+                        {course.courseName && courseId !== course.courseName && (
+                          <span className="user-course-full-name"> - {course.courseName}</span>
+                        )}
+                      </p>
+                      {isCommon && (
+                        <span className="common-course-badge" title="You're both taking this course">
+                          Shared 👥
+                        </span>
                       )}
-                    </p>
-                  </div>
-                ))
+                    </div>
+                  );
+                })
               ) : (
-                <p className="no-data-message">No courses shared</p>
+                <p className="no-data-message">This user hasn&apos;t added any courses yet.</p>
               )}
             </div>
           )}

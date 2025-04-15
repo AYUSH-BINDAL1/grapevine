@@ -1,16 +1,97 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import "./Profile.css";
 import profileImage from "../assets/temp-profile.webp";
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from "react-router-dom";
+import { FixedSizeList as List } from 'react-window';
+import PropTypes from 'prop-types';
+import { base_url, image_url } from "../config";
+
+// Add this custom hook at the top with other imports
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 // Add this validation function near the top of your Profile component
 const validateEmail = (email) => {
   // Regular expression for basic email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+};
+
+// Add this component at the top of your file
+const ProfileSkeleton = () => (
+  <div className="profile-card">
+    <div className="profile-header">
+      <div className="profile-image-container skeleton"></div>
+      <div className="skeleton-text"></div>
+      <div className="skeleton-tags">
+        <div className="skeleton-tag"></div>
+        <div className="skeleton-tag"></div>
+      </div>
+    </div>
+  </div>
+);
+
+// Add this component near the top of your file with other component declarations
+const DayRow = React.memo(({ day, index, toggleHourAvailability, updatingHours }) => {
+  return (
+    <div className="day-row">
+      <span className="day-name">{day.name}</span>
+      <div className="hour-blocks">
+        {day.hours.map((isAvailable, hourIndex) => {
+          const stringIndex = index * 24 + hourIndex;
+          const isUpdating = updatingHours.has(stringIndex);
+          
+          return (
+            <div 
+              key={hourIndex} 
+              className={`hour-block ${isAvailable === '1' ? 'available' : ''} ${isUpdating ? 'updating' : ''}`}
+              title={`${day.name} ${hourIndex}:00-${hourIndex+1}:00`}
+              onClick={() => toggleHourAvailability(index, hourIndex)}
+              style={{ 
+                cursor: isUpdating ? 'wait' : 'pointer',
+                position: 'relative'
+              }}
+            >
+              {isUpdating && (
+                <div className="hour-update-indicator"></div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+
+// Add display name
+DayRow.displayName = 'DayRow';
+
+// Add prop validations
+DayRow.propTypes = {
+  day: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    hours: PropTypes.array.isRequired
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+  toggleHourAvailability: PropTypes.func.isRequired,
+  updatingHours: PropTypes.shape({
+    has: PropTypes.func.isRequired
+  }).isRequired
 };
 
 function Profile() {
@@ -23,16 +104,18 @@ function Profile() {
   const [availabilityString, setAvailabilityString] = useState("0".repeat(168));
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState("");
-  // Add new state variables for profile editing
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedProfileData, setEditedProfileData] = useState({
     name: "",
     userEmail: "",
     majors: [],
-    majorsString: "" // New field to store the raw input
+    majorsString: ""
   });
-  // Add these state variables to your component
   const [emailError, setEmailError] = useState("");
+  // Add state for profile picture
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   // Add a state for the delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -48,6 +131,36 @@ function Profile() {
   const [updatingHours, setUpdatingHours] = useState(new Set());
   const [updateError, setUpdateError] = useState(null);
   const updateToastId = useRef(null);
+  const [descriptionInput, setDescriptionInput] = useState("");
+  const debouncedDescription = useDebounce(descriptionInput, 300);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+
+  // Add this near your other useMemo hooks
+  const timeIndicators = useMemo(() => {
+    return [0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
+      <div key={hour} className="time-indicator">
+        <span>{hour}:00</span>
+      </div>
+    ));
+  }, []);
+
+  // Use the effect to update the actual editedDescription
+  useEffect(() => {
+    setEditedDescription(debouncedDescription);
+  }, [debouncedDescription]);
+
+  // Format week availability for rendering (prevent recalculation on every render)
+  const formattedAvailability = useMemo(() => {
+    // Process the availabilityString into a structured format
+    if (!availabilityString) return [];
+    
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+      .map((day, index) => {
+        const dayStart = index * 24;
+        const hours = availabilityString.slice(dayStart, dayStart + 24).split('');
+        return { name: day, hours };
+      });
+  }, [availabilityString]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -55,13 +168,14 @@ function Profile() {
       setTimeout(() => window.location.href = '/', 2000);
       return;
     }
-  
+
     // Load user data from localStorage
     setIsLoading(true);
     const storedUserData = localStorage.getItem('userData');
     
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
+      console.log("User data from localStorage:", parsedData);
       setUserData(parsedData);
       setEditedDescription(parsedData.biography || "");
       
@@ -77,15 +191,48 @@ function Profile() {
       if (parsedData.weeklyAvailability) {
         setAvailabilityString(parsedData.weeklyAvailability);
       }
-  
-      // Fetch current role from backend
-      const fetchUserRole = async () => {
-        try {
-          const response = await axios.get(
-            `http://localhost:8080/users/${parsedData.userEmail}`,
-            { headers: { 'Session-Id': sessionId } }
-          );
-          
+
+      console.log("Making server request for user data:", parsedData.userEmail);
+      // Important change: Fetch user data from the server to get the latest profile picture ID
+      axios.get(
+        `${base_url}/users/${parsedData.userEmail}`,
+        { headers: { 'Session-Id': sessionId } }
+      ).then(response => {
+        console.log("Server response for user data:", response.data);
+        // Update the profile picture from the server response
+        if (response.data) {
+          // Check for profilePictureUrl first (current field name)
+          if (response.data.profilePictureUrl) {
+            console.log("Fetched profile picture URL from server:", response.data.profilePictureUrl);
+            
+            // Update the localStorage copy with the server value
+            const updatedUserData = {
+              ...parsedData,
+              profilePictureUrl: response.data.profilePictureUrl
+            };
+            localStorage.setItem('userData', JSON.stringify(updatedUserData));
+            
+            // Load the profile picture
+            fetchProfilePicture(response.data.profilePictureUrl);
+          }
+          // Fallback to profilePictureId if url is not available
+          else if (response.data.profilePictureId) {
+            console.log("Fetched profile picture ID from server:", response.data.profilePictureId);
+            
+            // Update the localStorage copy with the server value
+            const updatedUserData = {
+              ...parsedData,
+              profilePictureId: response.data.profilePictureId
+            };
+            localStorage.setItem('userData', JSON.stringify(updatedUserData));
+            
+            // Load the profile picture
+            fetchProfilePicture(response.data.profilePictureId);
+          }
+        }
+        
+        // Update user role from server response
+        if (response.data && response.data.role) {
           const role = response.data.role || 'Student';
           setUserRole(role);
           
@@ -95,19 +242,82 @@ function Profile() {
           
           // Update global searchEnabled variable
           window.searchEnabled = isTeachingRole;
-          
-        } catch (error) {
-          console.error('Error fetching user role:', error);
-          toast.error('Failed to fetch user role');
         }
-      };
-  
-      fetchUserRole();
+      }).catch(error => {
+        console.error('Error fetching user data:', error);
+        console.log('Error details:', error.response || 'No response data');
+        
+        // Still try to load picture from localStorage as fallback
+        if (parsedData.profilePictureId) {
+          fetchProfilePicture(parsedData.profilePictureId);
+        }
+        
+        // Continue with local role if available
+        const role = parsedData.role || 'Student';
+        setUserRole(role);
+        
+        // Update searchEnabled based on role
+        const isTeachingRole = ['INSTRUCTOR', 'GTA', 'UTA'].includes(role);
+        setSearchEnabled(isTeachingRole);
+        
+        // Update global searchEnabled variable
+        window.searchEnabled = isTeachingRole;
+      });
+    } else {
+      console.error("No user data found in localStorage");
+      toast.error("User data not found. Please login again.");
+      setTimeout(() => window.location.href = '/', 2000);
     }
     
     setTimeout(() => setIsLoading(false), 500);
   }, [sessionId]);
-  
+
+  // Update the fetchProfilePicture function
+  const fetchProfilePicture = async (fileId) => {
+    console.log("fetchProfilePicture called with ID:", fileId);
+    
+    if (!fileId || fileId === 'undefined') {
+      console.log("Invalid fileId detected:", fileId);
+      return;
+    }
+    
+    try {
+      // For database stored URLs, we need to check if it's a full URL or just an ID
+      let imageUrl;
+      
+      if (fileId.startsWith('http')) {
+        // If it's a full URL, use it directly
+        imageUrl = fileId;
+      } else {
+        // Otherwise construct the URL using the file ID
+        imageUrl = `${image_url}/images/${fileId}`;
+      }
+      
+      console.log("Setting profile picture URL:", imageUrl);
+      
+      // Set the profile picture URL
+      setProfilePicture(imageUrl);
+      
+      // Verify the image loads correctly in the background
+      const img = new Image();
+      img.onload = () => {
+        console.log("Image loaded successfully:", imageUrl);
+      };
+      img.onerror = (e) => {
+        console.error("Failed to load image:", imageUrl, e);
+        // Try alternative URL format if the first one fails
+        if (!fileId.startsWith('http') && !imageUrl.includes('/api/files/getImage/')) {
+          const alternativeUrl = `${base_url}/api/files/getImage/${fileId}`;
+          console.log("Trying alternative URL:", alternativeUrl);
+          setProfilePicture(alternativeUrl);
+        }
+      };
+      img.src = imageUrl;
+    } catch (error) {
+      console.error('Error setting profile picture URL:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchUserCourses = async () => {
       if (!userData?.userEmail) return;
@@ -118,7 +328,7 @@ function Profile() {
         const sessionId = localStorage.getItem('sessionId');
         
         const response = await axios.get(
-          `http://localhost:8080/users/${userData.userEmail}/courses`,
+          `${base_url}/users/${userData.userEmail}/courses`,
           {
             headers: {
               'Session-Id': sessionId
@@ -171,7 +381,7 @@ function Profile() {
     
     try {
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { role: newRole },
         {
           headers: {
@@ -220,6 +430,8 @@ function Profile() {
       return;
     }
   
+    setAvailabilityLoading(true);
+    
     // Convert day to starting index (24 hours per day)
     const dayIndices = {
       "monday": 0,
@@ -239,6 +451,7 @@ function Profile() {
     
     if (startHour >= endHour) {
       toast.warning("End time must be after start time");
+      setAvailabilityLoading(false);
       return;
     }
   
@@ -252,17 +465,21 @@ function Profile() {
     
     const updatedAvailabilityString = newAvailabilityString.join('');
   
-    if (!userData) return;
+    if (!userData) {
+      setAvailabilityLoading(false);
+      return;
+    }
   
     try {
       
       if (!sessionId) {
         toast.error("You must be logged in to save availability");
+        setAvailabilityLoading(false);
         return;
       }
   
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { weeklyAvailability: updatedAvailabilityString },
         {
           headers: {
@@ -285,49 +502,19 @@ function Profile() {
     } catch (error) {
       console.error('Error saving availability:', error);
       toast.error("Failed to save availability. Please try again.");
+    } finally {
+      setAvailabilityLoading(false);
     }
   };
 
-  const toggleHourAvailability = (dayIndex, hourIndex) => {
-    const stringIndex = dayIndex * 24 + hourIndex;
-    
-    // Don't allow toggling if this hour is already being updated
-    if (updatingHours.has(stringIndex)) return;
-    
-    // Add this hour to the updating set
-    setUpdatingHours(prev => new Set([...prev, stringIndex]));
-    
-    // Create new string with toggled value
-    let newAvailabilityString = availabilityString.split('');
-    newAvailabilityString[stringIndex] = newAvailabilityString[stringIndex] === '1' ? '0' : '1';
-    const updatedAvailabilityString = newAvailabilityString.join('');
-    
-    // Optimistically update the UI
-    setAvailabilityString(updatedAvailabilityString);
-    
-    // Show a toast notification for the update
-    if (updateToastId.current) {
-      toast.dismiss(updateToastId.current);
-    }
-    
-    updateToastId.current = toast.loading(
-      newAvailabilityString[stringIndex] === '1' 
-        ? "Adding availability..."
-        : "Removing availability..."
-    );
-    
-    // Update server
-    updateAvailabilityOnServer(updatedAvailabilityString, stringIndex);
-  };
-
-  const updateAvailabilityOnServer = async (updatedString, hourIndex = null) => {
+  const updateAvailabilityOnServer = useCallback(async (updatedString, hourIndex = null) => {
     if (!userData || !sessionId) return;
     
     try {
       setUpdateError(null);
       
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { weeklyAvailability: updatedString },
         {
           headers: {
@@ -345,10 +532,11 @@ function Profile() {
         
         // Update toast message if we're updating a specific hour
         if (hourIndex !== null && updateToastId.current) {
+          // Use formattedAvailability to get day and hour info
           const day = Math.floor(hourIndex / 24);
           const hour = hourIndex % 24;
-          const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-          const dayName = dayNames[day];
+          const dayName = formattedAvailability[day]?.name || 
+                        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][day];
           
           toast.update(updateToastId.current, {
             render: updatedString[hourIndex] === '1' 
@@ -361,6 +549,7 @@ function Profile() {
         }
       }
     } catch (error) {
+      // Error handling code remains the same
       console.error('Error updating availability:', error);
       
       // Show error toast
@@ -391,7 +580,39 @@ function Profile() {
         });
       }
     }
-  };
+  }, [userData, sessionId, updateToastId, formattedAvailability]);
+
+  const toggleHourAvailability = useCallback((dayIndex, hourIndex) => {
+    const stringIndex = dayIndex * 24 + hourIndex;
+    
+    // Don't allow toggling if this hour is already being updated
+    if (updatingHours.has(stringIndex)) return;
+    
+    // Add this hour to the updating set
+    setUpdatingHours(prev => new Set([...prev, stringIndex]));
+    
+    // Create new string with toggled value
+    let newAvailabilityString = availabilityString.split('');
+    newAvailabilityString[stringIndex] = newAvailabilityString[stringIndex] === '1' ? '0' : '1';
+    const updatedAvailabilityString = newAvailabilityString.join('');
+    
+    // Optimistically update the UI
+    setAvailabilityString(updatedAvailabilityString);
+    
+    // Show a toast notification for the update
+    if (updateToastId.current) {
+      toast.dismiss(updateToastId.current);
+    }
+    
+    updateToastId.current = toast.loading(
+      newAvailabilityString[stringIndex] === '1' 
+        ? "Adding availability..."
+        : "Removing availability..."
+    );
+    
+    // Update server
+    updateAvailabilityOnServer(updatedAvailabilityString, stringIndex);
+  }, [availabilityString, updatingHours, updateAvailabilityOnServer]);
 
   const handleEditDescription = () => {
     setIsEditingDescription(true);
@@ -408,7 +629,7 @@ function Profile() {
       }
 
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { biography: editedDescription },
         {
           headers: {
@@ -461,7 +682,7 @@ function Profile() {
       
       const response = await axios({
         method: 'DELETE',
-        url: `http://localhost:8080/users/${userData.userEmail}`,
+        url: `${base_url}/users/${userData.userEmail}`,
         headers: {
           'Content-Type': 'application/json',
           'Session-Id': sessionId
@@ -569,7 +790,7 @@ function Profile() {
       }
   
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         editedProfileData,
         {
           headers: {
@@ -623,7 +844,7 @@ function Profile() {
     const sessionId = localStorage.getItem('sessionId');
     if (sessionId) {
       axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { preferredLocations: updatedLocations },
         {
           headers: {
@@ -640,11 +861,165 @@ function Profile() {
     }
   };
 
+  // Update the handleProfilePictureUpload function with proper field name handling
+  const handleProfilePictureUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload an image file (JPEG, PNG, GIF, or WEBP)");
+      return;
+    }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size should be less than 2MB");
+      return;
+    }
+    
+    // Create form data for upload
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Show upload indicator
+    setIsUploadingPicture(true);
+    
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      
+      if (!sessionId) {
+        toast.error("You must be logged in to upload a profile picture");
+        setIsUploadingPicture(false);
+        return;
+      }
+      
+      console.log("Uploading file:", file.name, "size:", file.size);
+      
+      // Step 1: Upload the file
+      const response = await axios.post(
+        'http://localhost:8080/api/files/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Session-Id': sessionId
+          }
+        }
+      );
+      
+      console.log("Upload response:", response.data);
+      
+      if (response.status === 200 && response.data) {
+        // Extract the file ID and URL from the response
+        const fileId = response.data.fileName || response.data.fileId;
+        const publicUrl = response.data.publicUrl;
+        
+        if (!fileId) {
+          console.error("Invalid fileId in response");
+          toast.error("Failed to get valid file ID from server");
+          return;
+        }
+        
+        // Use the public URL if available, otherwise construct it
+        const imageUrl = publicUrl || `${image_url}/images/${fileId}`;
+        console.log("Setting profile picture URL:", imageUrl);
+        
+        // Update local state first for immediate feedback
+        setProfilePicture(imageUrl);
+        
+        // Update local storage
+        const updatedUserData = {
+          ...userData,
+          profilePictureUrl: imageUrl
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+        setProfilePicture(imageUrl);
+
+        // Dispatch event to notify other components
+        window.dispatchEvent(new Event('storage'));
+
+        toast.success("Profile picture updated successfully!");
+        
+        // Try one field at a time to find which one works
+        const updateMethods = [
+          // Method 1: Just use the field name as is
+          async () => {
+            console.log("Trying update with profilePictureUrl field");
+            return await axios.put(
+              `${base_url}/users/${userData.userEmail}`,
+              { profilePictureUrl: imageUrl },
+              { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
+            );
+          },
+          
+          // Method 2: Try with snake_case
+          async () => {
+            console.log("Trying update with profile_picture_url field");
+            return await axios.put(
+              `${base_url}/users/${userData.userEmail}`,
+              { profile_picture_url: imageUrl },
+              { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
+            );
+          },
+          
+          // Method 3: Try with just the file ID
+          async () => {
+            console.log("Trying update with profilePictureId field");
+            return await axios.put(
+              `${base_url}/users/${userData.userEmail}`,
+              { profilePictureId: fileId },
+              { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
+            );
+          }
+        ];
+        
+        let success = false;
+        
+        // Try each method until one works
+        for (const method of updateMethods) {
+          try {
+            const updateResponse = await method();
+            console.log("Update response:", updateResponse.status, updateResponse.data);
+            
+            // Verify if it worked by checking the response data
+            if (updateResponse.data && 
+                (updateResponse.data.profilePictureUrl || updateResponse.data.profile_picture_url)) {
+              console.log("Update successful!");
+              success = true;
+              break;
+            }
+          } catch (error) {
+            console.log("Update attempt failed:", error.message);
+            // Continue to the next method
+          }
+        }
+        
+        // Show toast based on success
+        if (success) {
+          toast.success("Profile picture updated successfully!");
+        } else {
+          // The update might have failed server-side but still show it client-side
+          toast.warning("Profile picture updated locally but may not be saved on the server.");
+        }
+      } else {
+        console.error("Unexpected response:", response);
+        toast.error("Failed to upload profile picture");
+      }
+    } catch (error) {
+      console.error('Error in profile picture upload process:', error);
+      toast.error("Failed to upload profile picture. Please try again later.");
+    } finally {
+      setIsUploadingPicture(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="profile-loading">
-        <div className="spinner"></div>
-        <p>Loading your profile...</p>
+        <ProfileSkeleton />
       </div>
     );
   }
@@ -654,15 +1029,63 @@ function Profile() {
       <div className="profile-sidebar">
         <div className="profile-card">
           <div className="profile-header">
-            <div className="profile-image-container">
-              <img src={profileImage} alt="Profile" className="profile-image" />
+            <div 
+              className="profile-image-container"
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              style={{ cursor: 'pointer' }}
+              title="Click to change profile picture"
+            >
+              {isUploadingPicture && (
+                <div className="profile-image-loading">
+                  <div className="spinner"></div>
+                </div>
+              )}
+              <img 
+                src={profilePicture && profilePicture !== `${image_url}/images/undefined` 
+                  ? profilePicture 
+                  : profileImage} 
+                alt="Profile" 
+                className="profile-image"
+                onError={(e) => {
+                  console.error("Failed to load image:", e.target.src);
+                  // Add a retry attempt before falling back to default
+                  if (e.target.src !== profileImage && !e.target.dataset.retried) {
+                    console.log("Retrying image load after error");
+                    e.target.dataset.retried = "true";
+                    // Force a cache refresh by adding a timestamp
+                    setTimeout(() => {
+                      e.target.src = e.target.src + "?t=" + new Date().getTime();
+                    }, 500);
+                  } else if (e.target.src !== profileImage) {
+                    console.log("Falling back to default image after retry");
+                    e.target.src = profileImage;
+                  }
+                }}
+              />
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={handleProfilePictureUpload}
+              />
+              <div className="profile-image-overlay">
+                <span className="upload-icon">📷</span>
+                <span className="upload-text">Click to change</span>
+              </div>
             </div>
             <h2 className="name">{userData?.name || "Loading..."}</h2>
-            <div className="tag-container">
-              {userData?.majors?.map((major, index) => (
-                <span key={index} className="tag">{major}</span>
-              )) || <span className="tag">CS</span>}
-            </div>
+            {userData?.majors?.length > 0 ? (
+              <div className="tag-container">
+                {userData.majors.map((major, index) => (
+                  <span key={index} className="tag">{major}</span>
+                ))}
+              </div>
+            ) : (
+              <div className="tag-container">
+                <span className="tag">CS</span>
+              </div>
+            )}
           </div>
         </div>
         
@@ -682,8 +1105,8 @@ function Profile() {
           {isEditingDescription ? (
             <div className="description-edit">
               <textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
+                value={descriptionInput}
+                onChange={(e) => setDescriptionInput(e.target.value)}
                 className="description-textarea"
                 rows={4}
                 placeholder="Enter your description..."
@@ -699,7 +1122,7 @@ function Profile() {
                   className="cancel-button"
                   onClick={() => {
                     setIsEditingDescription(false);
-                    setEditedDescription(userData?.biography || "");
+                    setDescriptionInput(userData?.biography || "");
                   }}
                 >
                   Cancel
@@ -782,7 +1205,9 @@ function Profile() {
               <option value="saturday">Saturday</option>
               <option value="sunday">Sunday</option>
             </select>
-            <button className="add-time" onClick={saveAvailability}>Add Availability</button>
+            <button className="add-time" onClick={saveAvailability} disabled={availabilityLoading}>
+              {availabilityLoading ? "Saving..." : "Add Availability"}
+            </button>
             <button 
               className="remove-time" 
               onClick={() => {
@@ -834,7 +1259,7 @@ function Profile() {
                   }
               
                   axios.put(
-                    `http://localhost:8080/users/${userData.userEmail}`,
+                    `${base_url}/users/${userData.userEmail}`,
                     { weeklyAvailability: updatedAvailabilityString },
                     {
                       headers: {
@@ -872,41 +1297,18 @@ function Profile() {
               <div className="time-indicators-container">
                 <div className="time-indicators-spacer"></div>
                 <div className="time-indicators">
-                  {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
-                    <div key={hour} className="time-indicator">
-                      <span>{hour}:00</span>
-                    </div>
-                  ))}
+                  {timeIndicators}
                 </div>
               </div>
               <div className="availability-visual">
-                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => (
-                  <div key={day} className="day-row">
-                    <span className="day-name">{day}</span>
-                    <div className="hour-blocks">
-                      {Array.from({ length: 24 }, (_, hourIndex) => {
-                        const stringIndex = dayIndex * 24 + hourIndex;
-                        const isUpdating = updatingHours.has(stringIndex);
-                        
-                        return (
-                          <div 
-                            key={hourIndex} 
-                            className={`hour-block ${availabilityString[stringIndex] === '1' ? 'available' : ''} ${isUpdating ? 'updating' : ''}`}
-                            title={`${day} ${hourIndex}:00-${hourIndex+1}:00`}
-                            onClick={() => toggleHourAvailability(dayIndex, hourIndex)}
-                            style={{ 
-                              cursor: isUpdating ? 'wait' : 'pointer',
-                              position: 'relative'
-                            }}
-                          >
-                            {isUpdating && (
-                              <div className="hour-update-indicator"></div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                {formattedAvailability.map((day, index) => (
+                  <DayRow
+                    key={day.name}
+                    day={day}
+                    index={index}
+                    toggleHourAvailability={toggleHourAvailability}
+                    updatingHours={updatingHours}
+                  />
                 ))}
               </div>
               {updateError && (
@@ -1051,7 +1453,7 @@ function Profile() {
                 const sessionId = localStorage.getItem('sessionId');
                 if (sessionId) {
                   axios.put(
-                    `http://localhost:8080/users/${userData.userEmail}`,
+                    `${base_url}/users/${userData.userEmail}`,
                     { preferredLocations: currentLocationIds },
                     {
                       headers: {
@@ -1109,24 +1511,49 @@ function Profile() {
               </div>
             </div>
           ) : (
-            <div className="courses-list">
-              {coursesData && coursesData.length > 0 ? (
-                coursesData.map((course, index) => (
-                  <div key={index} className="course-item">
-                    <p className="course-name">
-                      {course.courseId || course}
-                      {course.courseName && course.courseId !== course.courseName && (
-                        <span className="course-full-name"> - {course.courseName}</span>
-                      )}
-                    </p>
+            coursesData && coursesData.length > 10 ? (
+              <div style={{ height: 250 }}>
+                <List
+                  height={250}
+                  itemCount={coursesData.length}
+                  itemSize={50}
+                  width="100%"
+                >
+                  {({ index, style }) => {
+                    const course = coursesData[index];
+                    return (
+                      <div style={style} className="course-item">
+                        <p className="course-name">
+                          {course.courseId || course}
+                          {course.courseName && course.courseId !== course.courseName && (
+                            <span className="course-full-name"> - {course.courseName}</span>
+                          )}
+                        </p>
+                      </div>
+                    );
+                  }}
+                </List>
+              </div>
+            ) : (
+              <div className="courses-list">
+                {coursesData && coursesData.length > 0 ? (
+                  coursesData.map((course, index) => (
+                    <div key={index} className="course-item">
+                      <p className="course-name">
+                        {course.courseId || course}
+                        {course.courseName && course.courseId !== course.courseName && (
+                          <span className="course-full-name"> - {course.courseName}</span>
+                        )}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-courses-message">
+                    <p>No courses added yet! Add courses on the course tab.</p>
                   </div>
-                ))
-              ) : (
-                <div className="empty-courses-message">
-                  <p>No courses added yet! Add courses on the course tab.</p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )
           )}
         </div>
       </div>

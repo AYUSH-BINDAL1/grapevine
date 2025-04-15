@@ -3,9 +3,225 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import profileImage from '../assets/temp-profile.webp';
 import debounce from 'lodash.debounce';
+import PropTypes from 'prop-types';
 import './Friends.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { base_url, image_url } from '../config';
+
+// Friend skeleton component
+const FriendSkeleton = () => (
+    <div className="friend-card skeleton">
+        <div className="friend-card-content">
+            <div className="skeleton-image"></div>
+            <div className="skeleton-text"></div>
+        </div>
+    </div>
+);
+
+// Friend request skeleton component
+const FriendRequestSkeleton = () => (
+    <div className="friend-request-card skeleton">
+        <div className="user-info">
+            <div className="skeleton-avatar"></div>
+            <div className="request-details">
+                <div className="skeleton-text-short"></div>
+                <div className="skeleton-text-shorter"></div>
+            </div>
+        </div>
+        <div className="request-actions">
+            <div className="skeleton-button"></div>
+            <div className="skeleton-button"></div>
+        </div>
+    </div>
+);
+
+// Search result skeleton
+const SearchResultSkeleton = () => (
+    <div className="search-result-card skeleton">
+        <div className="user-info">
+            <div className="skeleton-avatar"></div>
+            <div className="search-result-details">
+                <div className="skeleton-text-short"></div>
+                <div className="skeleton-text-shorter"></div>
+            </div>
+        </div>
+        <div className="skeleton-button-wide"></div>
+    </div>
+);
+
+// Updated Filter Panel component to include role and locations
+const FilterPanel = () => {
+  return (
+    <div className="filter-panel">
+      <div className="filter-header">
+        <h4>Filter Results</h4>
+        <button className="reset-filters-btn" disabled>Reset All</button>
+      </div>
+      
+      <div className="filter-content">
+        <div className="filter-group">
+          <label className="filter-label">Major:</label>
+          <select className="filter-select" disabled>
+            <option value="">All Majors</option>
+            <option value="cs">Computer Science</option>
+            <option value="engineering">Engineering</option>
+            <option value="business">Business</option>
+          </select>
+        </div>
+        
+        {/* New Role filter */}
+        <div className="filter-group">
+          <label className="filter-label">Role:</label>
+          <select className="filter-select" disabled>
+            <option value="">All Roles</option>
+            <option value="STUDENT">Student</option>
+            <option value="INSTRUCTOR">Instructor</option>
+            <option value="GTA">Graduate TA</option>
+            <option value="UTA">Undergraduate TA</option>
+          </select>
+        </div>
+        
+        {/* New Locations filter */}
+        <div className="filter-group">
+          <label className="filter-label">Study Location:</label>
+          <select className="filter-select" disabled>
+            <option value="">All Locations</option>
+            <option value="1">Wilmeth Active Learning Center</option>
+            <option value="2">Hicks Undergraduate Library</option>
+            <option value="3">Stewart Center</option>
+            <option value="4">Lawson Computer Science Building</option>
+            <option value="5">Memorial Union</option>
+            <option value="6">Armstrong Hall</option>
+          </select>
+        </div>
+        
+        <div className="filter-group">
+          <label className="filter-label">Sort By:</label>
+          <select className="filter-select" disabled>
+            <option value="name">Name (A-Z)</option>
+            <option value="name_desc">Name (Z-A)</option>
+            <option value="recent">Recently Added</option>
+          </select>
+        </div>
+        
+        <div className="filter-group">
+          <label className="filter-checkbox-label">
+            <input type="checkbox" disabled />
+            <span>Same Courses</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ProfileImage component to handle profile image display
+const ProfileImage = ({ user, altText }) => {
+  const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  
+  useEffect(() => {
+    // Reset state when user changes
+    setLoading(true);
+    setError(false);
+    
+    const tryLoadImage = async () => {
+      // Try profilePictureUrl first
+      if (user.profilePictureUrl) {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            setImageUrl(user.profilePictureUrl);
+            setLoading(false);
+          };
+          img.onerror = () => {
+            // If URL fails, try using the ID
+            if (user.profilePictureId) {
+              tryLoadImageById(user.profilePictureId);
+            } else {
+              setError(true);
+              setLoading(false);
+            }
+          };
+          img.src = user.profilePictureUrl;
+        } catch (err) {
+          console.error('Error loading profile picture URL:', err);
+          if (user.profilePictureId) {
+            tryLoadImageById(user.profilePictureId);
+          } else {
+            setError(true);
+            setLoading(false);
+          }
+        }
+      } 
+      // If no URL, try ID
+      else if (user.profilePictureId) {
+        tryLoadImageById(user.profilePictureId);
+      } 
+      // If no URL or ID, show default
+      else {
+        setError(true);
+        setLoading(false);
+      }
+    };
+    
+    const tryLoadImageById = (id) => {
+      // Try standard format
+      const standardUrl = `${image_url}/images/${id}`;
+      const img = new Image();
+      img.onload = () => {
+        setImageUrl(standardUrl);
+        setLoading(false);
+      };
+      img.onerror = () => {
+        // Try API format
+        const apiUrl = `${base_url}/api/files/getImage/${id}`;
+        const apiImg = new Image();
+        apiImg.onload = () => {
+          setImageUrl(apiUrl);
+          setLoading(false);
+        };
+        apiImg.onerror = () => {
+          // All attempts failed
+          setError(true);
+          setLoading(false);
+        };
+        apiImg.src = apiUrl;
+      };
+      img.src = standardUrl;
+    };
+    
+    tryLoadImage();
+  }, [user.profilePictureUrl, user.profilePictureId]);
+  
+  if (loading) {
+    return <div className="profile-image skeleton-image"></div>;
+  }
+  
+  if (error) {
+    return <img src={profileImage} alt={altText || 'User'} className="profile-image default-image" />;
+  }
+  
+  return <img src={imageUrl} alt={altText || 'User'} className="profile-image" onError={(e) => {
+    e.target.onerror = null; 
+    e.target.src = profileImage;
+  }} />;
+};
+
+ProfileImage.propTypes = {
+  user: PropTypes.shape({
+    profilePictureUrl: PropTypes.string,
+    profilePictureId: PropTypes.string,
+    name: PropTypes.string
+  }).isRequired,
+  altText: PropTypes.string
+};
+
+ProfileImage.defaultProps = {
+  altText: 'User'
+};
 
 function Friends() {
     const friendsListRef = useRef(null);
@@ -17,9 +233,12 @@ function Friends() {
     const [friendRequests, setFriendRequests] = useState([]);
     const [searchHistory, setSearchHistory] = useState([]);
     const [noResultsFound, setNoResultsFound] = useState(false);
+    const [loadingFriends, setLoadingFriends] = useState(true);
+    const [loadingRequests, setLoadingRequests] = useState(true);
 
     // Function to fetch friend requests from the API
     const fetchFriendRequests = async () => {
+        setLoadingRequests(true);
         try {
             const sessionId = localStorage.getItem('sessionId');
             const userData = JSON.parse(localStorage.getItem('userData'));
@@ -33,7 +252,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/incoming`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/incoming`,
                     headers: {
                         'Session-Id': sessionId
                     }
@@ -44,7 +263,8 @@ function Friends() {
                     id: request.id || request.requestId,
                     name: request.senderName || request.name || 'Unknown User',
                     userEmail: request.senderEmail || request.userEmail || request.email,
-                    image: profileImage, // Default image until profile images are implemented
+                    profilePictureUrl: request.profilePictureUrl,
+                    profilePictureId: request.profilePictureId,
                     major: request.senderMajor || request.major || 'No major listed'
                 }));
                 
@@ -71,11 +291,14 @@ function Friends() {
             }
         } catch (error) {
             console.error('Error fetching friend requests:', error);
+        } finally {
+            setLoadingRequests(false);
         }
     };
 
     // Function to fetch friends list from the API
     const fetchFriends = async () => {
+        setLoadingFriends(true);
         try {
             const sessionId = localStorage.getItem('sessionId');
             const userData = JSON.parse(localStorage.getItem('userData'));
@@ -88,7 +311,7 @@ function Friends() {
             try {
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friends`,
+                    url: `${base_url}/users/${userData.userEmail}/friends`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -100,7 +323,8 @@ function Friends() {
                     id: friend.id || friend.friendId,
                     name: friend.name || friend.friendName,
                     userEmail: friend.userEmail || friend.friendEmail,
-                    image: profileImage // Default image until profile images are implemented
+                    profilePictureUrl: friend.profilePictureUrl,
+                    profilePictureId: friend.profilePictureId
                 }));
 
                 setFriends(formattedFriends);
@@ -110,19 +334,41 @@ function Friends() {
             }
         } catch (error) {
             console.error('Error fetching friends:', error);
+        } finally {
+            setLoadingFriends(false);
         }
     };
 
     // Add useEffect to load data when component mounts and set up polling interval
     useEffect(() => {
-        // Initial fetch
-        fetchFriendRequests();
-        fetchFriends();
+        // Create an async function to batch requests
+        const fetchInitialData = async () => {
+            // Show loading state if needed
+            const sessionId = localStorage.getItem('sessionId');
+            const userData = JSON.parse(localStorage.getItem('userData'));
+            
+            if (!sessionId || !userData) {
+                console.error('Missing session or user data');
+                return;
+            }
+            
+            // Execute requests in parallel
+            try {
+                await Promise.all([
+                    fetchFriendRequests(),
+                    fetchFriends()
+                ]);
+            } catch (error) {
+                console.error('Error fetching initial data:', error);
+            }
+        };
         
-        // Set up interval
+        fetchInitialData();
+        
+        // Set up interval (reduce polling frequency to 2 minutes)
         const interval = setInterval(() => {
             fetchFriendRequests();
-        }, 60000); // 60 seconds
+        }, 120000); // 120 seconds
         
         // Clean up interval on unmount
         return () => clearInterval(interval);
@@ -181,7 +427,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/search?query=${encodeURIComponent(query)}`,
+                    url: `${base_url}/users/search?query=${encodeURIComponent(query)}`,
                     headers: {
                         'Session-Id': sessionId
                     }
@@ -193,7 +439,8 @@ function Friends() {
                 const formattedResults = response.data.map(user => ({
                     name: user.name || user.fullName,
                     userEmail: user.userEmail || user.email,
-                    image: profileImage, // Default image until profile images are implemented
+                    profilePictureUrl: user.profilePictureUrl,
+                    profilePictureId: user.profilePictureId,
                     major: user.major || (user.majors && user.majors[0]) || 'No major listed',
                     isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email))
                 }));
@@ -268,7 +515,7 @@ function Friends() {
             try {
                 await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/send`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/send`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -310,7 +557,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/accept`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/accept`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -368,7 +615,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/deny`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/deny`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -420,7 +667,7 @@ function Friends() {
                     // Updated to exactly match the curl example format
                     await axios({
                         method: 'DELETE',
-                        url: `http://localhost:8080/users/${userData.userEmail}/friends/${friendEmail}`,
+                        url: `${base_url}/users/${userData.userEmail}/friends/${friendEmail}`,
                         headers: {
                             'Session-Id': sessionId,
                             'Content-Type': 'application/json'
@@ -486,10 +733,16 @@ function Friends() {
         );
     };
 
-    // Add a refresh function to manually refresh friend requests and friends
+    // Update the refreshData function
     const refreshData = () => {
+        // Set loading states first to show skeletons
+        setLoadingFriends(true);
+        setLoadingRequests(true);
+        
+        // Then fetch the data
         fetchFriendRequests();
         fetchFriends();
+        
         toast.info("Refreshing your friends data...");
     };
 
@@ -517,10 +770,15 @@ function Friends() {
 
     return (
         <div className="friends-page">
+            {/* Updated friends section */}
             <div className="friends-container">
                 <h2>My Friends</h2>
 
-                {friends.length > 0 ? (
+                {loadingFriends ? (
+                    <div className="friends-list">
+                        {[1, 2, 3, 4].map(i => <FriendSkeleton key={i} />)}
+                    </div>
+                ) : friends.length > 0 ? (
                     <div className="friends-list" ref={friendsListRef}>
                         {friends.map(user => (
                             <div className="friend-card" key={user.userEmail}>
@@ -538,7 +796,7 @@ function Friends() {
                                     className="friend-card-content"
                                     onClick={() => handleFriendClick(user.userEmail)}
                                 >
-                                    <img src={user.image} alt={user.name} />
+                                    <ProfileImage user={user} altText={user.name} />
                                     <h3>{user.name}</h3>
                                 </div>
                             </div>
@@ -553,22 +811,28 @@ function Friends() {
                 )}
             </div>
 
+            {/* Updated friend requests section */}
             <div className="friend-requests-container">
                 <h2>Friend Requests {friendRequests.length > 0 && <span className="request-count">{friendRequests.length}</span>}</h2>
 
-                {friendRequests.length > 0 ? (
+                {loadingRequests ? (
+                    <div className="friend-requests-list">
+                        {[1, 2].map(i => <FriendRequestSkeleton key={i} />)}
+                    </div>
+                ) : friendRequests.length > 0 ? (
                     <div className="friend-requests-list">
                         {friendRequests.map(request => (
                             <div className="friend-request-card" key={request.id}>
                                 <div className="user-info" onClick={() => handleFriendClick(request.userEmail)}>
-                                    <img src={request.image} alt={request.name} className="request-avatar" />
+                                    <ProfileImage user={request} altText={request.name} className="request-avatar" />
                                     <div className="request-details">
                                         <h4>{request.name}</h4>
                                         <p>{request.major || 'No major listed'}</p>
                                     </div>
                                 </div>
                                 <div className="request-actions">
-                                    <button
+                                    <button 
+                                        aria-label={`Accept friend request from ${request.name}`} 
                                         className="accept-request-btn"
                                         onClick={() => handleAcceptRequest(request)}
                                     >
@@ -592,64 +856,90 @@ function Friends() {
             </div>
 
             <div className="search-section">
-                <form className="search-container" onSubmit={(e) => e.preventDefault()}>
-                    <div className="search-input-container">
-                        <input
-                            type="text"
-                            className="search-bar"
-                            placeholder="Search to add friends..."
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                            onFocus={() => {
-                                // Load history from localStorage
-                                const savedHistory = JSON.parse(localStorage.getItem('friendSearchHistory') || '[]');
-                                setSearchHistory(savedHistory);
-                            }}
-                        />
-                        
-                        {searchHistory.length > 0 && searchQuery.length === 0 && document.activeElement === document.querySelector('.search-bar') && (
-                            <div className="search-history-dropdown">
-                                <div className="search-history-header">Recent Searches</div>
-                                {searchHistory.map((query, index) => (
+                <div className="search-filter-container">
+                    <form className="search-container" onSubmit={(e) => e.preventDefault()}>
+                        <div className="search-input-container">
+                            <input
+                                type="text"
+                                className="search-bar"
+                                placeholder="Search to add friends..."
+                                value={searchQuery}
+                                onChange={handleSearchChange}
+                                onFocus={() => {
+                                    // Load history from localStorage
+                                    const savedHistory = JSON.parse(localStorage.getItem('friendSearchHistory') || '[]');
+                                    setSearchHistory(savedHistory);
+                                }}
+                            />
+                            
+                            {searchHistory.length > 0 && searchQuery.length === 0 && document.activeElement === document.querySelector('.search-bar') && (
+                                <div className="search-history-dropdown">
+                                    <div className="search-history-header">Recent Searches</div>
+                                    {searchHistory.map((query, index) => (
+                                        <div 
+                                            key={index} 
+                                            className="search-history-item"
+                                            onClick={() => {
+                                                setSearchQuery(query);
+                                                performSearch(query);
+                                            }}
+                                        >
+                                            <i className="history-icon">↩️</i>
+                                            <span>{query}</span>
+                                        </div>
+                                    ))}
                                     <div 
-                                        key={index} 
-                                        className="search-history-item"
+                                        className="clear-history"
                                         onClick={() => {
-                                            setSearchQuery(query);
-                                            performSearch(query);
+                                            localStorage.removeItem('friendSearchHistory');
+                                            setSearchHistory([]);
                                         }}
                                     >
-                                        <i className="history-icon">↩️</i>
-                                        <span>{query}</span>
+                                        Clear History
                                     </div>
-                                ))}
-                                <div 
-                                    className="clear-history"
-                                    onClick={() => {
-                                        localStorage.removeItem('friendSearchHistory');
-                                        setSearchHistory([]);
-                                    }}
-                                >
-                                    Clear History
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            className={`search-button ${isSearching ? 'loading' : ''}`} 
+                            onClick={handleSearch} 
+                            disabled={isSearching}
+                        >
+                            {isSearching ? (
+                                <>
+                                    <span className="loading-spinner"></span>
+                                    <span>Searching...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <i className="friend-search"></i>
+                                    <span>Search</span>
+                                </>
+                            )}
+                        </button>
+                    </form>
                     
-                    <button type="submit" className="search-button" onClick={handleSearch} disabled={isSearching}>
-                        <i className="friend-search"></i>
-                        {isSearching ? 'Searching...' : 'Search'}
-                    </button>
-                </form>
+                    <FilterPanel />
+                </div>
 
-                {searchResults.length > 0 && (
+                {/* Rest of your search results section remains unchanged */}
+                {isSearching ? (
+                    <div className="search-results">
+                        <h3>Loading Results...</h3>
+                        <div className="search-results-list">
+                            {[1, 2, 3].map(i => <SearchResultSkeleton key={i} />)}
+                        </div>
+                    </div>
+                ) : searchResults.length > 0 ? (
                     <div className="search-results">
                         <h3>Search Results</h3>
                         <div className="search-results-list">
                             {searchResults.map(user => (
                                 <div key={user.userEmail} className="search-result-card">
                                     <div className="user-info" onClick={() => handleFriendClick(user.userEmail)}>
-                                        <img src={user.image} alt={user.name} className="search-result-avatar" />
+                                        <ProfileImage user={user} altText={user.name} className="search-result-avatar" />
                                         <div className="search-result-details">
                                             <h4>{user.name}</h4>
                                             <p>{user.major || 'No major listed'}</p>
@@ -674,13 +964,11 @@ function Friends() {
                             ))}
                         </div>
                     </div>
-                )}
-
-                {noResultsFound && (
+                ) : noResultsFound ? (
                     <div className="no-results">
                         <p>No users found matching &#34;{searchQuery}&#34;</p>
                     </div>
-                )}
+                ) : null}
             </div>
 
             <button onClick={refreshData} className="refresh-button">

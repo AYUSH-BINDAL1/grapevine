@@ -35,23 +35,76 @@ It also includes responsive design for different screen sizes. */
   padding: 30px 20px;
 }
 
+/* Profile image container styles - update these properties */
 .profile-image-container {
-  margin: 0 auto 20px;
   position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #8ebd89; /* Add visible border */
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8); /* Add white outline */
+  background-color: #f5f5f5; /* Background color if image has transparency */
+  box-sizing: content-box; /* Ensures border doesn't affect dimensions */
 }
 
 .profile-image {
-  width: 160px;
-  height: 160px;
-  border-radius: var(--border-radius-full);
-  object-fit: cover;
-  border: 4px solid var(--primary-color);
-  box-shadow: var(--shadow-light);
-  transition: transform 0.3s;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* This ensures the image covers the area without distortion */
+  object-position: center; /* Centers the image within the container */
+  transition: filter 0.3s ease;
 }
 
-.profile-image:hover {
-  transform: scale(1.03);
+/* Ensure the overlay respects the border-radius */
+.profile-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%; /* Match container border-radius */
+}
+
+.profile-image-container:hover .profile-image {
+  filter: brightness(70%);
+}
+
+.profile-image-container:hover .profile-image-overlay {
+  opacity: 1;
+}
+
+.upload-icon {
+  color: white;
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.upload-text {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.profile-image-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
 }
 
 .name {
@@ -392,7 +445,7 @@ It also includes responsive design for different screen sizes. */
   height: 100%;
   background-color: #f0f0f0;
   border: 1px solid #e8e8e8;
-  transition: all 0.2s;
+  transition: background-color 0.3s, transform 0.1s;
 }
 
 .hour-block.available {
@@ -410,6 +463,10 @@ It also includes responsive design for different screen sizes. */
 
 .hour-block.updating {
   opacity: 0.7;
+}
+
+.hour-block:active {
+  transform: scale(0.95);
 }
 
 .hour-update-indicator {
@@ -444,6 +501,34 @@ It also includes responsive design for different screen sizes. */
   transform: scale(1.1);
   z-index: 1;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Add gradient effect for transitions */
+.hour-block.available + .hour-block:not(.available),
+.hour-block:not(.available) + .hour-block.available {
+  position: relative;
+}
+
+.hour-block.available + .hour-block:not(.available)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  height: 100%;
+  width: 4px;
+  background: linear-gradient(to right, var(--primary-color), transparent);
+  z-index: 1;
+}
+
+.hour-block:not(.available) + .hour-block.available::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  height: 100%;
+  width: 4px;
+  background: linear-gradient(to right, transparent, var(--primary-color));
+  z-index: 1;
 }
 
 /* Add these styles to Profile.css for the time indicators */
@@ -748,6 +833,14 @@ It also includes responsive design for different screen sizes. */
 }
 
 @media (max-width: 768px) {
+  .profile-page {
+    flex-direction: column;
+  }
+  
+  .profile-sidebar, .profile-content {
+    width: 100%;
+  }
+
   .time-input {
     flex-direction: column;
     align-items: stretch;
@@ -1148,4 +1241,45 @@ It also includes responsive design for different screen sizes. */
 /* Student styling (default) */
 .role-student .profile-sidebar {
   border-left: 4px solid #2ecc71;
+}
+
+/* Skeleton Loading Styles */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+.profile-image-container.skeleton {
+  background-color: #f0f0f0;
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  height: 24px;
+  width: 70%;
+  margin: 20px auto 15px;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-tags {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.skeleton-tag {
+  height: 26px;
+  width: 60px;
+  border-radius: 13px;
+  background-color: #f0f0f0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
