@@ -139,7 +139,7 @@ function Events() {
                     return;
                 }
                 /*
-                const response = await axios.get("http://localhost:8080/events/all-short", {
+                const response = await axios.get(`http://localhost:8080/events/all-short`, {
                     headers: {'Session-Id': sessionId}
                 });
                 setAllEvents(response.data);

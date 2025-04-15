@@ -162,6 +162,42 @@ function Profile() {
       });
   }, [availabilityString]);
 
+  const fetchUserProfile = async () => {
+    const storedUserData = localStorage.getItem('userData');
+    if (!storedUserData) {
+      toast.error("User data not found. Please login again.");
+      setTimeout(() => window.location.href = '/', 2000);
+      return null;
+    }
+    
+    const parsedData = JSON.parse(storedUserData);
+    setUserData(parsedData); // Set initial data from localStorage first
+    
+    try {
+      // Then fetch fresh data from server
+      const response = await axios.get(
+        `${base_url}/users/${parsedData.userEmail}`,
+        { headers: { 'Session-Id': sessionId } }
+      );
+      
+      // Merge server data with local data, preferring server values
+      const mergedData = {
+        ...parsedData,
+        ...response.data,
+        // Handle any special field merging here
+      };
+      
+      // Update local storage with fresh data
+      localStorage.setItem('userData', JSON.stringify(mergedData));
+      setUserData(mergedData);
+      
+      return mergedData;
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return parsedData; // Return localStorage data as fallback
+    }
+  };
+
   useEffect(() => {
     if (!sessionId) {
       toast.error("Session expired. Please login again.");
@@ -169,71 +205,27 @@ function Profile() {
       return;
     }
 
-    // Load user data from localStorage
     setIsLoading(true);
-    const storedUserData = localStorage.getItem('userData');
-    
-    if (storedUserData) {
-      const parsedData = JSON.parse(storedUserData);
-      console.log("User data from localStorage:", parsedData);
-      setUserData(parsedData);
-      setEditedDescription(parsedData.biography || "");
-      
-      // Store the majors array and create the display string
-      setEditedProfileData({
-        name: parsedData.name || "",
-        userEmail: parsedData.userEmail || "",
-        majors: parsedData.majors || [],
-        majorsString: (parsedData.majors || []).join(', ')
-      });
-      
-      // If the user already has availability data, load it
-      if (parsedData.weeklyAvailability) {
-        setAvailabilityString(parsedData.weeklyAvailability);
-      }
-
-      console.log("Making server request for user data:", parsedData.userEmail);
-      // Important change: Fetch user data from the server to get the latest profile picture ID
-      axios.get(
-        `${base_url}/users/${parsedData.userEmail}`,
-        { headers: { 'Session-Id': sessionId } }
-      ).then(response => {
-        console.log("Server response for user data:", response.data);
-        // Update the profile picture from the server response
-        if (response.data) {
-          // Check for profilePictureUrl first (current field name)
-          if (response.data.profilePictureUrl) {
-            console.log("Fetched profile picture URL from server:", response.data.profilePictureUrl);
-            
-            // Update the localStorage copy with the server value
-            const updatedUserData = {
-              ...parsedData,
-              profilePictureUrl: response.data.profilePictureUrl
-            };
-            localStorage.setItem('userData', JSON.stringify(updatedUserData));
-            
-            // Load the profile picture
-            fetchProfilePicture(response.data.profilePictureUrl);
-          }
-          // Fallback to profilePictureId if url is not available
-          else if (response.data.profilePictureId) {
-            console.log("Fetched profile picture ID from server:", response.data.profilePictureId);
-            
-            // Update the localStorage copy with the server value
-            const updatedUserData = {
-              ...parsedData,
-              profilePictureId: response.data.profilePictureId
-            };
-            localStorage.setItem('userData', JSON.stringify(updatedUserData));
-            
-            // Load the profile picture
-            fetchProfilePicture(response.data.profilePictureId);
-          }
+    fetchUserProfile().then((parsedData) => {
+      if (parsedData) {
+        setEditedDescription(parsedData.biography || "");
+        
+        // Store the majors array and create the display string
+        setEditedProfileData({
+          name: parsedData.name || "",
+          userEmail: parsedData.userEmail || "",
+          majors: parsedData.majors || [],
+          majorsString: (parsedData.majors || []).join(', ')
+        });
+        
+        // If the user already has availability data, load it
+        if (parsedData.weeklyAvailability) {
+          setAvailabilityString(parsedData.weeklyAvailability);
         }
         
         // Update user role from server response
-        if (response.data && response.data.role) {
-          const role = response.data.role || 'Student';
+        if (parsedData.role) {
+          const role = parsedData.role || 'Student';
           setUserRole(role);
           
           // Update searchEnabled based on role
@@ -243,41 +235,25 @@ function Profile() {
           // Update global searchEnabled variable
           window.searchEnabled = isTeachingRole;
         }
-      }).catch(error => {
-        console.error('Error fetching user data:', error);
-        console.log('Error details:', error.response || 'No response data');
-        
-        // Still try to load picture from localStorage as fallback
-        if (parsedData.profilePictureId) {
-          fetchProfilePicture(parsedData.profilePictureId);
-        }
-        
-        // Continue with local role if available
-        const role = parsedData.role || 'Student';
-        setUserRole(role);
-        
-        // Update searchEnabled based on role
-        const isTeachingRole = ['INSTRUCTOR', 'GTA', 'UTA'].includes(role);
-        setSearchEnabled(isTeachingRole);
-        
-        // Update global searchEnabled variable
-        window.searchEnabled = isTeachingRole;
-      });
-    } else {
-      console.error("No user data found in localStorage");
-      toast.error("User data not found. Please login again.");
-      setTimeout(() => window.location.href = '/', 2000);
-    }
-    
-    setTimeout(() => setIsLoading(false), 500);
+      }
+    }).finally(() => setIsLoading(false));
   }, [sessionId]);
 
-  // Update the fetchProfilePicture function
-  const fetchProfilePicture = async (fileId) => {
+  // Complete and optimize the fetchProfilePicture function
+  const fetchProfilePicture = useCallback(async (fileId) => {
     console.log("fetchProfilePicture called with ID:", fileId);
     
     if (!fileId || fileId === 'undefined') {
       console.log("Invalid fileId detected:", fileId);
+      setProfilePicture(profileImage); // Set default image
+      return;
+    }
+    
+    // Check for cached image URL first
+    const cachedUrl = sessionStorage.getItem(`profile-image-${fileId}`);
+    if (cachedUrl) {
+      console.log("Using cached profile image:", cachedUrl);
+      setProfilePicture(cachedUrl);
       return;
     }
     
@@ -293,30 +269,76 @@ function Profile() {
         imageUrl = `${image_url}/images/${fileId}`;
       }
       
-      console.log("Setting profile picture URL:", imageUrl);
+      console.log("Attempting to load image from URL:", imageUrl);
+      
+      // Verify the image loads correctly
+      const img = new Image();
+      
+      // Create a promise to handle image loading
+      const imageLoadPromise = new Promise((resolve, reject) => {
+        img.onload = () => {
+          console.log("Image loaded successfully:", imageUrl);
+          resolve(imageUrl);
+        };
+        
+        img.onerror = () => {
+          console.error("Failed to load image from primary URL:", imageUrl);
+          // Try alternative URL format if the first one fails
+          if (!fileId.startsWith('http')) {
+            const alternativeUrl = `${base_url}/api/files/getImage/${fileId}`;
+            console.log("Trying alternative URL:", alternativeUrl);
+            
+            const altImg = new Image();
+            altImg.onload = () => {
+              console.log("Alternative URL loaded successfully");
+              resolve(alternativeUrl);
+            };
+            
+            altImg.onerror = () => {
+              console.error("Failed to load image from alternative URL");
+              reject(new Error("Failed to load profile image"));
+            };
+            
+            altImg.src = alternativeUrl;
+          } else {
+            reject(new Error("Failed to load profile image"));
+          }
+        };
+      });
+      
+      // Start loading the image
+      img.src = imageUrl;
+      
+      // Wait for image load resolution
+      const successfulUrl = await imageLoadPromise;
+      
+      // Cache the successful URL
+      sessionStorage.setItem(`profile-image-${fileId}`, successfulUrl);
       
       // Set the profile picture URL
-      setProfilePicture(imageUrl);
+      setProfilePicture(successfulUrl);
       
-      // Verify the image loads correctly in the background
-      const img = new Image();
-      img.onload = () => {
-        console.log("Image loaded successfully:", imageUrl);
-      };
-      img.onerror = (e) => {
-        console.error("Failed to load image:", imageUrl, e);
-        // Try alternative URL format if the first one fails
-        if (!fileId.startsWith('http') && !imageUrl.includes('/api/files/getImage/')) {
-          const alternativeUrl = `${base_url}/api/files/getImage/${fileId}`;
-          console.log("Trying alternative URL:", alternativeUrl);
-          setProfilePicture(alternativeUrl);
-        }
-      };
-      img.src = imageUrl;
+      return successfulUrl;
     } catch (error) {
-      console.error('Error setting profile picture URL:', error);
+      console.error('Error fetching profile picture:', error);
+      // Fall back to default image
+      setProfilePicture(profileImage);
     }
-  };
+  }, []);
+
+  // Add this useEffect to call fetchProfilePicture when user data changes
+  useEffect(() => {
+    if (userData) {
+      if (userData.profilePictureUrl) {
+        fetchProfilePicture(userData.profilePictureUrl);
+      } else if (userData.profilePictureId) {
+        fetchProfilePicture(userData.profilePictureId);
+      } else {
+        // No profile picture data available, use default
+        setProfilePicture(profileImage);
+      }
+    }
+  }, [userData, fetchProfilePicture]);
 
   useEffect(() => {
     const fetchUserCourses = async () => {
@@ -899,7 +921,7 @@ function Profile() {
       
       // Step 1: Upload the file
       const response = await axios.post(
-        'http://localhost:8080/api/files/upload',
+        `${base_url}/api/files/upload`,
         formData,
         {
           headers: {
