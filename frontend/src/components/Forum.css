@@ -370,3 +370,72 @@
     flex-grow: 1;
   }
 }
+
+/* Add these styles to Forum.css */
+.post-thread-fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  align-items: center;
+  background-color: var(--primary-color, #4a6da7);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 100;
+  font-weight: bold;
+}
+
+.post-thread-fab:hover {
+  background-color: var(--primary-hover, #3a5d97);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.fab-icon {
+  font-size: 20px;
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.fab-text {
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+/* Hide the FAB when the form is already open */
+.forum-container.form-open .post-thread-fab {
+  display: none;
+}
+
+/* Make the button responsive */
+@media (max-width: 768px) {
+  .post-thread-fab {
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 16px;
+  }
+}
+
+/* For very small screens, show just the icon */
+@media (max-width: 480px) {
+  .post-thread-fab {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    justify-content: center;
+  }
+  
+  .fab-text {
+    display: none;
+  }
+  
+  .fab-icon {
+    margin-right: 0;
+    font-size: 24px;
+  }
+}

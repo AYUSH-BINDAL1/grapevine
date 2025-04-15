@@ -6,53 +6,33 @@ import 'react-toastify/dist/ReactToastify.css';
 import './Forum.css';
 import { base_url } from '../config';
 
-// Sample data for development and testing
-const EXAMPLE_THREADS = [
-  {
-    id: 1,
-    title: "Tips for CS 180 Final Exam",
-    content: "I'm preparing for the CS 180 final and was wondering if anyone had study tips or resources they could share. I'm especially struggling with the algorithms section. What concepts do you think will be most important to focus on? Last semester's exam had a lot of questions on time complexity and binary trees, but I heard this professor focuses more on practical coding problems.",
-    createdAt: "2023-11-15T14:32:00Z",
-    category: { id: "cs", name: "Computer Science" },
-    author: {
-      name: "Alex Johnson",
-      profilePictureUrl: "https://randomuser.me/api/portraits/men/32.jpg"
-    },
-    views: 438,
-    commentCount: 24
-  },
-  {
-    id: 2,
-    title: "Looking for partner for Biology research project",
-    content: "Hello everyone! I'm looking for a partner for the BIO 203 semester research project. My focus area is on plant cellular regeneration, and I want to study the effects of different growth hormones on tissue culture. I've already secured lab space and have some preliminary research done. Let me know if you're interested and what your schedule looks like for the next few weeks!",
-    createdAt: "2023-11-20T09:15:00Z",
-    category: { id: "bio", name: "Biology" },
-    author: {
-      name: "Sarah Chen",
-      profilePictureUrl: "https://randomuser.me/api/portraits/women/44.jpg"
-    },
-    views: 126,
-    commentCount: 8
-  },
-  {
-    id: 3,
-    title: "Purdue vs. Indiana Basketball Game",
-    content: "Who's excited for the big game this weekend? Purdue vs. Indiana is always a highlight of the season. Let's show our Boilermaker pride and cheer on the team! Does anyone know if there are any watch parties happening on campus?",
-    createdAt: "2023-11-18T18:45:00Z",
-    category: { id: "sports", name: "Sports" },
-    author: {
-      name: "Michael Brown",
-      profilePictureUrl: "https://randomuser.me/api/portraits/men/45.jpg"
-    },
-    views: 312,
-    commentCount: 15
-  }
+const EXAMPLE_CATEGORIES = [
+  { id: '1', name: 'General', threadCount: 10 },
+  { id: '2', name: 'Announcements', threadCount: 5 },
+  { id: '3', name: 'Feedback', threadCount: 8 },
 ];
 
-const EXAMPLE_CATEGORIES = [
-  { id: "cs", name: "Computer Science", threadCount: 10 },
-  { id: "bio", name: "Biology", threadCount: 5 },
-  { id: "sports", name: "Sports", threadCount: 8 }
+const EXAMPLE_THREADS = [
+  {
+    id: '1',
+    title: 'Welcome to the forum!',
+    content: 'This is the first thread in the forum. Feel free to discuss anything here.',
+    author: { name: 'Admin', profilePictureUrl: '' },
+    createdAt: '2023-01-01T12:00:00Z',
+    category: { id: '1', name: 'General' },
+    views: 100,
+    commentCount: 5,
+  },
+  {
+    id: '2',
+    title: 'Forum Rules',
+    content: 'Please read the forum rules before posting.',
+    author: { name: 'Admin', profilePictureUrl: '' },
+    createdAt: '2023-01-02T12:00:00Z',
+    category: { id: '2', name: 'Announcements' },
+    views: 50,
+    commentCount: 2,
+  },
 ];
 
 function Forum() {
@@ -80,71 +60,76 @@ function Forum() {
 
         setLoading(true);
         
-        try {
-          // Try fetching from API first
-          const categoriesResponse = await axios.get(`${base_url}/forum/categories`, {
-            headers: { 'Session-Id': sessionId }
-          });
-          
-          setCategories(categoriesResponse.data || []);
-        } catch (error) {
-          console.log('Using example categories data');
-          // Fall back to example data if API fails
-          setCategories(EXAMPLE_CATEGORIES);
-        }
+        // Use example categories directly
+        setCategories(EXAMPLE_CATEGORIES);
         
         try {
-          // Try fetching threads from API first
-          const threadsResponse = await axios.get(`${base_url}/forum/threads`, {
-            params: {
-              page: currentPage,
-              category: selectedCategory !== 'all' ? selectedCategory : undefined,
-              search: searchQuery || undefined
-            },
+          // Attempt to fetch threads from API
+          console.log("Attempting to fetch threads from API...");
+          const threadsResponse = await axios.get(`${base_url}/threads`, {
             headers: { 'Session-Id': sessionId }
           });
           
-          setThreads(threadsResponse.data.threads || []);
-          setTotalPages(threadsResponse.data.totalPages || 1);
+          console.log("API response received:", threadsResponse.data);
+          const responseData = threadsResponse.data;
+          
+          // Process API response
+          if (Array.isArray(responseData)) {
+            setThreads(responseData);
+            setTotalPages(Math.ceil(responseData.length / 10));
+          } else if (responseData.threads && Array.isArray(responseData.threads)) {
+            setThreads(responseData.threads);
+            setTotalPages(responseData.totalPages || Math.ceil(responseData.threads.length / 10));
+          } else {
+            console.warn('Unexpected response format, falling back to sample data');
+            useExampleThreads();
+          }
         } catch (error) {
-          console.log('Using example threads data');
-          // Fall back to example data if API fails
+          console.warn(`API error: ${error.message}. Status: ${error.response?.status}`);
+          console.log('Using example thread data due to API error');
           
-          // Filter by category if selected
-          let filteredThreads = EXAMPLE_THREADS;
-          if (selectedCategory !== 'all') {
-            filteredThreads = EXAMPLE_THREADS.filter(
-              thread => thread.category.id === selectedCategory
-            );
+          // Show only a single toast message, not for every failed request
+          if (currentPage === 1 && selectedCategory === 'all' && !searchQuery) {
+            toast.info("Using demo data while server is unavailable", {
+              autoClose: 3000,
+              toastId: "api-error" // Prevents duplicate toasts
+            });
           }
           
-          // Filter by search query if provided
-          if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filteredThreads = filteredThreads.filter(thread => 
-              thread.title.toLowerCase().includes(query) || 
-              thread.content.toLowerCase().includes(query) ||
-              thread.author.name.toLowerCase().includes(query)
-            );
-          }
-          
-          // Sort by most recent first
-          filteredThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          
-          // Basic pagination
-          const threadsPerPage = 5;
-          const start = (currentPage - 1) * threadsPerPage;
-          const end = start + threadsPerPage;
-          const paginatedThreads = filteredThreads.slice(start, end);
-          
-          setThreads(paginatedThreads);
-          setTotalPages(Math.ceil(filteredThreads.length / threadsPerPage));
+          useExampleThreads();
         }
       } catch (error) {
-        console.error('Error fetching forum data:', error);
-        toast.error("Failed to load forum data");
+        console.error('Unexpected error in fetchForumData:', error);
       } finally {
         setLoading(false);
+      }
+      
+      // Extract the example threads filtering logic into a helper function
+      function useExampleThreads() {
+        let filteredThreads = EXAMPLE_THREADS;
+        
+        if (selectedCategory !== 'all') {
+          filteredThreads = EXAMPLE_THREADS.filter(
+            thread => thread.category.id === selectedCategory
+          );
+        }
+        
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          filteredThreads = filteredThreads.filter(thread => 
+            thread.title.toLowerCase().includes(query) || 
+            thread.content.toLowerCase().includes(query)
+          );
+        }
+        
+        // Basic pagination
+        const threadsPerPage = 5;
+        const start = (currentPage - 1) * threadsPerPage;
+        const end = start + threadsPerPage;
+        const paginatedThreads = filteredThreads.slice(start, end);
+        
+        setThreads(paginatedThreads);
+        setTotalPages(Math.ceil(filteredThreads.length / threadsPerPage));
       }
     };
     
@@ -162,34 +147,75 @@ function Forum() {
         return;
       }
       
-      if (!newThread.title.trim() || !newThread.content.trim() || !newThread.categoryId) {
+      if (!newThread.title.trim() || !newThread.content.trim()) {
         toast.error("Please fill in all required fields");
         return;
       }
       
-      /*const response = await axios.post(`${base_url}/forum/threads`, newThread, {
-        headers: { 'Session-Id': sessionId }
-      }); */
+      // Get user email from localStorage
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      const userEmail = userData.userEmail;
       
-      toast.success("Thread created successfully!");
+      if (!userEmail) {
+        toast.error("User information not found. Please log in again.");
+        return;
+      }
+      
+      // Create the request payload in the format expected by the API
+      const threadPayload = {
+        title: newThread.title,
+        description: newThread.content,     // API expects 'description', not 'content'
+        authorEmail: userEmail,             // Add author email from user data
+        categoryId: newThread.categoryId    // Include category if your API supports it
+      };
+      
+      console.log('Creating thread with payload:', threadPayload);
+      
+      // Show creating status
+      toast.info("Creating thread...", { autoClose: 2000, toastId: "creating" });
+      
+      // Attempt to create thread via API
+      try {
+        const response = await axios.post(`${base_url}/threads`, threadPayload, {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId 
+          }
+        });
+        
+        toast.success("Thread created successfully!");
+      } catch (apiError) {
+        console.warn("API error when creating thread:", apiError);
+        toast.warning("Thread creation API unavailable. Using demo mode.");
+        
+        // Simulate thread creation in demo mode
+        const newThreadObj = {
+          id: `demo-${Date.now()}`,
+          title: newThread.title,
+          content: newThread.content,
+          author: { 
+            name: userData.fullName || userData.name || "Current User",
+            profilePictureUrl: userData.profilePictureUrl || ""
+          },
+          createdAt: new Date().toISOString(),
+          category: categories.find(c => c.id === newThread.categoryId) || { id: '1', name: 'General' },
+          views: 0,
+          commentCount: 0
+        };
+        
+        // Add to example threads for the demo experience
+        EXAMPLE_THREADS.unshift(newThreadObj);
+      }
+      
+      // Clean up form regardless of API success
       setShowNewThreadForm(false);
       setNewThread({ title: '', content: '', categoryId: '' });
       
-      // Refresh threads to include the new one
-      const threadsResponse = await axios.get(`${base_url}/forum/threads`, {
-        params: {
-          page: 1, // Go back to first page
-          category: selectedCategory !== 'all' ? selectedCategory : undefined,
-          search: searchQuery || undefined
-        },
-        headers: { 'Session-Id': sessionId }
-      });
-      
-      setThreads(threadsResponse.data.threads || []);
-      setCurrentPage(1);
+      // Refresh the thread list (will use API or sample data as appropriate)
+      fetchForumData();
     } catch (error) {
-      console.error('Error creating thread:', error);
-      toast.error("Failed to create thread");
+      console.error('Error in thread creation process:', error);
+      toast.error("An unexpected error occurred");
     }
   };
 
@@ -320,15 +346,11 @@ function Forum() {
             <h3>Forum Statistics</h3>
             <div className="stat-item">
               <span className="stat-label">Total Threads:</span>
-              <span className="stat-value">1,234</span>
+              <span className="stat-value">N/A</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Total Posts:</span>
-              <span className="stat-value">5,678</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Active Users:</span>
-              <span className="stat-value">42</span>
+              <span className="stat-label">Total Replies:</span>
+              <span className="stat-value">N/A</span>
             </div>
           </div>
         </div>
@@ -406,6 +428,16 @@ function Forum() {
           )}
         </div>
       </div>
+
+      {/* Add floating action button for posting new threads */}
+      <button 
+        className="post-thread-fab"
+        onClick={() => setShowNewThreadForm(true)}
+        aria-label="Create a new thread"
+      >
+        <span className="fab-icon">+</span>
+        <span className="fab-text">Post Thread</span>
+      </button>
     </div>
   );
 }
