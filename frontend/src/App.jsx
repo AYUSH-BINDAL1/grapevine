@@ -16,7 +16,7 @@ import EventDetails from "./components/EventDetails";
 import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import './App.css';
-import './components/Groups.css';
+
 
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
