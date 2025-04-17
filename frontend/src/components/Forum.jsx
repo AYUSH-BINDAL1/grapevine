@@ -29,35 +29,50 @@ function Forum() {
       }
 
       try {
+        console.log('Fetching threads from API...');
+        
         // Get threads from API
         const response = await axios.get(`${base_url}/threads`, {
           headers: { 'Session-Id': sessionId }
         });
+        
+        // Log the raw API response
+        console.log('Raw API response:', response);
+        console.log('Thread data received:', response.data);
         
         // Store complete forum data
         setForumData(response.data);
         
         // Process the response data
         if (Array.isArray(response.data)) {
+          console.log(`Processing ${response.data.length} threads from array response`);
           setThreads(response.data);
           setTotalPages(Math.ceil(response.data.length / 10));
+          
+          // Log thread IDs with the correct property name
+          console.log('Thread IDs:', response.data.map(thread => thread.threadId));
         } else if (response.data.threads && Array.isArray(response.data.threads)) {
+          console.log(`Processing ${response.data.threads.length} threads from nested response`);
           setThreads(response.data.threads);
           setTotalPages(response.data.totalPages || Math.ceil(response.data.threads.length / 10));
+          
+          // Log thread IDs to help identify any missing or duplicate IDs
+          console.log('Thread IDs:', response.data.threads.map(thread => thread.id));
         } else {
-          console.warn('Unexpected response format');
+          console.warn('Unexpected response format:', response.data);
           setThreads([]);
           setTotalPages(1);
         }
       } catch (error) {
         console.warn("Error fetching forum data from API:", error);
-        
+        console.log("Error details:", error.response || error.message);
       }
     } catch (error) {
       console.error("Unexpected error in fetchForumData:", error);
       toast.error("Failed to load forum data. Please try again later.");
     } finally {
       setLoading(false);
+      console.log('Thread fetching complete.');
     }
   }, [navigate]);
 
@@ -163,6 +178,11 @@ function Forum() {
   };
 
   const goToThread = (threadId) => {
+    if (!threadId) {
+      console.warn('Attempted to navigate to thread with undefined ID');
+      toast.error('Cannot view this thread: Invalid thread ID');
+      return;
+    }
     navigate(`/forum/thread/${threadId}`);
   };
 
@@ -328,8 +348,12 @@ function Forum() {
           ) : (
             <>
               <ul className="threads-list">
-                {threads.map(thread => (
-                  <li key={thread.id} className="thread-item" onClick={() => goToThread(thread.id)}>
+                {threads.map((thread, index) => (
+                  <li 
+                    key={thread.threadId || `thread-${index}`} 
+                    className="thread-item" 
+                    onClick={() => goToThread(thread.threadId)}
+                  >
                     <div className="thread-avatar">
                       <img 
                         src={thread.author?.profilePictureUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%234a6da7'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='16' fill='white' text-anchor='middle' dy='.3em'%3E${thread.author?.name?.charAt(0) || 'U'}%3C/text%3E%3C/svg%3E`} 
