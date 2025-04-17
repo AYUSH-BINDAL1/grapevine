@@ -1,9 +1,10 @@
-import  { useEffect, useRef, useState } from 'react';
+import  { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Events.css';
+import { base_url } from '../config';
 
 function Events() {
     const [myEvents, setMyEvents] = useState([]);
@@ -59,7 +60,7 @@ function Events() {
                 const email = userData.userEmail;
 
                 const response = await axios.get(
-                    `http://localhost:8080/events/all`,
+                    `${base_url}/events/all`,
                     { headers: { 'Session-Id': sessionId } }
                 );
 
@@ -79,33 +80,8 @@ function Events() {
         fetchMyEvents();
     }, []);
 
-    // Fetch All Events initially
-    useEffect(() => {
-        const fetchAllEvents = async () => {
-            try {
-                const sessionId = localStorage.getItem('sessionId');
-                if (!sessionId) {
-                    toast.error("Session expired. Please login again.");
-                    navigate("/");
-                    return;
-                }
-                /*
-                const response = await axios.get("http://localhost:8080/events/all-short", {
-                    headers: {'Session-Id': sessionId}
-                });
-                setAllEvents(response.data);
-                setFilteredEvents(response.data);
-                */
-               applyEventFilter();
-            } catch (error) {
-                console.error("Error fetching all events:", error);
-            }
-        };
-        fetchAllEvents();
-    }, [navigate]);
-
     // Apply filter based on provided criteria
-    const applyEventFilter = async () => {
+    const applyEventFilter = useCallback(async () => {
         try {
             const sessionId = localStorage.getItem('sessionId');
             if (!sessionId) {
@@ -140,7 +116,7 @@ function Events() {
                     query.append(key, val);
                 }
             });
-            const url = `http://localhost:8080/events/all-short?${query.toString()}`;
+            const url = `${base_url}/events/all-short?${query.toString()}`;
             console.log("Requesting:", url);
             const response = await axios.get(url, {
                 headers: { 'Session-Id': sessionId }
@@ -150,7 +126,32 @@ function Events() {
             console.error("Error applying event filter:", error);
             toast.error("Failed to fetch events with the given filters.");
         }
-    };
+    }, [search, maxUsers, startTime, endTime, locationId, includePastEvents, onlyFullEvents, navigate, setFilteredEvents]);
+
+    // Fetch All Events initially
+    useEffect(() => {
+        const fetchAllEvents = async () => {
+            try {
+                const sessionId = localStorage.getItem('sessionId');
+                if (!sessionId) {
+                    toast.error("Session expired. Please login again.");
+                    navigate("/");
+                    return;
+                }
+                /*
+                const response = await axios.get(`http://localhost:8080/events/all-short`, {
+                    headers: {'Session-Id': sessionId}
+                });
+                setAllEvents(response.data);
+                setFilteredEvents(response.data);
+                */
+               applyEventFilter();
+            } catch (error) {
+                console.error("Error fetching all events:", error);
+            }
+        };
+        fetchAllEvents();
+    }, [applyEventFilter, navigate]);
 
     const handleCreateEvent = () => {
         navigate('/create-event');

@@ -290,7 +290,7 @@ class UserControllerTest {
     @Test
     void getAllShortEvents_Success() {
         // Arrange
-        ShortEvent shortEvent = new ShortEvent(1L, "Test Event", 1L);
+        ShortEvent shortEvent = new ShortEvent(1L, "Test Event", 1L, true);
         List<ShortEvent> shortEvents = Arrays.asList(shortEvent);
 
         when(userService.validateSession(testSessionId)).thenReturn(testUser);
@@ -700,61 +700,4 @@ class UserControllerTest {
         verify(userService).validateSession(testSessionId);
         verify(userService, never()).removeFriend(anyString(), anyString());
     }
-
-    // STORY3 As a user I would like to be able to search for other users based on my profile
-    @Test
-    void searchUsers_Success() {
-        // Arrange
-        String query = "test";
-        List<User> foundUsers = Arrays.asList(testUser);
-
-        when(userService.validateSession(testSessionId)).thenReturn(testUser);
-        when(userService.searchUsersByName(query)).thenReturn(foundUsers);
-
-        // Act
-        ResponseEntity<List<User>> response = userController.searchUsers(query, testSessionId);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(foundUsers, response.getBody());
-        assertEquals(1, response.getBody().size());
-        verify(userService).validateSession(testSessionId);
-        verify(userService).searchUsersByName(query);
-    }
-
-    @Test
-    void searchUsers_NoResults() {
-        // Arrange
-        String query = "nonexistent";
-        List<User> emptyList = Collections.emptyList();
-
-        when(userService.validateSession(testSessionId)).thenReturn(testUser);
-        when(userService.searchUsersByName(query)).thenReturn(emptyList);
-
-        // Act
-        ResponseEntity<List<User>> response = userController.searchUsers(query, testSessionId);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.getBody().isEmpty());
-        verify(userService).validateSession(testSessionId);
-        verify(userService).searchUsersByName(query);
-    }
-
-    @Test
-    void searchUsers_InvalidSession() {
-        // Arrange
-        String query = "test";
-
-        when(userService.validateSession(testSessionId))
-                .thenThrow(new InvalidSessionException("Invalid session"));
-
-        // Act & Assert
-        assertThrows(InvalidSessionException.class, () ->
-                userController.searchUsers(query, testSessionId));
-
-        verify(userService).validateSession(testSessionId);
-        verifyNoMoreInteractions(userService);
-    }
-
 }

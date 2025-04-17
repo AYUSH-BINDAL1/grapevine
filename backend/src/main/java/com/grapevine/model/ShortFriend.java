@@ -9,9 +9,8 @@ import lombok.ToString;
 @Setter
 @ToString
 @AllArgsConstructor
-public class ShortEvent {
-    private Long eventId;
+public class ShortFriend {
+    private String userEmail;
     private String name;
-    private Long locationId;
-    private Boolean isPublic;
+    private String profilePicUrl;
 }

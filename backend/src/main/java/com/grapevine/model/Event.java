@@ -36,7 +36,7 @@ public class Event {
     @Column(name = "max_users", nullable = false)
     private Integer maxUsers;
 
-    @Column(name = "is_public")
+    @Column(name = "is_public", nullable = false)
     private Boolean isPublic;
 
     @Column(name = "location_id")

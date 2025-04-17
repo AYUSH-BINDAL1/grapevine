@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './CreateEvent.css';
+import { base_url } from '../config';
 
 function CreateEvent() {
     const [formData, setFormData] = useState({
@@ -53,7 +54,7 @@ function CreateEvent() {
         const fetchGroups = async () => {
             try {
                 const email = JSON.parse(localStorage.getItem('userData')).userEmail;
-                const url = `http://localhost:8080/users/${email}/hosted-groups`;
+                const url = `${base_url}/users/${email}/hosted-groups`;
                 const sessionId = localStorage.getItem('sessionId');
                 const response = await axios.get(url, {
                     headers: { 'Session-Id': sessionId }
@@ -104,7 +105,7 @@ function CreateEvent() {
                 locationId: parseInt(formData.locationId, 10)
             };
 
-            const url = `http://localhost:8080/events/create/${formData.groupId}`;
+            const url = `${base_url}/events/create/${formData.groupId}`;
 
             const response = await axios.post(url, payload, {
                 headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId }

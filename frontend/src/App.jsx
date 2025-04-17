@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { useRef, useEffect, useState, lazy, Suspense } from 'react';
+import { useRef, useEffect, useState, lazy, Suspense, useCallback, useMemo, memo } from 'react';
 import axios from 'axios';
 import Registration from './components/Registration';
 import Confirmation from './components/Confirmation';
@@ -15,40 +15,120 @@ import CourseSearch from './components/CourseSearch.jsx';
 import EventDetails from "./components/EventDetails";
 import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
+import Forum from './components/Forum';
 import './App.css';
-
+import './components/Groups.css';
+import {base_url, image_url} from './config.js';
 
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
   searchEnabled = value;
 };
 */
-
 const Login = lazy(() => import('./components/Login'));
 
-function Taskbar() {
+// Optimize the Taskbar with memo to prevent unnecessary re-renders
+const Taskbar = memo(function Taskbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userProfileImage, setUserProfileImage] = useState(profileImage);
-
-  useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    if (userData.profilePictureId) {
-      const userImageUrl = `http://localhost:9000/images/${userData.profilePictureId}`;
-      const img = new Image();
-      img.onload = () => setUserProfileImage(userImageUrl);
-      img.onerror = () => console.log("Failed to load profile image, using default");
-      img.src = userImageUrl;
-    }
-  }, []);
-
-  const isActive = (path) => {
+  const [userDataVersion, setUserDataVersion] = useState(0);
+  
+  // Memoize this function to prevent recreation on each render
+  const isActive = useCallback((path) => {
     if (path === '/home') return location.pathname === '/home' || location.pathname.startsWith('/group/');
     return location.pathname.startsWith(path);
-  };
+  }, [location.pathname]);
+  
+  // Optimize image loading with useCallback
+  const tryLoadIdBasedImage = useCallback((profilePictureId) => {
+    // Check for cached image first
+    const cachedImageUrl = sessionStorage.getItem(`profile-image-${profilePictureId}`);
+    if (cachedImageUrl) {
+      setUserProfileImage(cachedImageUrl);
+      return;
+    }
+    
+    // Try the standard URL format first
+    const userImageUrl = `${image_url}/images/${profilePictureId}`;
+    const img = new Image();
+    
+    img.onload = () => {
+      setUserProfileImage(userImageUrl);
+      // Cache the successful image URL
+      sessionStorage.setItem(`profile-image-${profilePictureId}`, userImageUrl);
+    };
+    img.onerror = () => {
+      // If that fails, try the API format
+      const apiImageUrl = `${base_url}/api/files/getImage/${profilePictureId}`;
+      const imgApi = new Image();
+      imgApi.onload = () => {
+        setUserProfileImage(apiImageUrl);
+        // Cache the successful image URL
+        sessionStorage.setItem(`profile-image-${profilePictureId}`, apiImageUrl);
+      };
+      imgApi.onerror = () => {
+        console.error("Failed to load profile image with both URL formats");
+      };
+      imgApi.src = apiImageUrl;
+    };
+    img.src = userImageUrl;
+  }, []);
 
-  const handlelogout = async () => {
+  // Use the useEffect hook more efficiently
+  useEffect(() => {
+    // Debounce storage event handler to prevent excessive updates
+    let timeoutId = null;
+    const handleStorageChange = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setUserDataVersion(prev => prev + 1);
+      }, 300);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Initial load - use try/catch for better error handling
+    try {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      
+      if (userData.profilePictureUrl) {
+        // Check if we've already fetched this image
+        const cachedUserImage = sessionStorage.getItem(`profile-url-${userData.profilePictureUrl}`);
+        if (cachedUserImage === 'valid') {
+          setUserProfileImage(userData.profilePictureUrl);
+        } else {
+          const img = new Image();
+          img.onload = () => {
+            setUserProfileImage(userData.profilePictureUrl);
+            sessionStorage.setItem(`profile-url-${userData.profilePictureUrl}`, 'valid');
+          };
+          img.onerror = () => {
+            console.error("Failed to load profile image URL");
+            if (userData.profilePictureId) {
+              tryLoadIdBasedImage(userData.profilePictureId);
+            }
+          };
+          img.src = userData.profilePictureUrl;
+        }
+      } else if (userData.profilePictureId) {
+        tryLoadIdBasedImage(userData.profilePictureId);
+      }
+    } catch (error) {
+      console.error("Error loading user profile data:", error);
+    }
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearTimeout(timeoutId);
+    };
+  }, [userDataVersion, tryLoadIdBasedImage]);
+
+  // Optimize the logout handler with useCallback
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOut) return; // Prevent multiple clicks
+    
     const conf = window.confirm("Are you sure you want to log out?");
     if (!conf) return;
 
@@ -60,9 +140,20 @@ function Taskbar() {
         navigate("/");
         return;
       }
-      await axios.delete('http://localhost:8080/users/logout', {
-        headers: { 'Session-Id': sessionId }
+      
+      // Set a timeout to ensure we don't wait forever
+      const timeout = setTimeout(() => {
+        console.warn("Logout request timed out, clearing local data");
+        localStorage.clear();
+        navigate("/");
+      }, 5000);
+      
+      await axios.delete(`${base_url}/users/logout`, {
+        headers: { 'Session-Id': sessionId },
+        timeout: 4000 // Add axios timeout
       });
+      
+      clearTimeout(timeout);
       localStorage.clear();
       navigate("/");
     } catch (error) {
@@ -73,41 +164,30 @@ function Taskbar() {
     } finally {
       setIsLoggingOut(false);
     }
-  };
+  }, [isLoggingOut, navigate]);
+
+  // Memoize the navbar items to prevent unnecessary re-renders
+  const navItems = useMemo(() => [
+    { path: '/home', label: 'Groups' },
+    { path: '/events', label: 'Events' },
+    { path: '/forum', label: 'Forum' },
+    { path: '/messages', label: 'Messages' },
+    { path: '/friends', label: 'Friends' }
+  ], []);
 
   return (
     <div className="taskbar">
       <nav className="taskbar-elem">
-        <h3 
-          onClick={() => navigate("/home")} 
-          className={`elem ${isActive('/home') ? 'active' : ''}`}
-        >
-          Groups
-        </h3>
-        <h3 
-          onClick={() => navigate("/events")} 
-          className={`elem ${isActive('/events') ? 'active' : ''}`}
-        >
-          Events
-        </h3>
-        <h3 
-          onClick={() => navigate("/forum")} 
-          className={`elem ${isActive('/forum') ? 'active' : ''}`}
-        >
-          Forum
-        </h3>
-        <h3 
-          onClick={() => navigate("/messages")} 
-          className={`elem ${isActive('/messages') ? 'active' : ''}`}
-        >
-          Messages
-        </h3>
-        <h3 
-          onClick={() => navigate("/friends")} 
-          className={`elem ${isActive('/friends') ? 'active' : ''}`}
-        >
-          Friends
-        </h3>
+        {navItems.map(item => (
+          <h3 
+            key={item.path}
+            onClick={() => navigate(item.path)} 
+            className={`elem ${isActive(item.path) ? 'active' : ''}`}
+          >
+            {item.label}
+          </h3>
+        ))}
+        
         {searchEnabled && (
           <h3 
             onClick={() => navigate("/courseSearch")} 
@@ -116,14 +196,17 @@ function Taskbar() {
             Courses
           </h3>
         )}
+        
         <img 
           onClick={() => navigate("/profile")} 
           className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
           src={userProfileImage} 
           alt="Profile" 
+          loading="lazy" // Add lazy loading
         />
+        
         <h3 
-          onClick={isLoggingOut ? null : handlelogout} 
+          onClick={handleLogout} 
           className={`elem logout ${isLoggingOut ? 'disabled' : ''}`}
           style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}
         >
@@ -132,7 +215,7 @@ function Taskbar() {
       </nav>
     </div>
   );
-}
+});
 
 function Layout() {
   return (
@@ -162,7 +245,7 @@ function Home() {
         const userEmail = parsedUser.userEmail;
         try {
           const response = await axios.get(
-              `http://localhost:8080/users/${userEmail}/all-groups-short`,
+              `${base_url}/users/${userEmail}/all-groups-short`,
               { headers: { 'Session-Id': sessionId }
           });
           setGroups(response.data);
@@ -175,7 +258,7 @@ function Home() {
         }
 
         try {
-          const allRes = await axios.get("http://localhost:8080/groups/all", {
+          const allRes = await axios.get(`${base_url}/groups/all`, {
             headers: { 'Session-Id': sessionId }
           });
           setAllGroups(allRes.data);
@@ -183,6 +266,10 @@ function Home() {
           setFilteredGroups(publicGroups);
         } catch (error) {
           console.error('Error fetching all groups:', error);
+          if (error.response?.status === 401) {
+            alert('Session expired. Please login again.');
+            navigate('/');
+          }
         }
       } else {
         alert('No user information or session found. Please login again.');
@@ -356,13 +443,13 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/events" element={<Events />} />
             <Route path="/create-event" element={<CreateEvent />} />
-            <Route path="/forum" element={<Nopath />} />
             <Route path="/messages" element={<Nopath />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/courseSearch" element={<CourseSearch />} />
             <Route path="/view-students" element={<ViewStudents />} />
             <Route path="/group/:id" element={<Groups />} />
             <Route path="/event/:eventId" element={<EventDetails />} />
+            <Route path="/forum" element={<Forum />} />
           </Route>
         </Routes>
       </Router>

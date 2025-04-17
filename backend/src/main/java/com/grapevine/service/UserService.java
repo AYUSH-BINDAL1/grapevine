@@ -369,7 +369,7 @@ public class UserService {
         if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
             for (Long eventId : currentUser.getHostedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
@@ -377,7 +377,7 @@ public class UserService {
         if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
             for (Long eventId : currentUser.getJoinedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
@@ -405,7 +405,7 @@ public class UserService {
         if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
             for (Long eventId : currentUser.getHostedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> hostedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> hostedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
@@ -433,7 +433,7 @@ public class UserService {
         if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
             for (Long eventId : currentUser.getJoinedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> joinedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> joinedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
@@ -491,6 +491,34 @@ public class UserService {
     // Add to UserService.java
     public List<User> searchUsersByName(String query) {
         return userRepository.findByNameContainingIgnoreCase(query);
+    }
+
+    public List<User> searchUsersByNameWithFilters(String query, List<String> majors, User.Role role, List<Long> locationIds) {
+        // Start with basic name search
+        List<User> users = userRepository.findByNameContainingIgnoreCase(query);
+
+        // Apply filters if provided
+        if (majors != null && !majors.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getMajors() != null &&
+                            user.getMajors().stream().anyMatch(majors::contains))
+                    .collect(Collectors.toList());
+        }
+
+        if (role != null) {
+            users = users.stream()
+                    .filter(user -> role.equals(user.getRole()))
+                    .collect(Collectors.toList());
+        }
+
+        if (locationIds != null && !locationIds.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getPreferredLocations() != null &&
+                            user.getPreferredLocations().stream().anyMatch(locationIds::contains))
+                    .collect(Collectors.toList());
+        }
+
+        return users;
     }
 
     public User sendFriendRequest(String senderEmail, String receiverEmail) {
@@ -636,5 +664,10 @@ public class UserService {
 
         userRepository.save(friend);
         return userRepository.save(user);
+    }
+
+    public boolean isUserOnline(String userEmail) {
+        return activeSessions.values().stream()
+                .anyMatch(session -> session.userEmail.equals(userEmail));
     }
 }

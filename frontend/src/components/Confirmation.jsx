@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Confirmation.css';
 import { FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { base_url } from '../config';
 
 function Confirmation() {
   const [confirmationCode, setConfirmationCode] = useState('');
@@ -39,7 +40,7 @@ function Confirmation() {
     }
 
     try {
-      const response = await axios.post(`http://localhost:8080/users/verify?token=${confirmationCode}`, userInfo, {
+      const response = await axios.post(`${base_url}/users/verify?token=${confirmationCode}`, userInfo, {
         headers: {
           'Content-Type': 'application/json'
         }
