@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/grapes-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="GrapeVine - Connect with study partners, join groups, and enhance your academic journey at your university" />
+    <meta name="theme-color" content="#8ebd89" />
+    <meta name="color-scheme" content="light" />
+    <title>GrapeVine | Find Your Study Partners</title>
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="GrapeVine | Find Your Study Partners" />
+    <meta property="og:description" content="Connect with study partners who match your schedule, courses, and preferred study locations." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.jpg" />
+    
+    <!-- Preconnect to critical domains -->
+    <link rel="preconnect" href="http://localhost:8080" crossorigin />
+    <link rel="preconnect" href="http://localhost:9000" crossorigin />
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/grapes-icon.png" as="image" fetchpriority="high" />
+    <link rel="modulepreload" href="data:text/jsx;base64,aW1wb3J0IHsgU3RyaWN0TW9kZSB9IGZyb20gJ3JlYWN0Jw0KaW1wb3J0IHsgY3JlYXRlUm9vdCB9IGZyb20gJ3JlYWN0LWRvbS9jbGllbnQnDQppbXBvcnQgJy4vaW5kZXguY3NzJw0KaW1wb3J0ICcuL2NvbmZpZyc7DQppbXBvcnQgQXBwIGZyb20gJy4vQXBwLmpzeCcNCg0KY3JlYXRlUm9vdChkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncm9vdCcpKS5yZW5kZXIoDQogIDxTdHJpY3RNb2RlPg0KICAgIDxBcHAgLz4NCiAgPC9TdHJpY3RNb2RlPiwNCikNCg==" />
+    
+    <!-- Web app manifest for PWA capabilities -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Initial loading style -->
+    <style>
+      :root {
+        --primary-color: #8ebd89;
+        --secondary-color: #ae92c6;
+        --background-color: #f5f5f5;
+        --text-color: #333;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background-color: var(--background-color);
+        margin: 0;
+        padding: 0;
+        color: var(--text-color);
+        line-height: 1.5;
+      }
+
+      .loading-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: var(--background-color);
+      }
+      
+      .loading-logo {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 20px;
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+      
+      /* Reduced motion for accessibility */
+      @media (prefers-reduced-motion: reduce) {
+        .loading-logo, .loading-spinner {
+          animation: none;
+        }
+      }
+      
+      /* Basic skip-link for accessibility */
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--primary-color);
+        color: white;
+        padding: 8px;
+        z-index: 100;
+        transition: top 0.2s;
+      }
+      
+      .skip-link:focus {
+        top: 0;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-DFMQpgGu.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CL2fhh6o.css">
+  </head>
+  <body>
+    <!-- Accessibility skip link -->
+    <a href="#root" class="skip-link">Skip to main content</a>
+    
+    <div id="root">
+      <!-- This will show while React is loading -->
+      <div class="loading-screen" role="status" aria-live="polite">
+        <img src="/grapes-icon.png" alt="GrapeVine Logo" class="loading-logo" width="100" height="100">
+        <p aria-live="assertive">Loading GrapeVine application...</p>
+      </div>
+    </div>
+    
+    <!-- Added noscript fallback -->
+    <noscript>
+      <div style="padding: 20px; text-align: center;">
+        <h1>JavaScript Required</h1>
+        <p>GrapeVine needs JavaScript to work. Please enable JavaScript in your browser settings to continue.</p>
+      </div>
+    </noscript>
+    
+  </body>
+</html>

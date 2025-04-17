@@ -1,0 +1,3 @@
+.vscode/launch.json
+.vscode/settings.json
+backend/src/main/resources/*.properties
