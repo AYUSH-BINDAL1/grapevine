@@ -1090,3 +1090,17 @@ h1 {
   animation: shimmer 1.5s infinite linear;
   background-repeat: no-repeat;
 }
+
+.instructor-toggle-button {
+  margin-top: 12px;
+  padding: 6px 12px;
+  background-color: #6a5acd;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.instructor-toggle-button:hover {
+  background-color: #5942c4;
+}
