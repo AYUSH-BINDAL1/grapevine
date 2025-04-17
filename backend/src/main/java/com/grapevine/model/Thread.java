@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ import java.util.List;
 @Table(name = "threads")
 @Getter
 @Setter
-@ToString
+@ToString(exclude = "comments")
 @NoArgsConstructor
 public class Thread {
 
@@ -52,6 +53,7 @@ public class Thread {
     @Column(name = "likes")
     private Integer likes = 0;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "thread", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 }
