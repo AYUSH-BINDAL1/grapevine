@@ -5,6 +5,7 @@ import './Login.css';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { base_url } from '../config';
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -49,7 +50,7 @@ function Login() {
       // Show loading toast
       const loadingToast = toast.loading("Logging in...");
       
-      const response = await axios.post('http://localhost:8080/users/login', formData, {
+      const response = await axios.post(`${base_url}/users/login`, formData, {
         headers: {
           'Content-Type': 'application/json'
         },

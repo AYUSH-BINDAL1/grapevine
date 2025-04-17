@@ -569,17 +569,29 @@ function Groups() {
         try {
           const basicInfoResponse = await axios.get(
             `${base_url}/groups/${id}/basic-info`,
-            { headers: { 'Session-Id': sessionId }
+            { headers: { 'Session-Id': sessionId } }
+          ).catch(error => {
+            // Handle 500 error specifically
+            console.log('Error fetching basic info:', error.response?.status);
+            // Return a default response instead of throwing
+            return { 
+              data: { 
+                name: "Private Group",
+                description: "This is a private group. You need to request access to view details."
+              } 
+            };
           });
           
           setGroup({
             id: id,
             title: basicInfoResponse.data.name || "Private Group",
             isPrivate: true,
-            description: "This is a private group. You need to request access to view details."
+            description: basicInfoResponse.data.description || 
+              "This is a private group. You need to request access to view details."
           });
         } catch (error) {
-          console.error('Error fetching basic group info:', error);
+          console.error('Error handling private group access:', error);
+          // Set default group information
           setGroup({
             id: id,
             title: "Private Group",

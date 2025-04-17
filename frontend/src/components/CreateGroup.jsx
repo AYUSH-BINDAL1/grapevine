@@ -2,6 +2,7 @@ import './CreateGroup.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { base_url } from '../config';
 
 function CreateGroup() {
     const [formData, setFormData] = useState({
@@ -44,7 +45,7 @@ function CreateGroup() {
 
         try {
             const response = await axios.post(
-                'http://localhost:8080/groups/create',
+                `${base_url}/groups/create`,
                 payload,
                 {
                     headers: {

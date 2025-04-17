@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './EventDetails.css';
+import { base_url } from '../config';
 
 function EventDetails() {
     const { eventId } = useParams();
@@ -52,14 +53,14 @@ function EventDetails() {
                     navigate("/");
                     return;
                 }
-                const response = await axios.get(`http://localhost:8080/events/${eventId}`, {
+                const response = await axios.get(`${base_url}/events/${eventId}`, {
                     headers: { "Session-Id": sessionId }
                 });
                 setEventData(response.data);
                 setEditedData(response.data);
 
                 if (response.data.groupId) {
-                    const groupResponse = await axios.get(`http://localhost:8080/groups/${response.data.groupId}`, {
+                    const groupResponse = await axios.get(`${base_url}/groups/${response.data.groupId}`, {
                         headers: { "Session-Id": sessionId }
                     });
                     setGroupName(groupResponse.data.name);
@@ -70,7 +71,7 @@ function EventDetails() {
                 await Promise.all(
                     hosts.map(async (email) => {
                         try {
-                            const userRes = await axios.get(`http://localhost:8080/users/${email}`, {
+                            const userRes = await axios.get(`${base_url}/users/${email}`, {
                                 headers: { "Session-Id": sessionId }
                             });
                             names[email] = userRes.data.name || email;
@@ -98,7 +99,7 @@ function EventDetails() {
     const handleSave = async () => {
         const sessionId = localStorage.getItem("sessionId");
         try {
-            await axios.put(`http://localhost:8080/events/${eventId}`, editedData, {
+            await axios.put(`${base_url}/events/${eventId}`, editedData, {
                 headers: { "Session-Id": sessionId }
             });
             setEventData(editedData);
@@ -113,7 +114,7 @@ function EventDetails() {
         const sessionId = localStorage.getItem("sessionId");
         if (!window.confirm("Are you sure you want to delete this event?")) return;
         try {
-            await axios.delete(`http://localhost:8080/events/${eventId}`, {
+            await axios.delete(`${base_url}/events/${eventId}`, {
                 headers: { "Session-Id": sessionId }
             });
             alert("Event deleted.");
