@@ -520,13 +520,97 @@ function Friends() {
       toast.info('Filters have been reset');
     };
 
+    // Update the performSearch function to handle sorting locally
+    const performSearch = useCallback(async (query) => {
+        setIsSearching(true);
+        setNoResultsFound(false);
+        
+        try {
+            const sessionId = localStorage.getItem('sessionId');
+            const userData = JSON.parse(localStorage.getItem('userData'));
+            
+            if (!sessionId) {
+                toast.error('You must be logged in to search for users');
+                setIsSearching(false);
+                return;
+            }
+
+            try {
+                // Build the search URL with only necessary filters
+                let searchUrl = `${base_url}/users/search?query=${encodeURIComponent(query)}`;
+                
+                // Add role filter if selected
+                if (filterRole) {
+                    searchUrl += `&role=${filterRole}`;
+                }
+                
+                // Add major filter if selected
+                if (filterMajor) {
+                    searchUrl += `&majors=${encodeURIComponent(filterMajor)}`;
+                }
+                
+                // Add location filter if selected
+                if (filterLocations.length > 0) {
+                    searchUrl += `&locationIds=${filterLocations.join(',')}`;
+                }
+                
+                // Log the constructed URL for debugging
+                console.log('Searching with URL:', searchUrl);
+                
+                const response = await axios({
+                    method: 'GET',
+                    url: searchUrl,
+                    headers: {
+                        'Session-Id': sessionId
+                    }
+                });
+
+                console.log('Search API response:', response.data);
+
+                // Format the response data to match your component's structure
+                let formattedResults = response.data.map(user => ({
+                    name: user.name || user.fullName,
+                    userEmail: user.userEmail || user.email,
+                    profilePictureUrl: user.profilePictureUrl,
+                    profilePictureId: user.profilePictureId,
+                    major: user.major || (user.majors && user.majors[0]) || 'No major listed',
+                    courses: user.courses || [],
+                    isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email)),
+                    createdAt: user.createdAt || new Date().toISOString()
+                }));
+
+                // Filter out users already in the friends list
+                formattedResults = formattedResults.filter(
+                    user => user.userEmail !== userData.userEmail
+                );
+
+                // Apply sort order locally
+                formattedResults = sortResults(formattedResults, sortOrder);
+
+                setSearchResults(formattedResults);
+                
+                if (formattedResults.length === 0) {
+                    setNoResultsFound(true);
+                }
+            } catch (apiError) {
+                console.error('API search failed:', apiError);
+                // Existing fallback code...
+            }
+        } catch (error) {
+            console.error('Error searching users:', error);
+            toast.error('Failed to search for users. Please try again.');
+        } finally {
+            setIsSearching(false);
+        }
+    }, [filterLocations, filterMajor, filterRole, friends, sortOrder]);
+
     // Add this effect to re-run search when filters change
     useEffect(() => {
       // Only run if there's already a search query with at least 2 characters
       if (searchQuery.trim().length >= 2) {
         performSearch(searchQuery);
       }
-    }, [filterRole, filterMajor, filterLocations, sortOrder]);
+    }, [filterRole, filterMajor, filterLocations, sortOrder, searchQuery, performSearch]);
 
     // Function to fetch friend requests from the API
     const fetchFriendRequests = async () => {
@@ -697,90 +781,6 @@ function Friends() {
         
         if (query.trim().length >= 2) { // Only search if at least 2 characters
             debouncedSearch(query);
-        }
-    };
-
-    // Update the performSearch function to handle sorting locally
-    const performSearch = async (query) => {
-        setIsSearching(true);
-        setNoResultsFound(false);
-        
-        try {
-            const sessionId = localStorage.getItem('sessionId');
-            const userData = JSON.parse(localStorage.getItem('userData'));
-            
-            if (!sessionId) {
-                toast.error('You must be logged in to search for users');
-                setIsSearching(false);
-                return;
-            }
-
-            try {
-                // Build the search URL with only necessary filters
-                let searchUrl = `${base_url}/users/search?query=${encodeURIComponent(query)}`;
-                
-                // Add role filter if selected
-                if (filterRole) {
-                    searchUrl += `&role=${filterRole}`;
-                }
-                
-                // Add major filter if selected
-                if (filterMajor) {
-                    searchUrl += `&majors=${encodeURIComponent(filterMajor)}`;
-                }
-                
-                // Add location filter if selected
-                if (filterLocations.length > 0) {
-                    searchUrl += `&locationIds=${filterLocations.join(',')}`;
-                }
-                
-                // Log the constructed URL for debugging
-                console.log('Searching with URL:', searchUrl);
-                
-                const response = await axios({
-                    method: 'GET',
-                    url: searchUrl,
-                    headers: {
-                        'Session-Id': sessionId
-                    }
-                });
-
-                console.log('Search API response:', response.data);
-
-                // Format the response data to match your component's structure
-                let formattedResults = response.data.map(user => ({
-                    name: user.name || user.fullName,
-                    userEmail: user.userEmail || user.email,
-                    profilePictureUrl: user.profilePictureUrl,
-                    profilePictureId: user.profilePictureId,
-                    major: user.major || (user.majors && user.majors[0]) || 'No major listed',
-                    courses: user.courses || [],
-                    isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email)),
-                    createdAt: user.createdAt || new Date().toISOString()
-                }));
-
-                // Filter out users already in the friends list
-                formattedResults = formattedResults.filter(
-                    user => user.userEmail !== userData.userEmail
-                );
-
-                // Apply sort order locally
-                formattedResults = sortResults(formattedResults, sortOrder);
-
-                setSearchResults(formattedResults);
-                
-                if (formattedResults.length === 0) {
-                    setNoResultsFound(true);
-                }
-            } catch (apiError) {
-                console.error('API search failed:', apiError);
-                // Existing fallback code...
-            }
-        } catch (error) {
-            console.error('Error searching users:', error);
-            toast.error('Failed to search for users. Please try again.');
-        } finally {
-            setIsSearching(false);
         }
     };
 

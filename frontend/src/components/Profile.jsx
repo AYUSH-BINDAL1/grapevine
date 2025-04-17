@@ -362,7 +362,7 @@ function Profile() {
       });
   }, [availabilityString]);
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     const storedUserData = localStorage.getItem('userData');
     if (!storedUserData) {
       toast.error("User data not found. Please login again.");
@@ -396,7 +396,7 @@ function Profile() {
       console.error('Error fetching user data:', error);
       return parsedData; // Return localStorage data as fallback
     }
-  };
+  }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -437,7 +437,7 @@ function Profile() {
         }
       }
     }).finally(() => setIsLoading(false));
-  }, [sessionId]);
+  }, [fetchUserProfile, sessionId]);
 
   // Complete and optimize the fetchProfilePicture function
   const fetchProfilePicture = useCallback(async (fileId) => {
