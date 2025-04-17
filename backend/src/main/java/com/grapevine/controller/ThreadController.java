@@ -1,0 +1,136 @@
+package com.grapevine.controller;
+
+import com.grapevine.model.Comment;
+import com.grapevine.model.Thread;
+import com.grapevine.model.User;
+import com.grapevine.service.ThreadService;
+import com.grapevine.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/threads")
+@CrossOrigin(origins = "http://localhost:5173")
+public class ThreadController {
+
+    private final ThreadService threadService;
+    private final UserService userService;
+
+    @Autowired
+    public ThreadController(ThreadService threadService, UserService userService) {
+        this.threadService = threadService;
+        this.userService = userService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Thread>> getAllThreads(
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        userService.validateSession(sessionId);
+        return ResponseEntity.ok(threadService.getAllThreads());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Thread> getThreadById(
+            @PathVariable Long id,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        userService.validateSession(sessionId);
+        return ResponseEntity.ok(threadService.getThreadById(id));
+    }
+
+    @GetMapping("/author/{email}")
+    public ResponseEntity<List<Thread>> getThreadsByAuthor(
+            @PathVariable String email,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        userService.validateSession(sessionId);
+        return ResponseEntity.ok(threadService.getThreadsByAuthor(email));
+    }
+
+    @PostMapping
+    public ResponseEntity<Thread> createThread(
+            @RequestBody Thread thread,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session and ensure the user can only create threads as themselves
+        User currentUser = userService.validateSession(sessionId);
+
+        if (!currentUser.getUserEmail().equals(thread.getAuthorEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You can only create threads using your own account");
+        }
+
+        // Set the author name from the validated user
+        thread.setAuthorName(currentUser.getName());
+
+        Thread createdThread = threadService.createThread(thread);
+        return new ResponseEntity<>(createdThread, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Thread> updateThread( // NOT implemented
+            @PathVariable Long id,
+            @RequestBody Thread thread,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session and ensure the user can only update their own threads
+        User currentUser = userService.validateSession(sessionId);
+        Thread existingThread = threadService.getThreadById(id);
+
+        if (!existingThread.getAuthorEmail().equals(currentUser.getUserEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You can only update your own threads");
+        }
+
+        return ResponseEntity.ok(threadService.updateThread(id, thread));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteThread(
+            @PathVariable Long id,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session and ensure the user can only delete their own threads
+        User currentUser = userService.validateSession(sessionId);
+        Thread existingThread = threadService.getThreadById(id);
+
+        if (!existingThread.getAuthorEmail().equals(currentUser.getUserEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You can only delete your own threads");
+        }
+
+        threadService.deleteThread(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{threadId}/comments")
+    public ResponseEntity<Thread> addComment( // NOT FINISHED
+            @PathVariable Long threadId,
+            @RequestBody Comment comment,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session and ensure the user can only comment as themselves
+        User currentUser = userService.validateSession(sessionId);
+
+        if (!currentUser.getUserEmail().equals(comment.getAuthorEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You can only add comments using your own account");
+        }
+
+        // Set the author name from the validated user
+        comment.setAuthorName(currentUser.getName());
+
+        return ResponseEntity.ok(threadService.addComment(threadId, comment));
+    }
+
+    @PostMapping("/{id}/like")
+    public ResponseEntity<Thread> likeThread( // NOT FINISHED
+            @PathVariable Long id,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        userService.validateSession(sessionId);
+        return ResponseEntity.ok(threadService.likeThread(id));
+    }
+}

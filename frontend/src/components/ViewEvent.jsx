@@ -51,7 +51,7 @@ function ViewEvent() {
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:8080/events/${eventId}`,
+        `${base_url}/events/${eventId}`,
         { headers: { 'Session-Id': sessionId } }
       );
       
@@ -88,7 +88,7 @@ function ViewEvent() {
   const handleJoinEvent = async () => {
     try {
       const response = await axios.post(
-        `http://localhost:8080/events/${eventId}/join`,
+        `${base_url}/events/${eventId}/join`,
         null,
         { headers: { 'Session-Id': sessionId } }
       );
@@ -108,7 +108,7 @@ function ViewEvent() {
   const handleLeaveEvent = async () => {
     try {
       const response = await axios.post(
-        `http://localhost:8080/events/${eventId}/leave`,
+        `${base_url}/events/${eventId}/leave`,
         null,
         { headers: { 'Session-Id': sessionId } }
       );
@@ -135,7 +135,7 @@ function ViewEvent() {
     
     try {
       const response = await axios.delete(
-        `http://localhost:8080/events/${eventId}`,
+        `${base_url}/events/${eventId}`,
         { headers: { 'Session-Id': sessionId } }
       );
       

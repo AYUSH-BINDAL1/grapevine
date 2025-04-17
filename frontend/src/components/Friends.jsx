@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import profileImage from '../assets/temp-profile.webp';
 import debounce from 'lodash.debounce';
+import PropTypes from 'prop-types';
 import './Friends.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { base_url, image_url } from '../config';
 
 // Friend skeleton component
 const FriendSkeleton = () => (
@@ -48,7 +50,7 @@ const SearchResultSkeleton = () => (
     </div>
 );
 
-// Updated Filter Panel component for horizontal layout
+// Updated Filter Panel component to include role and locations
 const FilterPanel = () => {
   return (
     <div className="filter-panel">
@@ -68,6 +70,32 @@ const FilterPanel = () => {
           </select>
         </div>
         
+        {/* New Role filter */}
+        <div className="filter-group">
+          <label className="filter-label">Role:</label>
+          <select className="filter-select" disabled>
+            <option value="">All Roles</option>
+            <option value="STUDENT">Student</option>
+            <option value="INSTRUCTOR">Instructor</option>
+            <option value="GTA">Graduate TA</option>
+            <option value="UTA">Undergraduate TA</option>
+          </select>
+        </div>
+        
+        {/* New Locations filter */}
+        <div className="filter-group">
+          <label className="filter-label">Study Location:</label>
+          <select className="filter-select" disabled>
+            <option value="">All Locations</option>
+            <option value="1">Wilmeth Active Learning Center</option>
+            <option value="2">Hicks Undergraduate Library</option>
+            <option value="3">Stewart Center</option>
+            <option value="4">Lawson Computer Science Building</option>
+            <option value="5">Memorial Union</option>
+            <option value="6">Armstrong Hall</option>
+          </select>
+        </div>
+        
         <div className="filter-group">
           <label className="filter-label">Sort By:</label>
           <select className="filter-select" disabled>
@@ -80,19 +108,119 @@ const FilterPanel = () => {
         <div className="filter-group">
           <label className="filter-checkbox-label">
             <input type="checkbox" disabled />
-            <span>Match Interests</span>
-          </label>
-        </div>
-        
-        <div className="filter-group">
-          <label className="filter-checkbox-label">
-            <input type="checkbox" disabled />
             <span>Same Courses</span>
           </label>
         </div>
       </div>
     </div>
   );
+};
+
+// ProfileImage component to handle profile image display
+const ProfileImage = ({ user, altText }) => {
+  const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  
+  useEffect(() => {
+    // Reset state when user changes
+    setLoading(true);
+    setError(false);
+    
+    const tryLoadImage = async () => {
+      // Try profilePictureUrl first
+      if (user.profilePictureUrl) {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            setImageUrl(user.profilePictureUrl);
+            setLoading(false);
+          };
+          img.onerror = () => {
+            // If URL fails, try using the ID
+            if (user.profilePictureId) {
+              tryLoadImageById(user.profilePictureId);
+            } else {
+              setError(true);
+              setLoading(false);
+            }
+          };
+          img.src = user.profilePictureUrl;
+        } catch (err) {
+          console.error('Error loading profile picture URL:', err);
+          if (user.profilePictureId) {
+            tryLoadImageById(user.profilePictureId);
+          } else {
+            setError(true);
+            setLoading(false);
+          }
+        }
+      } 
+      // If no URL, try ID
+      else if (user.profilePictureId) {
+        tryLoadImageById(user.profilePictureId);
+      } 
+      // If no URL or ID, show default
+      else {
+        setError(true);
+        setLoading(false);
+      }
+    };
+    
+    const tryLoadImageById = (id) => {
+      // Try standard format
+      const standardUrl = `${image_url}/images/${id}`;
+      const img = new Image();
+      img.onload = () => {
+        setImageUrl(standardUrl);
+        setLoading(false);
+      };
+      img.onerror = () => {
+        // Try API format
+        const apiUrl = `${base_url}/api/files/getImage/${id}`;
+        const apiImg = new Image();
+        apiImg.onload = () => {
+          setImageUrl(apiUrl);
+          setLoading(false);
+        };
+        apiImg.onerror = () => {
+          // All attempts failed
+          setError(true);
+          setLoading(false);
+        };
+        apiImg.src = apiUrl;
+      };
+      img.src = standardUrl;
+    };
+    
+    tryLoadImage();
+  }, [user.profilePictureUrl, user.profilePictureId]);
+  
+  if (loading) {
+    return <div className="profile-image skeleton-image"></div>;
+  }
+  
+  if (error) {
+    return <img src={profileImage} alt={altText || 'User'} className="profile-image default-image" />;
+  }
+  
+  return <img src={imageUrl} alt={altText || 'User'} className="profile-image" onError={(e) => {
+    e.target.onerror = null; 
+    e.target.src = profileImage;
+  }} />;
+};
+
+ProfileImage.propTypes = {
+  user: PropTypes.shape({
+    profilePictureUrl: PropTypes.string,
+    profilePictureId: PropTypes.string,
+    name: PropTypes.string
+  }).isRequired,
+  altText: PropTypes.string
+};
+
+ProfileImage.defaultProps = {
+  altText: 'User'
 };
 
 function Friends() {
@@ -124,7 +252,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/incoming`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/incoming`,
                     headers: {
                         'Session-Id': sessionId
                     }
@@ -135,7 +263,8 @@ function Friends() {
                     id: request.id || request.requestId,
                     name: request.senderName || request.name || 'Unknown User',
                     userEmail: request.senderEmail || request.userEmail || request.email,
-                    image: profileImage, // Default image until profile images are implemented
+                    profilePictureUrl: request.profilePictureUrl,
+                    profilePictureId: request.profilePictureId,
                     major: request.senderMajor || request.major || 'No major listed'
                 }));
                 
@@ -182,7 +311,7 @@ function Friends() {
             try {
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friends`,
+                    url: `${base_url}/users/${userData.userEmail}/friends`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -194,7 +323,8 @@ function Friends() {
                     id: friend.id || friend.friendId,
                     name: friend.name || friend.friendName,
                     userEmail: friend.userEmail || friend.friendEmail,
-                    image: profileImage // Default image until profile images are implemented
+                    profilePictureUrl: friend.profilePictureUrl,
+                    profilePictureId: friend.profilePictureId
                 }));
 
                 setFriends(formattedFriends);
@@ -297,7 +427,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/search?query=${encodeURIComponent(query)}`,
+                    url: `${base_url}/users/search?query=${encodeURIComponent(query)}`,
                     headers: {
                         'Session-Id': sessionId
                     }
@@ -309,7 +439,8 @@ function Friends() {
                 const formattedResults = response.data.map(user => ({
                     name: user.name || user.fullName,
                     userEmail: user.userEmail || user.email,
-                    image: profileImage, // Default image until profile images are implemented
+                    profilePictureUrl: user.profilePictureUrl,
+                    profilePictureId: user.profilePictureId,
                     major: user.major || (user.majors && user.majors[0]) || 'No major listed',
                     isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email))
                 }));
@@ -384,7 +515,7 @@ function Friends() {
             try {
                 await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/send`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/send`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -426,7 +557,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/accept`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/accept`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -484,7 +615,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/deny`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/deny`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -536,7 +667,7 @@ function Friends() {
                     // Updated to exactly match the curl example format
                     await axios({
                         method: 'DELETE',
-                        url: `http://localhost:8080/users/${userData.userEmail}/friends/${friendEmail}`,
+                        url: `${base_url}/users/${userData.userEmail}/friends/${friendEmail}`,
                         headers: {
                             'Session-Id': sessionId,
                             'Content-Type': 'application/json'
@@ -665,7 +796,7 @@ function Friends() {
                                     className="friend-card-content"
                                     onClick={() => handleFriendClick(user.userEmail)}
                                 >
-                                    <img src={user.image} alt={user.name} />
+                                    <ProfileImage user={user} altText={user.name} />
                                     <h3>{user.name}</h3>
                                 </div>
                             </div>
@@ -693,7 +824,7 @@ function Friends() {
                         {friendRequests.map(request => (
                             <div className="friend-request-card" key={request.id}>
                                 <div className="user-info" onClick={() => handleFriendClick(request.userEmail)}>
-                                    <img src={request.image} alt={request.name} className="request-avatar" />
+                                    <ProfileImage user={request} altText={request.name} className="request-avatar" />
                                     <div className="request-details">
                                         <h4>{request.name}</h4>
                                         <p>{request.major || 'No major listed'}</p>
@@ -808,7 +939,7 @@ function Friends() {
                             {searchResults.map(user => (
                                 <div key={user.userEmail} className="search-result-card">
                                     <div className="user-info" onClick={() => handleFriendClick(user.userEmail)}>
-                                        <img src={user.image} alt={user.name} className="search-result-avatar" />
+                                        <ProfileImage user={user} altText={user.name} className="search-result-avatar" />
                                         <div className="search-result-details">
                                             <h4>{user.name}</h4>
                                             <p>{user.major || 'No major listed'}</p>

@@ -638,8 +638,8 @@ public class EventServiceTest {
         when(eventRepository.findAll()).thenReturn(allEvents);
 
         // Create filter for public events only
-        EventFilter publicFilter = new EventFilter(
-                null, null, null, null, null, null, true, null, null
+        EventFilter publicFilter = new EventFilter(null
+                , null, null, null, null, null, null, null
         );
 
         // Act
@@ -693,7 +693,7 @@ public class EventServiceTest {
 
         // Create filter for events with at least 5 users
         EventFilter userLimitsFilter = new EventFilter(
-                null, 5, null, null, null, null, null, null, null
+                null, 5, null, null, null, null, null, null
         );
 
         // Act
@@ -726,7 +726,7 @@ public class EventServiceTest {
 
         // Filter for events in the next 5 days - using strings for dates
         EventFilter dateRangeFilter = new EventFilter(
-                null, null, null, now.toString(), now.plusDays(5).toString(), null, null, null, null
+                null, null, null, now.toString(), now.plusDays(5).toString(), null, null, null
         );
 
         // Act
@@ -777,7 +777,7 @@ public class EventServiceTest {
 
         // Filter for only full events
         EventFilter fullEventsFilter = new EventFilter(
-                null, null, null, null, null, null, null, null, true
+                null, null, null, null, null,  null, null, true
         );
 
         // Act
@@ -818,7 +818,7 @@ public class EventServiceTest {
 
         // Act - use default filter
         List<ShortEvent> result = eventService.getAllShortEvents(new EventFilter(
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         ));
 
         // Assert
@@ -859,7 +859,7 @@ public class EventServiceTest {
 
         // Act
         List<ShortEvent> result = eventService.getAllShortEvents(new EventFilter(
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         ));
 
         // Assert

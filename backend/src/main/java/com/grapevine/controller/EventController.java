@@ -8,6 +8,8 @@ import com.grapevine.model.User;
 import com.grapevine.service.EventService;
 import com.grapevine.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,7 +45,7 @@ public class EventController {
 
         EventFilter filter = new EventFilter(
                 search, minUsers, maxUsers, startTime, endTime,
-                locationId, isPublic, includePastEvents, onlyFullEvents);
+                locationId, includePastEvents, onlyFullEvents);
 
         return eventService.getAllShortEvents(filter);
     }
@@ -89,5 +91,21 @@ public class EventController {
         // Validate session and get current user
         User currentUser = userService.validateSession(sessionId);
         eventService.deleteEvent(eventId, currentUser);
+    }
+
+    @PostMapping("/{eventId}/join")
+    public ResponseEntity<?> joinEvent(
+            @PathVariable Long eventId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+
+        try {
+            // Attempt to join the event
+            Event updatedEvent = eventService.joinEvent(eventId, currentUser);
+            return ResponseEntity.ok(updatedEvent);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }
