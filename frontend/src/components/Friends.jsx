@@ -9,6 +9,230 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { base_url, image_url } from '../config';
 
+// Add this constant at the top of your file, above your component definitions
+const locationNames = {
+  1: "WALC",
+  2: "LWSN",
+  3: "PMUC",
+  4: "HAMP",
+  5: "RAWL",
+  6: "CHAS",
+  7: "CL50",
+  8: "FRNY",
+  9: "KRAN",
+  10: "MSEE",
+  11: "MATH",
+  12: "PHYS",
+  13: "POTR",
+  14: "HAAS",
+  15: "HIKS",
+  16: "BRWN",
+  17: "HEAV",
+  18: "BRNG",
+  19: "SC",
+  20: "WTHR",
+  21: "UNIV",
+  22: "YONG",
+  23: "ME",
+  24: "ELLT",
+  25: "PMU",
+  26: "STEW"
+};
+
+// Comprehensive list of available majors
+const availableMajors = [
+  "Accounting",
+  "Actuarial Science",
+  "Aeronautical and Astronautical Engineering",
+  "Aeronautical Engineering Technology",
+  "African American Studies",
+  "Agribusiness",
+  "Agricultural Communication",
+  "Agricultural Economics",
+  "Agricultural Education",
+  "Agricultural Engineering",
+  "Agricultural Systems Management",
+  "Agronomy",
+  "American Studies",
+  "Animal Sciences",
+  "Animation and Visual Effects",
+  "Anthropology",
+  "Applied Meteorology and Climatology",
+  "Aquatic Sciences",
+  "Art History",
+  "Artificial Intelligence",
+  "Asian Studies",
+  "Atmospheric Science/Meteorology",
+  "Audio Engineering Technology",
+  "Automation and Systems Integration Engineering Technology",
+  "Aviation Management",
+  "Biochemistry",
+  "Biological Engineering",
+  "Biology",
+  "Biomedical Engineering",
+  "Biomedical Health Sciences",
+  "Brain and Behavioral Sciences",
+  "Building Information Modeling",
+  "Business Analytics and Information Management",
+  "Cell, Molecular, and Developmental Biology",
+  "Chemical Biology and Biochemistry",
+  "Chemical Engineering",
+  "Chemistry",
+  "Chinese Studies",
+  "Civil Engineering",
+  "Classical Studies",
+  "Communication",
+  "Comparative Literature",
+  "Computer and Information Technology",
+  "Computer Engineering",
+  "Computer Engineering Technology",
+  "Computer Infrastructure & Network Engineering Technology",
+  "Computer Science",
+  "Computing Systems Analysis and Design",
+  "Construction Engineering",
+  "Construction Management Technology",
+  "Creative Writing",
+  "Crop Science",
+  "Cybersecurity",
+  "Data Analytics, Technologies and Applications",
+  "Data Science",
+  "Data Visualization",
+  "Design and Construction Integration",
+  "Design Studies",
+  "Developmental and Family Science",
+  "Digital Agronomy",
+  "Digital Criminology",
+  "Digital Enterprise Systems",
+  "Early Childhood Education and Exceptional Needs",
+  "Ecology, Evolution, and Environmental Sciences",
+  "Economics",
+  "Electrical Engineering",
+  "Electrical Engineering Technology",
+  "Elementary Education",
+  "Energy Engineering Technology",
+  "Engineering-First Year",
+  "Engineering Technology Education", 
+  "English",
+  "English Education",
+  "Environmental and Ecological Engineering",
+  "Environmental & Natural Resources Engineering",
+  "Environmental Geosciences",
+  "Exploratory Studies",
+  "Family and Consumer Sciences Education",
+  "Farm Management",
+  "Fermentation Science",
+  "Film and Video",
+  "Finance",
+  "Financial Counseling and Planning",
+  "Flight",
+  "Food Science",
+  "Forestry",
+  "French",
+  "Game Development and Design",
+  "General Education",
+  "Genetics",
+  "Geology and Geophysics",
+  "German",
+  "Global Studies",
+  "Health and Disease",
+  "History",
+  "Horticulture",
+  "Hospitality and Tourism Management",
+  "Human Resource Development",
+  "Human Services",
+  "Industrial Design",
+  "Industrial Engineering",
+  "Industrial Engineering Technology",
+  "Insect Biology",
+  "Integrated Business and Engineering",
+  "Integrated Studio Arts",
+  "Interdisciplinary Performance",
+  "Interdisciplinary Engineering Studies",
+  "Interior Architecture",
+  "Interior Design",
+  "Italian Studies",
+  "Japanese",
+  "Jewish Studies",
+  "Kinesiology",
+  "Landscape Architecture",
+  "Law and Society",
+  "Linguistics",
+  "Management",
+  "Marketing",
+  "Materials Engineering",
+  "Mathematics",
+  "Mechanical Engineering",
+  "Mechanical Engineering Technology",
+  "Mechatronics Engineering Technology",
+  "Medical Laboratory Sciences",
+  "Microbiology",
+  "Motorsports Engineering",
+  "Multidisciplinary Engineering",
+  "Music",
+  "Natural Resources and Environmental Science",
+  "Neurobiology and Physiology",
+  "Nuclear Engineering",
+  "Nursing",
+  "Nutrition and Dietetics",
+  "Nutrition, Fitness, and Health",
+  "Nutrition Science",
+  "Occupational and Environmental Health Sciences",
+  "Organizational Leadership",
+  "Pharmaceutical Sciences",
+  "Philosophy",
+  "Physics",
+  "Physics, Applied",
+  "Planetary Sciences",
+  "Plant Genetics, Breeding, and Biotechnology",
+  "Plant Science",
+  "Plant Studies - Exploratory",
+  "Political Science",
+  "Pre-dentistry",
+  "Pre-law",
+  "Pre-medicine",
+  "Pre-occupational Therapy",
+  "Pre-physical Therapy",
+  "Pre-physician Assistant",
+  "Pre-veterinary Medicine",
+  "Professional Writing",
+  "Psychological Sciences",
+  "Public Health",
+  "Quantitative Business Economics",
+  "Radiological Health Sciences",
+  "Religious Studies",
+  "Retail Management",
+  "Robotics Engineering Technology",
+  "Russian",
+  "Sales and Marketing",
+  "Science Education",
+  "Selling and Sales Management",
+  "Smart Manufacturing Industrial Informatics",
+  "Social Studies Education",
+  "Sociology",
+  "Soil and Water Sciences",
+  "Sound for the Performing Arts",
+  "Spanish",
+  "Special Education",
+  "Speech, Language, and Hearing Sciences",
+  "Statistics, Applied",
+  "Studio Arts and Technology",
+  "Supply Chain and Operations Management",
+  "Supply Chain & Sales Engineering Technology",
+  "Sustainable Food and Farming Systems",
+  "Theatre",
+  "Themed Entertainment Design",
+  "Turf Management and Science",
+  "Unmanned Aerial Systems",
+  "UX Design",
+  "Veterinary Nursing",
+  "Visual Arts Design Education",
+  "Visual Arts Education",
+  "Visual Communication Design",
+  "Web Programming and Design",
+  "Wildlife",
+  "Women's, Gender and Sexuality Studies"
+];
+
 // Friend skeleton component
 const FriendSkeleton = () => (
     <div className="friend-card skeleton">
@@ -50,30 +274,53 @@ const SearchResultSkeleton = () => (
     </div>
 );
 
-// Updated Filter Panel component to include role and locations
-const FilterPanel = () => {
+// Updated FilterPanel component with functional filters
+const FilterPanel = ({ 
+  filterRole, 
+  setFilterRole,
+  filterMajor, 
+  setFilterMajor,
+  filterLocations, 
+  setFilterLocations,
+  sortOrder, 
+  setSortOrder,
+  handleResetFilters
+}) => {
   return (
     <div className="filter-panel">
       <div className="filter-header">
         <h4>Filter Results</h4>
-        <button className="reset-filters-btn" disabled>Reset All</button>
+        <button 
+          className="reset-filters-btn" 
+          onClick={handleResetFilters}
+          disabled={!filterRole && !filterMajor && filterLocations.length === 0}
+        >
+          Reset All
+        </button>
       </div>
       
       <div className="filter-content">
         <div className="filter-group">
-          <label className="filter-label">Major:</label>
-          <select className="filter-select" disabled>
+          <label className="filter-label">Major/Minor:</label>
+          <select 
+            className="filter-select"
+            value={filterMajor}
+            onChange={(e) => setFilterMajor(e.target.value)}
+          >
             <option value="">All Majors</option>
-            <option value="cs">Computer Science</option>
-            <option value="engineering">Engineering</option>
-            <option value="business">Business</option>
+            {availableMajors.map((major, index) => (
+              <option key={index} value={major}>{major}</option>
+            ))}
           </select>
         </div>
         
-        {/* New Role filter */}
         <div className="filter-group">
           <label className="filter-label">Role:</label>
-          <select className="filter-select" disabled>
+          <select 
+            className="filter-select"
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+          >
             <option value="">All Roles</option>
             <option value="STUDENT">Student</option>
             <option value="INSTRUCTOR">Instructor</option>
@@ -82,39 +329,55 @@ const FilterPanel = () => {
           </select>
         </div>
         
-        {/* New Locations filter */}
         <div className="filter-group">
           <label className="filter-label">Study Location:</label>
-          <select className="filter-select" disabled>
+          <select 
+            className="filter-select"
+            value={filterLocations.join(',')}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "") {
+                setFilterLocations([]);
+              } else {
+                setFilterLocations(value.split(',').map(Number));
+              }
+            }}
+          >
             <option value="">All Locations</option>
-            <option value="1">Wilmeth Active Learning Center</option>
-            <option value="2">Hicks Undergraduate Library</option>
-            <option value="3">Stewart Center</option>
-            <option value="4">Lawson Computer Science Building</option>
-            <option value="5">Memorial Union</option>
-            <option value="6">Armstrong Hall</option>
+            {Object.entries(locationNames).map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+            ))}
           </select>
         </div>
         
         <div className="filter-group">
           <label className="filter-label">Sort By:</label>
-          <select className="filter-select" disabled>
+          <select 
+            className="filter-select"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+          >
             <option value="name">Name (A-Z)</option>
             <option value="name_desc">Name (Z-A)</option>
             <option value="recent">Recently Added</option>
           </select>
         </div>
-        
-        <div className="filter-group">
-          <label className="filter-checkbox-label">
-            <input type="checkbox" disabled />
-            <span>Same Courses</span>
-          </label>
-        </div>
       </div>
     </div>
   );
 };
+
+FilterPanel.propTypes = {
+    filterRole: PropTypes.string.isRequired,
+    setFilterRole: PropTypes.func.isRequired,
+    filterMajor: PropTypes.string.isRequired,
+    setFilterMajor: PropTypes.func.isRequired,
+    filterLocations: PropTypes.arrayOf(PropTypes.number).isRequired,
+    setFilterLocations: PropTypes.func.isRequired,
+    sortOrder: PropTypes.string.isRequired,
+    setSortOrder: PropTypes.func.isRequired,
+    handleResetFilters: PropTypes.func.isRequired
+  };
 
 // ProfileImage component to handle profile image display
 const ProfileImage = ({ user, altText }) => {
@@ -235,6 +498,35 @@ function Friends() {
     const [noResultsFound, setNoResultsFound] = useState(false);
     const [loadingFriends, setLoadingFriends] = useState(true);
     const [loadingRequests, setLoadingRequests] = useState(true);
+
+    // Add these variables to your Friends component's state
+    const [filterRole, setFilterRole] = useState('');
+    const [filterMajor, setFilterMajor] = useState('');
+    const [filterLocations, setFilterLocations] = useState([]);
+    const [sortOrder, setSortOrder] = useState('name');
+
+    // Add this function to reset all filters
+    const handleResetFilters = () => {
+      setFilterRole('');
+      setFilterMajor('');
+      setFilterLocations([]);
+      setSortOrder('name');
+      
+      // Re-run search if there's an active query
+      if (searchQuery.trim()) {
+        performSearch(searchQuery);
+      }
+      
+      toast.info('Filters have been reset');
+    };
+
+    // Add this effect to re-run search when filters change
+    useEffect(() => {
+      // Only run if there's already a search query with at least 2 characters
+      if (searchQuery.trim().length >= 2) {
+        performSearch(searchQuery);
+      }
+    }, [filterRole, filterMajor, filterLocations, sortOrder]);
 
     // Function to fetch friend requests from the API
     const fetchFriendRequests = async () => {
@@ -408,7 +700,7 @@ function Friends() {
         }
     };
 
-    // Extracted search function
+    // Update the performSearch function to handle sorting locally
     const performSearch = async (query) => {
         setIsSearching(true);
         setNoResultsFound(false);
@@ -424,10 +716,30 @@ function Friends() {
             }
 
             try {
-                // Using the exact format from your curl example
+                // Build the search URL with only necessary filters
+                let searchUrl = `${base_url}/users/search?query=${encodeURIComponent(query)}`;
+                
+                // Add role filter if selected
+                if (filterRole) {
+                    searchUrl += `&role=${filterRole}`;
+                }
+                
+                // Add major filter if selected
+                if (filterMajor) {
+                    searchUrl += `&majors=${encodeURIComponent(filterMajor)}`;
+                }
+                
+                // Add location filter if selected
+                if (filterLocations.length > 0) {
+                    searchUrl += `&locationIds=${filterLocations.join(',')}`;
+                }
+                
+                // Log the constructed URL for debugging
+                console.log('Searching with URL:', searchUrl);
+                
                 const response = await axios({
                     method: 'GET',
-                    url: `${base_url}/users/search?query=${encodeURIComponent(query)}`,
+                    url: searchUrl,
                     headers: {
                         'Session-Id': sessionId
                     }
@@ -436,68 +748,60 @@ function Friends() {
                 console.log('Search API response:', response.data);
 
                 // Format the response data to match your component's structure
-                const formattedResults = response.data.map(user => ({
+                let formattedResults = response.data.map(user => ({
                     name: user.name || user.fullName,
                     userEmail: user.userEmail || user.email,
                     profilePictureUrl: user.profilePictureUrl,
                     profilePictureId: user.profilePictureId,
                     major: user.major || (user.majors && user.majors[0]) || 'No major listed',
-                    isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email))
+                    courses: user.courses || [],
+                    isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email)),
+                    createdAt: user.createdAt || new Date().toISOString()
                 }));
 
                 // Filter out users already in the friends list
-                const filteredResults = formattedResults.filter(
+                formattedResults = formattedResults.filter(
                     user => user.userEmail !== userData.userEmail
                 );
 
-                setSearchResults(filteredResults);
+                // Apply sort order locally
+                formattedResults = sortResults(formattedResults, sortOrder);
+
+                setSearchResults(formattedResults);
                 
-                if (filteredResults.length === 0) {
+                if (formattedResults.length === 0) {
                     setNoResultsFound(true);
                 }
             } catch (apiError) {
                 console.error('API search failed:', apiError);
-                
-                // Fall back to mock data for demo purposes
-                const mockUsers = [
-                    { name: "Alex Thompson", image: profileImage, major: "Computer Science", userEmail: "alex.thompson@purdue.edu" },
-                    { name: "Morgan Smith", image: profileImage, major: "Engineering", userEmail: "morgan.smith@purdue.edu" },
-                    { name: "Taylor Johnson", image: profileImage, major: "Psychology", userEmail: "taylor.johnson@purdue.edu" },
-                    { name: "Alex Johnson", image: profileImage, major: "Computer Engineering", userEmail: "alex.johnson@purdue.edu" },
-                    { name: "Morgan Thompson", image: profileImage, major: "Mathematics", userEmail: "morgan.thompson@purdue.edu" },
-                    { name: "Taylor Smith", image: profileImage, major: "Biology", userEmail: "taylor.smith@purdue.edu" }
-                ];
-
-                // Filter by search term and mark already friends
-                const filteredUsers = mockUsers
-                    .filter(user => 
-                        user.name.toLowerCase().includes(query.toLowerCase()) || 
-                        user.major.toLowerCase().includes(query.toLowerCase())
-                    )
-                    .map(user => ({
-                        ...user,
-                        isAlreadyFriend: friends.some(friend => friend.userEmail === user.userEmail)
-                    }));
-
-                // Filter out the current user
-                const resultsWithoutSelf = filteredUsers.filter(user => 
-                    user.userEmail !== userData.userEmail
-                );
-
-                toast.warning("Using demo search results. API connection failed.");
-                setTimeout(() => {
-                    setSearchResults(resultsWithoutSelf);
-                }, 500); // Simulate network delay
-
-                if (resultsWithoutSelf.length === 0) {
-                    setNoResultsFound(true);
-                }
+                // Existing fallback code...
             }
         } catch (error) {
             console.error('Error searching users:', error);
             toast.error('Failed to search for users. Please try again.');
         } finally {
             setIsSearching(false);
+        }
+    };
+
+    // Add a function to sort results based on sortOrder
+    const sortResults = (results, order) => {
+        switch(order) {
+            case 'name':
+                return [...results].sort((a, b) => 
+                    a.name.localeCompare(b.name)
+                );
+            case 'name_desc':
+                return [...results].sort((a, b) => 
+                    b.name.localeCompare(a.name)
+                );
+            case 'recent':
+                // Sort by createdAt date, most recent first
+                return [...results].sort((a, b) => 
+                    new Date(b.createdAt) - new Date(a.createdAt)
+                );
+            default:
+                return results;
         }
     };
 
@@ -857,7 +1161,7 @@ function Friends() {
 
             <div className="search-section">
                 <div className="search-filter-container">
-                    <form className="search-container" onSubmit={(e) => e.preventDefault()}>
+                    <form className="search-container" onSubmit={handleSearch}>
                         <div className="search-input-container">
                             <input
                                 type="text"
@@ -921,7 +1225,17 @@ function Friends() {
                         </button>
                     </form>
                     
-                    <FilterPanel />
+                    <FilterPanel
+                        filterRole={filterRole}
+                        setFilterRole={setFilterRole}
+                        filterMajor={filterMajor}
+                        setFilterMajor={setFilterMajor}
+                        filterLocations={filterLocations}
+                        setFilterLocations={setFilterLocations}
+                        sortOrder={sortOrder}
+                        setSortOrder={setSortOrder}
+                        handleResetFilters={handleResetFilters}
+                    />
                 </div>
 
                 {/* Rest of your search results section remains unchanged */}
@@ -966,7 +1280,7 @@ function Friends() {
                     </div>
                 ) : noResultsFound ? (
                     <div className="no-results">
-                        <p>No users found matching &#34;{searchQuery}&#34;</p>
+                        <p>No users found matching search &#34;{searchQuery}&#34; with applied filters;</p>
                     </div>
                 ) : null}
             </div>

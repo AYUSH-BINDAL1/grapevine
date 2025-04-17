@@ -210,7 +210,8 @@ function UsrProfile() {
               weeklyAvailability: response.data.weeklyAvailability,
               preferredLocations: response.data.preferredLocations || [],
               profilePictureUrl: response.data.profilePictureUrl,
-              profilePictureId: response.data.profilePictureId
+              profilePictureId: response.data.profilePictureId,
+              role: response.data.role
             };
             
             setUserData(formattedUserData);
@@ -776,7 +777,18 @@ function UsrProfile() {
                 <span key={index} className="user-tag">{major}</span>
               )) || <span className="user-tag">No major listed</span>}
             </div>
-            
+
+            {/* Add role badge here */}
+            {userData.role && (
+              <div className="user-role-badge">
+                <span className={`role-indicator ${userData.role.toLowerCase()}`}>
+                  {userData.role === 'GTA' ? 'Graduate TA' : 
+                  userData.role === 'UTA' ? 'Undergraduate TA' : 
+                  userData.role}
+                </span>
+              </div>
+            )}
+
             {/* Friend relationship status indicator */}
             {isFriend && (
               <div className="friend-status-indicator">

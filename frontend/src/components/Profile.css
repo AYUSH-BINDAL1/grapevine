@@ -1283,3 +1283,49 @@ It also includes responsive design for different screen sizes. */
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* Add these styles for the majors selector */
+
+.majors-selector {
+  margin-bottom: 10px;
+}
+
+.major-select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.selected-majors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.selected-major {
+  background-color: #e7f3ff;
+  border: 1px solid #bde0ff;
+  border-radius: 16px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.remove-major {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 6px;
+  padding: 0 4px;
+}
+
+.remove-major:hover {
+  color: #ff3b30;
+}
