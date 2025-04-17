@@ -665,4 +665,9 @@ public class UserService {
         userRepository.save(friend);
         return userRepository.save(user);
     }
+
+    public boolean isUserOnline(String userEmail) {
+        return activeSessions.values().stream()
+                .anyMatch(session -> session.userEmail.equals(userEmail));
+    }
 }
