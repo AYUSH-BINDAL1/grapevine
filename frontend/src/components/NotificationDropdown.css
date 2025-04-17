@@ -1,0 +1,54 @@
+.notification-wrapper {
+    position: relative;
+}
+
+.bell-button {
+    background: #3166ff;
+    color: white;
+    padding: 10px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    position: relative;
+}
+
+.notification-dropdown {
+    position: absolute;
+    right: 0;
+    top: 50px;
+    background: white;
+    width: 360px;
+    max-height: 400px;
+    overflow-y: auto;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    z-index: 1000;
+}
+
+.notification-card {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+}
+
+.notif-img-placeholder {
+    width: 45px;
+    height: 45px;
+    background-color: #ccc;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.notif-content {
+    font-size: 14px;
+    color: #444;
+}
+
+.notif-time {
+    color: #3166ff;
+    font-weight: bold;
+    margin-top: 4px;
+    display: block;
+}

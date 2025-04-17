@@ -15,6 +15,7 @@ function EventDetails() {
     const [registrationMessage, setRegistrationMessage] = useState("");
     const [hostNames, setHostNames] = useState({});
 
+
     const hardcodedLocations = [
         { id: 1, shortName: "WALC" },
         { id: 2, shortName: "LWSN" },
@@ -126,15 +127,44 @@ function EventDetails() {
     };
 
     const handleReminderChange = (e) => {
-        setReminderTime(e.target.value);
+        const value = e.target.value;
+        setReminderTime(value);
+
+        const message = value
+            ? `⏰ You’ll be reminded ${value} minute(s) before the event.`
+            : 'No reminder set.';
+        setRegistrationMessage(message);
     };
 
-    const handleRegistration = () => {
-        alert(`Registered for event with reminder: ${reminderTime ? reminderTime + " minutes before" : "no reminder"}`);
-        setRegistrationMessage("You have successfully registered for this event.");
+    const handleRegistration = async () => {
+        const sessionId = localStorage.getItem("sessionId");
+        const currentUserEmail = JSON.parse(localStorage.getItem("userData"))?.userEmail;
+        if (!sessionId || !currentUserEmail) return;
+
+        try {
+            const response = await axios.post(
+                `${base_url}/events/${eventId}/register`,
+                { userEmail: currentUserEmail },
+                { headers: { "Session-Id": sessionId } }
+            );
+
+            setRegistrationMessage("✅ You have successfully registered for this event.");
+
+            // Re-fetch the event to update members
+            const updatedEvent = await axios.get(`${base_url}/events/${eventId}`, {
+                headers: { "Session-Id": sessionId }
+            });
+            setEventData(updatedEvent.data);
+        } catch (error) {
+            console.error("Registration failed:", error);
+            setRegistrationMessage("❌ Failed to register for event.");
+        }
     };
 
     const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
+    const isHost = eventData?.hosts?.includes(currentUserEmail);
+    const isParticipant = eventData?.participants?.includes(currentUserEmail);
+    const eventIsFull = eventData?.participants?.length >= eventData?.maxUsers;
     if (!eventData) {
         return <div className="event-details-loading">Loading...</div>;
     }
@@ -227,18 +257,34 @@ function EventDetails() {
             </div>
 
             <div className="event-details-actions">
-                <div className="event-reminder-registration">
-                    <div className="reminder-setting">
-                        <label htmlFor="reminder-time">Set Reminder:</label>
-                        <select id="reminder-time" name="reminderTime" value={reminderTime} onChange={handleReminderChange}>
+
+                {/* Reminder UI (only for host or participant) */}
+                {(eventData.hosts?.includes(currentUserEmail) || eventData.participants?.includes(currentUserEmail)) && (
+                    <div className="reminder-container">
+                        <label htmlFor="reminder-time">⏰ Set Reminder:</label>
+                        <select
+                            id="reminder-time"
+                            name="reminderTime"
+                            value={reminderTime}
+                            onChange={handleReminderChange}
+                        >
                             <option value="">None</option>
                             <option value="15">15 minutes before</option>
                             <option value="30">30 minutes before</option>
                             <option value="60">1 hour before</option>
                         </select>
                     </div>
-                    <button className="register-button" onClick={handleRegistration}>Register</button>
-                </div>
+                )}
+
+                {/* Registration Button (only if not host or participant and not full) */}
+                {eventData &&
+                    !eventData.hosts?.includes(currentUserEmail) &&
+                    !eventData.participants?.includes(currentUserEmail) &&
+                    eventData.participants?.length < eventData.maxUsers && (
+                        <button className="register-button" onClick={handleRegistration}>
+                            Register
+                        </button>
+                    )}
 
                 {editMode ? (
                     <>

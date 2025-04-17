@@ -17,6 +17,7 @@ import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import Messaging from './components/Messaging.jsx';
 import Forum from './components/Forum';
+import NotificationDropdown from './components/NotificationDropdown';
 import './App.css';
 import './components/Groups.css';
 import {base_url, image_url} from './config.js';
@@ -197,6 +198,10 @@ const Taskbar = memo(function Taskbar() {
             Courses
           </h3>
         )}
+
+        <div className="navbar">
+          <NotificationDropdown />
+        </div>
         
         <img 
           onClick={() => navigate("/profile")} 
@@ -335,15 +340,19 @@ function Home() {
                     >
                       <h3>{group.name}</h3>
                       {group.public === false ? (
-                        <div className="private-group-indicator">
-                          <span className="lock-icon">🔒</span>
-                          <span className="private-text">Private</span>
-                        </div>
+                          <div className="private-group-indicator">
+                            <span className="lock-icon">🔒</span>
+                            <span className="private-text">
+                              Private{group.instructorLed ? " / Instructor Led" : ""}
+                            </span>
+                          </div>
                       ) : (
-                        <div className="public-group-indicator">
-                          <span className="globe-icon">🌐</span>
-                          <span className="public-text">Public</span>
-                        </div>
+                          <div className="public-group-indicator">
+                            <span className="globe-icon">🌐</span>
+                            <span className="public-text">
+                              Public{group.instructorLed ? " / Instructor Led" : ""}
+                            </span>
+                          </div>
                       )}
                     </div>
                 ))
@@ -403,15 +412,19 @@ function Home() {
                     >
                       <h3>{group.name}</h3>
                       {group.public === false ? (
-                        <div className="private-group-indicator">
-                          <span className="lock-icon">🔒</span>
-                          <span className="private-text">Private</span>
-                        </div>
+                          <div className="private-group-indicator">
+                            <span className="lock-icon">🔒</span>
+                            <span className="private-text">
+                              Private{group.instructorLed ? " / Instructor Led" : ""}
+                            </span>
+                          </div>
                       ) : (
-                        <div className="public-group-indicator">
-                          <span className="globe-icon">🌐</span>
-                          <span className="public-text">Public</span>
-                        </div>
+                          <div className="public-group-indicator">
+                            <span className="globe-icon">🌐</span>
+                            <span className="public-text">
+                              Public{group.instructorLed ? " / Instructor Led" : ""}
+                            </span>
+                          </div>
                       )}
                     </div>
                 ))
