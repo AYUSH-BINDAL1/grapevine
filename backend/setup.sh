@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# simple script for running the application with all dependencies
-# note: this script should be run from a UNIX-based shell (e.g., Git Bash on Windows)
+# Simple script for running the application with all dependencies
+# Note: this script should be run from a UNIX-based shell (e.g., Git Bash or WSL on Windows)
 
 # INSTRUCTIONS:
    #1. Make the script executable:
