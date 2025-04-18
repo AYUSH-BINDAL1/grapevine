@@ -367,7 +367,7 @@ function Forum() {
                     <div className="thread-content">
                       <h3 className="thread-title">{thread.title}</h3>
                       <div className="thread-meta">
-                        <span className="thread-author">by {thread.author?.name || "Anonymous"}</span>
+                        <span className="thread-author">by {thread.authorName || "Anonymous"}</span>
                         <span className="thread-date">Posted on {formatDate(thread.createdAt)}</span>
                       </div>
                       <p className="thread-excerpt">
@@ -386,7 +386,7 @@ function Forum() {
                           <svg className="stats-icon" viewBox="0 0 24 24" width="16" height="16">
                             <path fill="currentColor" d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/>
                           </svg>
-                          <span>{formatNumber(thread.commentCount || 0)}</span>
+                          <span>{formatNumber(thread.comments.length || 0)}</span>
                         </div>
                         
                         {thread.isRecent && (

@@ -225,6 +225,35 @@
   line-height: 1.6;
 }
 
+/* For horizontal layout with more separation */
+.commenter-details {
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.commenter-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #444;
+  margin-right: 12px; /* Add space after the name */
+}
+
+.comment-date {
+  font-size: 12px;
+  color: #777;
+  position: relative;
+  padding-left: 12px; /* Add space before the date */
+}
+
+/* Add a dot separator before the date */
+.comment-date::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #ccc;
+}
+
 /* Loading state */
 .thread-view-loading {
   display: flex;
@@ -264,6 +293,62 @@
 .thread-view-error p {
   color: #666;
   margin-bottom: 20px;
+}
+
+/* Thread voting styles */
+.thread-view-voting {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+/* Comment voting styles */
+.comment-voting {
+  display: flex;
+  align-items: center;
+  margin-left: 15px;
+}
+
+/* Shared voting styles */
+.vote-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-color);
+}
+
+.vote-button:hover {
+  background-color: var(--secondary-hover);
+}
+
+.vote-button.upvote.active {
+  color: #4caf50;
+}
+
+.vote-button.downvote.active {
+  color: #f44336;
+}
+
+.vote-score {
+  margin: 0 8px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+
+.thread-view-voting .vote-score {
+  font-size: 18px;
+}
+
+.comment-voting .vote-score {
+  font-size: 14px;
 }
 
 /* Mobile responsiveness */
