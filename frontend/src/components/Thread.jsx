@@ -21,7 +21,6 @@ function Thread() {
     score: thread?.likes || 0,
     userVote: 0 // 1 for upvote, -1 for downvote, 0 for no vote
   });
-  const [commentVotes, setCommentVotes] = useState({});
   
   // Add a function to sort comments by date (newest first)
   const sortCommentsByDate = (commentsArray) => {
@@ -58,6 +57,25 @@ function Thread() {
       
       console.log('Thread data:', threadResponse.data);
       setThread(threadResponse.data);
+
+      // Get current user email
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      const userEmail = userData.userEmail;
+
+      // Calculate score from upvotes and downvotes
+      const score = (threadResponse.data.upvotes || 0) - (threadResponse.data.downvotes || 0);
+
+      // Check if user has already voted
+      let userVote = 0;
+      if (threadResponse.data.votes && userEmail) {
+        userVote = threadResponse.data.votes[userEmail] || 0;
+      }
+
+      // Set thread votes
+      setThreadVotes({
+        score: score,
+        userVote: userVote
+      });
       
       // Extract and set comments from thread data
       if (threadResponse.data.comments && Array.isArray(threadResponse.data.comments)) {
@@ -76,17 +94,13 @@ function Thread() {
         // Sort comments by date (newest first) before setting state
         setComments(sortCommentsByDate(extractedComments));
       } else {
-        // If no comments in thread data, fetch them separately
-        try {
-          const commentsResponse = await axios.get(`${base_url}/threads/${threadId}/comments`, {
-            headers: { 'Session-Id': sessionId }
-          });
-          console.log('Comments fetched separately:', commentsResponse.data);
-          // Sort comments by date (newest first) before setting state
-          setComments(sortCommentsByDate(commentsResponse.data || []));
-        } catch (commentsError) {
-          console.error('Error fetching comments:', commentsError);
-        }
+        console.log('No comments found in thread data');
+        setComments([]);
+        
+        // Optionally fetch comments separately if needed
+        // try {
+        //   const commentsResponse = await axios.get...
+        // } ...
       }
       
       // Increment view count (commented out in your original code)
@@ -103,27 +117,6 @@ function Thread() {
   useEffect(() => {
     fetchThreadData();
   }, [fetchThreadData]);
-
-  useEffect(() => {
-    if (thread) {
-      setThreadVotes({
-        score: thread.likes || 0,
-        userVote: 0 // We'll initialize with no vote
-      });
-    }
-    
-    // Initialize comment votes
-    if (comments && comments.length > 0) {
-      const initialCommentVotes = {};
-      comments.forEach(comment => {
-        initialCommentVotes[comment.commentId] = {
-          score: comment.likes || 0,
-          userVote: 0
-        };
-      });
-      setCommentVotes(initialCommentVotes);
-    }
-  }, [thread, comments]);
   
   // Format date display
   const formatDate = (dateString) => {
@@ -212,13 +205,13 @@ function Thread() {
         return;
       }
       
+      // Save current vote state to determine what we're doing
+      const isRemovingVote = threadVotes.userVote === vote;
+      
       // Determine the endpoint based on vote direction
       const endpoint = vote === 1 
         ? `${base_url}/threads/${threadId}/upvote` 
         : `${base_url}/threads/${threadId}/downvote`;
-      
-      // If user clicks the same vote again, we need to handle toggling
-      // But your API doesn't seem to support vote removal, so we'll just flip votes
       
       // Optimistically update UI
       setThreadVotes(prev => {
@@ -245,11 +238,14 @@ function Thread() {
         };
       });
       
-      // Only call API if we're actually voting (not removing a vote)
-      if (threadVotes.userVote !== vote) {
-        await axios.post(endpoint, {}, {
-          headers: { 'Session-Id': sessionId }
-        });
+      // Always call API regardless of whether voting or removing vote
+      await axios.post(endpoint, {}, {
+        headers: { 'Session-Id': sessionId }
+      });
+      
+      if (isRemovingVote) {
+        console.log(`Vote removed from thread ${threadId}`);
+      } else {
         console.log(`Thread ${vote === 1 ? 'upvoted' : 'downvoted'} successfully`);
       }
       
@@ -258,73 +254,10 @@ function Thread() {
       toast.error('Failed to register vote');
       
       // Revert to previous state on error
-      setThreadVotes(prev => ({
-        score: thread.likes || 0,
-        userVote: 0
-      }));
-    }
-  };
-
-  const handleCommentVote = async (commentId, vote) => {
-    try {
-      const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) {
-        toast.error('Please log in to vote');
-        return;
-      }
-      
-      // Determine the endpoint based on vote direction
-      const endpoint = vote === 1 
-        ? `${base_url}/threads/${threadId}/comments/${commentId}/upvote` 
-        : `${base_url}/threads/${threadId}/comments/${commentId}/downvote`;
-      
-      const currentVoteInfo = commentVotes[commentId] || { score: 0, userVote: 0 };
-      
-      // Optimistically update UI
-      setCommentVotes(prev => {
-        const updatedVotes = {...prev};
-        
-        // If same vote type clicked, remove the vote (toggle behavior)
-        if (currentVoteInfo.userVote === vote) {
-          updatedVotes[commentId] = {
-            score: currentVoteInfo.score - vote,
-            userVote: 0
-          };
-        } 
-        // If changing vote direction
-        else if (currentVoteInfo.userVote !== 0) {
-          updatedVotes[commentId] = {
-            score: currentVoteInfo.score + 2 * vote,
-            userVote: vote
-          };
-        }
-        // New vote
-        else {
-          updatedVotes[commentId] = {
-            score: currentVoteInfo.score + vote,
-            userVote: vote
-          };
-        }
-        
-        return updatedVotes;
-      });
-      
-      // Call API
-      if (currentVoteInfo.userVote !== vote) {
-        await axios.post(endpoint, {}, {
-          headers: { 'Session-Id': sessionId }
-        });
-        console.log(`Comment ${commentId} ${vote === 1 ? 'upvoted' : 'downvoted'} successfully`);
-      }
-      
-    } catch (error) {
-      console.error(`Error voting on comment ${commentId}:`, error);
-      toast.error('Failed to register vote');
-      
-      // Revert on error
-      setCommentVotes(prev => ({
-        ...prev,
-        [commentId]: { score: comments.find(c => c.commentId === commentId)?.likes || 0, userVote: 0 }
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      setThreadVotes(() => ({
+        score: (thread.upvotes || 0) - (thread.downvotes || 0),
+        userVote: thread.votes ? thread.votes[userData?.userEmail] || 0 : 0
       }));
     }
   };
@@ -457,7 +390,6 @@ function Thread() {
           <div className="thread-view-comments-list">
             {comments.map((comment, index) => {
               const commentId = comment.commentId || `comment-${index}`;
-              const voteInfo = commentVotes[commentId] || { score: comment.likes || 0, userVote: 0 };
               
               return (
                 <div key={commentId} className="thread-view-comment-item">
@@ -477,27 +409,6 @@ function Thread() {
                         <span className="commenter-name">{comment.authorName || comment.author?.name || 'Anonymous'}</span>
                         <span className="comment-date">{formatDate(comment.createdAt)}</span>
                       </div>
-                    </div>
-                    <div className="comment-voting">
-                      <button 
-                        className={`vote-button upvote ${voteInfo.userVote === 1 ? 'active' : ''}`}
-                        onClick={() => handleCommentVote(commentId, 1)}
-                        aria-label="Upvote comment"
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16">
-                          <path fill="currentColor" d="M7 14l5-5 5 5H7z"/>
-                        </svg>
-                      </button>
-                      <span className="vote-score">{voteInfo.score}</span>
-                      <button 
-                        className={`vote-button downvote ${voteInfo.userVote === -1 ? 'active' : ''}`}
-                        onClick={() => handleCommentVote(commentId, -1)}
-                        aria-label="Downvote comment"
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16">
-                          <path fill="currentColor" d="M7 10l5 5 5-5H7z"/>
-                        </svg>
-                      </button>
                     </div>
                   </div>
                   <div className="thread-view-comment-body">

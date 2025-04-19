@@ -17,6 +17,10 @@ function Forum() {
   const [newThread, setNewThread] = useState({ title: '', content: '' });
   const [forumData, setForumData] = useState([]);
   const [sortOrder, setSortOrder] = useState('recent');
+  const [forumStats, setForumStats] = useState({
+    totalThreads: 0,
+    totalReplies: 0
+  });
 
   const fetchForumData = useCallback(async () => {
     setLoading(true);
@@ -49,12 +53,22 @@ function Forum() {
           setThreads(response.data);
           setTotalPages(Math.ceil(response.data.length / 10));
           
+          // Calculate and set forum stats
+          const stats = calculateForumStats(response.data);
+          setForumStats(stats);
+          console.log('Forum statistics calculated:', stats);
+          
           // Log thread IDs with the correct property name
           console.log('Thread IDs:', response.data.map(thread => thread.threadId));
         } else if (response.data.threads && Array.isArray(response.data.threads)) {
           console.log(`Processing ${response.data.threads.length} threads from nested response`);
           setThreads(response.data.threads);
           setTotalPages(response.data.totalPages || Math.ceil(response.data.threads.length / 10));
+          
+          // Calculate and set forum stats
+          const stats = calculateForumStats(response.data.threads);
+          setForumStats(stats);
+          console.log('Forum statistics calculated:', stats);
           
           // Log thread IDs to help identify any missing or duplicate IDs
           console.log('Thread IDs:', response.data.threads.map(thread => thread.id));
@@ -79,6 +93,30 @@ function Forum() {
   useEffect(() => {
     fetchForumData();
   }, [fetchForumData]);
+
+  useEffect(() => {
+    if (!threads.length) return;
+    
+    let sortedThreads = [...threads];
+    
+    switch(sortOrder) {
+      case 'recent':
+        sortedThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        break;
+      case 'comments':
+        sortedThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+        break;
+      case 'score':
+        sortedThreads.sort((a, b) => 
+          ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0))
+        );
+        break;
+      default:
+        break;
+    }
+    
+    setThreads(sortedThreads);
+  }, [sortOrder, threads]);
 
   const handleCreateThread = async (e) => {
     e.preventDefault();
@@ -166,15 +204,36 @@ function Forum() {
   };
 
   const isHotThread = (thread) => {
-    const viewsThreshold = 100;
     const commentsThreshold = 5;
-    const viewsWeight = 1;
+    const upvotesThreshold = 3;
+    
     const commentsWeight = 10;
+    const upvotesWeight = 15;
     
-    const score = (thread.views || 0) * viewsWeight + 
-                 (thread.commentCount || 0) * commentsWeight;
+    const score = 
+      (thread.comments?.length || 0) * commentsWeight + 
+      (thread.upvotes || 0) * upvotesWeight;
     
-    return score > viewsThreshold + (commentsThreshold * commentsWeight);
+    return score > (commentsThreshold * commentsWeight) || 
+           (thread.upvotes || 0) >= upvotesThreshold;
+  };
+
+  const calculateForumStats = (threadsArray) => {
+    if (!threadsArray || !Array.isArray(threadsArray)) {
+      return { totalThreads: 0, totalReplies: 0 };
+    }
+    
+    const totalThreads = threadsArray.length;
+    let totalReplies = 0;
+    
+    // Sum up all comments across all threads
+    threadsArray.forEach(thread => {
+      if (thread.comments && Array.isArray(thread.comments)) {
+        totalReplies += thread.comments.length;
+      }
+    });
+    
+    return { totalThreads, totalReplies };
   };
 
   const goToThread = (threadId) => {
@@ -305,11 +364,15 @@ function Forum() {
             <h3>Forum Statistics</h3>
             <div className="stat-item">
               <span className="stat-label">Total Threads:</span>
-              <span className="stat-value">N/A</span>
+              <span className="stat-value">{formatNumber(forumStats.totalThreads)}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Total Replies:</span>
-              <span className="stat-value">N/A</span>
+              <span className="stat-value">{formatNumber(forumStats.totalReplies)}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Activity Score:</span>
+              <span className="stat-value">{formatNumber(forumStats.totalThreads + forumStats.totalReplies * 2)}</span>
             </div>
           </div>
         </div>
@@ -324,8 +387,8 @@ function Forum() {
                 onChange={(e) => setSortOrder(e.target.value)}
               >
                 <option value="recent">Most Recent</option>
-                <option value="popular">Most Popular</option>
                 <option value="comments">Most Comments</option>
+                <option value="score">Highest Score</option>
               </select>
             </div>
           </div>
@@ -375,18 +438,35 @@ function Forum() {
                         {(thread.content || thread.description || "").length > 120 ? "..." : ""}
                       </p>
                       <div className="thread-stats">
-                        <div className="stats-item views">
-                          <svg className="stats-icon" viewBox="0 0 24 24" width="16" height="16">
-                            <path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                          </svg>
-                          <span>{formatNumber(thread.views || 0)}</span>
-                        </div>
-                        
                         <div className="stats-item comments">
                           <svg className="stats-icon" viewBox="0 0 24 24" width="16" height="16">
                             <path fill="currentColor" d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/>
                           </svg>
-                          <span>{formatNumber(thread.comments.length || 0)}</span>
+                          <span>{formatNumber(thread.comments ? thread.comments.length : 0)}</span>
+                        </div>
+                        
+                        {/* Add score stat */}
+                        <div className="stats-item score">
+                          <svg className="stats-icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/>
+                          </svg>
+                          <span>{formatNumber((thread.upvotes || 0) - (thread.downvotes || 0))}</span>
+                        </div>
+                        
+                        {/* Add upvotes stat */}
+                        <div className="stats-item upvotes">
+                          <svg className="stats-icon upvote" viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M7 14l5-5 5 5H7z"/>
+                          </svg>
+                          <span>{formatNumber(thread.upvotes || 0)}</span>
+                        </div>
+                        
+                        {/* Add downvotes stat */}
+                        <div className="stats-item downvotes">
+                          <svg className="stats-icon downvote" viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M7 10l5 5 5-5H7z"/>
+                          </svg>
+                          <span>{formatNumber(thread.downvotes || 0)}</span>
                         </div>
                         
                         {thread.isRecent && (

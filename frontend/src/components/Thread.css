@@ -321,7 +321,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--primary-color);
+  background-color: var(--secondary-color);
 }
 
 .vote-button:hover {
