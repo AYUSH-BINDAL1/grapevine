@@ -17,6 +17,7 @@ import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import Messaging from './components/Messaging.jsx';
 import Forum from './components/Forum';
+import Thread from './components/Thread.jsx';
 import NotificationDropdown from './components/NotificationDropdown';
 import './App.css';
 import './components/Groups.css';
@@ -464,6 +465,7 @@ function App() {
             <Route path="/group/:id" element={<Groups />} />
             <Route path="/event/:eventId" element={<EventDetails />} />
             <Route path="/forum" element={<Forum />} />
+            <Route path="/forum/thread/:threadId" element={<Thread />} />
             <Route path="/messaging" element={<Messaging />} />
           </Route>
         </Routes>

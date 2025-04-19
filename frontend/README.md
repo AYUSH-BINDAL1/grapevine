@@ -42,12 +42,14 @@ The frontend is organized into components, with key features including:
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/your-repo/grapevine.git
    cd grapevine/frontend
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    # or
@@ -57,6 +59,7 @@ The frontend is organized into components, with key features including:
 ## Running the Application
 
 1. Start the development server:
+
    ```bash
    npm run dev
    # or
@@ -69,11 +72,12 @@ The frontend is organized into components, with key features including:
 3. Make sure the backend servers are running:
    - Main API server on `http://localhost:8080`
    - Image server on `http://localhost:9000`
-   - Mailpit server on 'http://localhost:8025/'
+   - Mailpit server on '<http://localhost:8025/>'
 
 ## Building for Production
 
 1. Create a production build:
+
    ```bash
    npm run build
    # or
@@ -93,7 +97,7 @@ The frontend is organized into components, with key features including:
 
 Environment variables can be configured in a `.env` file:
 
-```
+``` JavaScipt
 VITE_API_URL=http://localhost:8080
 VITE_IMAGE_URL=http://localhost:9000
 ```
@@ -103,4 +107,3 @@ VITE_IMAGE_URL=http://localhost:9000
 - If you see CORS errors, ensure the backend has proper CORS configuration
 - If images don't load, verify the image server is running correctly
 - Login issues may require clearing localStorage and cookies
-
