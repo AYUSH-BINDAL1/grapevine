@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.time.LocalDateTime;
 
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "comments")
 @Getter
 @Setter
-@ToString
+@ToString(exclude = "thread")
 @NoArgsConstructor
 public class Comment {
 
@@ -38,6 +39,7 @@ public class Comment {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "thread_id")
     private Thread thread;

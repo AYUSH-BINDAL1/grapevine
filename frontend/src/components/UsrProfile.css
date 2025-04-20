@@ -919,3 +919,52 @@
   font-style: italic;
 }
 
+/* Add this to your CSS file to style the role badge */
+
+.user-role-badge {
+  margin: 5px 0 15px;
+  display: flex;
+}
+
+.role-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  position: relative;
+  color: white;
+  text-transform: uppercase;
+}
+
+.role-indicator::before {
+  content: "•";
+  margin-right: 6px;
+  font-size: 18px;
+}
+
+/* Color coding for different roles */
+.role-indicator.student {
+  background-color: #0F9D58;
+}
+
+.role-indicator.instructor {
+  background-color: #8e44ad;
+}
+
+.role-indicator.gta {
+  background-color: #F4B400;
+}
+
+.role-indicator.uta {
+  background-color: #4285F4;
+}
+
+/* Responsive styles */
+@media (max-width: 900px) {
+  .user-role-badge {
+    justify-content: center;
+  }
+}
+

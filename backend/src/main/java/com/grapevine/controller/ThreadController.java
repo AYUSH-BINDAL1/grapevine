@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/threads")
@@ -125,12 +126,31 @@ public class ThreadController {
         return ResponseEntity.ok(threadService.addComment(threadId, comment));
     }
 
-    @PostMapping("/{id}/like")
-    public ResponseEntity<Thread> likeThread( // NOT FINISHED
+    @PostMapping("/{id}/upvote")
+    public ResponseEntity<Thread> upvoteThread(
             @PathVariable Long id,
             @RequestHeader(name = "Session-Id", required = true) String sessionId) {
         // Validate session
-        userService.validateSession(sessionId);
-        return ResponseEntity.ok(threadService.likeThread(id));
+        User currentUser = userService.validateSession(sessionId);
+        return ResponseEntity.ok(threadService.upvoteThread(id, currentUser.getUserEmail()));
+    }
+
+    @PostMapping("/{id}/downvote")
+    public ResponseEntity<Thread> downvoteThread(
+            @PathVariable Long id,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        return ResponseEntity.ok(threadService.downvoteThread(id, currentUser.getUserEmail()));
+    }
+
+    @GetMapping("/{id}/vote")
+    public ResponseEntity<Map<String, Integer>> getUserVote(
+            @PathVariable Long id,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        Integer vote = threadService.getUserVote(id, currentUser.getUserEmail());
+        return ResponseEntity.ok(Map.of("vote", vote));
     }
 }
