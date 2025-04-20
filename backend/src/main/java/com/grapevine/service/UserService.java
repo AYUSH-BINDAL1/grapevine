@@ -97,9 +97,20 @@ public class UserService {
     }
 
     public void logout(String sessionId) {
-        if (sessionId != null && activeSessions.containsKey(sessionId)) {
             activeSessions.remove(sessionId);
+    }
+
+    public void logoutAllUserSessions(String sessionId) {
+        // Get the user email from the provided session
+        if (sessionId == null || !activeSessions.containsKey(sessionId)) {
+            throw new InvalidSessionException("Invalid or missing session");
         }
+
+        String userEmail = activeSessions.get(sessionId).userEmail;
+
+        // Remove all sessions for this user
+        activeSessions.entrySet().removeIf(entry -> entry.getValue().userEmail.equals(userEmail));
+
     }
 
     public User validateSession(String sessionId) {

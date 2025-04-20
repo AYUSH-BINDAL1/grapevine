@@ -1,10 +1,8 @@
 package com.grapevine.controller;
 
 import com.grapevine.exception.GroupNotFoundException;
-import com.grapevine.model.Event;
-import com.grapevine.model.EventFilter;
-import com.grapevine.model.ShortEvent;
-import com.grapevine.model.User;
+import com.grapevine.model.*;
+import com.grapevine.service.EventReminderService;
 import com.grapevine.service.EventService;
 import com.grapevine.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/events")
@@ -21,6 +20,7 @@ import java.util.List;
 public class EventController {
     private final EventService eventService;
     private final UserService userService;
+    private final EventReminderService eventReminderService;
 
     @GetMapping("/all")
     public List<Event> getAllEvents(@RequestHeader(name = "Session-Id", required = true) String sessionId) {
@@ -105,6 +105,58 @@ public class EventController {
             Event updatedEvent = eventService.joinEvent(eventId, currentUser);
             return ResponseEntity.ok(updatedEvent);
         } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/{eventId}/reminders")
+    public ResponseEntity<?> createReminder(
+            @PathVariable Long eventId,
+            @RequestBody Map<String, Long> request,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        Long minutesBefore = request.get("minutesBefore");
+
+        try {
+            EventReminder reminder = eventReminderService.createReminder(
+                    eventId, currentUser.getUserEmail(), minutesBefore);
+            return ResponseEntity.ok(reminder);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{eventId}/reminders")
+    public ResponseEntity<?> getReminders(
+            @PathVariable Long eventId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+
+        try {
+            List<EventReminder> reminders = eventReminderService.getRemindersForEvent(
+                    eventId, currentUser.getUserEmail());
+            return ResponseEntity.ok(reminders);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/reminders/{reminderId}")
+    public ResponseEntity<?> deleteReminder(
+            @PathVariable Long reminderId,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+
+        try {
+            eventReminderService.deleteReminder(reminderId, currentUser.getUserEmail());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }

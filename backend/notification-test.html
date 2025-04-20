@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Grapevine Notifications Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .panel {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        .notification {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .unread {
+            background-color: #e2f0fd;
+            font-weight: bold;
+        }
+        #notifications {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .log {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0b5ed7;
+        }
+        input, select {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+<h1>Grapevine Notifications Test Client</h1>
+
+<div class="control-group">
+    <label for="email">Your Email:</label>
+    <input type="text" id="email" placeholder="your@email.com"/>
+    <label for="sessionId">Session ID:</label>
+    <input type="text" id="sessionId" placeholder="your-session-id"/>
+    <button onclick="connect()">Connect</button>
+    <button onclick="loadNotifications()">Refresh Notifications</button>
+    <button onclick="markAllAsRead()">Mark All Read</button>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <h2>Notifications</h2>
+        <div id="notifications"></div>
+    </div>
+    <div class="panel">
+        <h2>Activity Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+</div>
+
+<div class="control-group" style="margin-top: 20px;">
+    <h3>WebSocket Direct Testing</h3>
+    <label for="notificationId">Notification ID:</label>
+    <input type="text" id="notificationId" placeholder="ID to mark as read"/>
+    <button onclick="markAsReadViaWebSocket()">Mark Read (WebSocket)</button>
+</div>
+
+<script>
+    let stompClient = null;
+    const notifications = [];
+
+    function showInAppNotification(notification) {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = 'in-app-toast';
+
+        // Set content
+        const title = document.createElement('div');
+        title.className = 'toast-title';
+        title.textContent = `New ${notification.type}`;
+
+        const content = document.createElement('div');
+        content.className = 'toast-content';
+        content.textContent = notification.content;
+
+        const from = document.createElement('div');
+        from.className = 'toast-from';
+        from.textContent = `From: ${notification.senderName}`;
+
+        // Add elements to toast
+        toast.appendChild(title);
+        toast.appendChild(content);
+        toast.appendChild(from);
+
+        // Add to document
+        document.body.appendChild(toast);
+
+        // Add styles if not already in the CSS
+        if (!document.getElementById('toast-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'toast-styles';
+            styles.textContent = `
+            .in-app-toast {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #fff;
+                border-left: 4px solid #0d6efd;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                padding: 15px;
+                z-index: 1000;
+                min-width: 300px;
+                max-width: 400px;
+                border-radius: 4px;
+                animation: slideIn 0.3s, fadeOut 0.5s 4.5s;
+                animation-fill-mode: forwards;
+            }
+            .toast-title {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .toast-content {
+                margin-bottom: 5px;
+            }
+            .toast-from {
+                font-size: 0.8em;
+                color: #6c757d;
+            }
+            @keyframes slideIn {
+                from { transform: translateX(100%); }
+                to { transform: translateX(0); }
+            }
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; visibility: hidden; }
+            }
+        `;
+            document.head.appendChild(styles);
+        }
+
+        // Remove after 5 seconds
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+
+    function connect() {
+        const email = document.getElementById('email').value;
+        if (!email) {
+            addLog('Please enter your email');
+            return;
+        }
+
+        // Include email on the handshake URL
+        const socket = new SockJS(
+            `http://localhost:8080/ws?email=${encodeURIComponent(email)}`
+        );
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect(
+            {},
+            frame => {
+                addLog(`Connected as ${frame.headers['user-name']}`);
+
+                // Subscribe to messages (for notifications)
+                stompClient.subscribe(
+                    '/user/queue/messages',
+                    msg => {
+                        const m = JSON.parse(msg.body);
+                        addLog(`New message received: ${m.content} (from ${m.senderEmail})`);
+
+                        // Show browser notification
+                        showBrowserNotification({
+                            type: 'MESSAGE',
+                            content: m.content,
+                            senderName: m.senderEmail,
+                            senderEmail: m.senderEmail,
+                            referenceId: m.conversationId
+                        });
+
+                        // Refresh notifications list to show new notifications
+                        loadNotifications();
+                    }
+                );
+
+                // Subscribe to connection confirmations
+                stompClient.subscribe(
+                    '/user/queue/connect',
+                    msg => {
+                        const data = JSON.parse(msg.body);
+                        addLog(`WebSocket connection status: ${data.status}`);
+
+                        // Load notifications after connecting
+                        loadNotifications();
+                    }
+                );
+
+                // Modify the /user/queue/notifications subscription in the connect() function
+                stompClient.subscribe(
+                    '/user/queue/notifications',
+                    msg => {
+                        const notification = JSON.parse(msg.body);
+                        console.log("WebSocket notification received:", notification); // Debug
+                        addLog(`Raw notification data: ${msg.body}`); // Debug
+                        addLog(`New notification received: ${notification.content} (type: ${notification.type})`);
+
+                        // Show in-app notification
+                        showInAppNotification(notification);
+
+                        // Also show browser notification (optional - you can remove this if you don't want both)
+                        showBrowserNotification({
+                            type: notification.type || 'NOTIFICATION',
+                            content: notification.content,
+                            senderName: notification.senderName,
+                            notificationId: notification.id || notification.notificationId
+                        });
+
+                        // Refresh notifications list
+                        loadNotifications();
+                    }
+                );
+
+                // Tell the server "I'm here"
+                stompClient.send('/app/chat.addUser', {}, '{}');
+            },
+            err => addLog('Error connecting: ' + err)
+        );
+    }
+
+    function loadNotifications() {
+        const sessionId = document.getElementById('sessionId').value;
+        if (!sessionId) {
+            addLog('Please enter a session ID');
+            return;
+        }
+
+        fetch('http://localhost:8080/notifications', {
+            headers: {
+                'Session-Id': sessionId
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load notifications: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Clear existing notifications display
+                document.getElementById('notifications').innerHTML = '';
+                notifications.length = 0;
+
+                // Display each notification
+                if (data.length === 0) {
+                    addLog('No notifications found');
+                    const noNotifications = document.createElement('div');
+                    noNotifications.textContent = 'No notifications';
+                    noNotifications.style.padding = '10px';
+                    noNotifications.style.color = '#6c757d';
+                    document.getElementById('notifications').appendChild(noNotifications);
+                } else {
+                    data.forEach(notification => {
+                        notifications.push(notification);
+                        displayNotification(notification);
+                    });
+                    addLog(`Loaded ${data.length} notifications`);
+                }
+            })
+            .catch(error => {
+                addLog('Error: ' + error.message);
+            });
+    }
+
+    function markAsRead(notificationId) {
+        const sessionId = document.getElementById('sessionId').value;
+        if (!sessionId) {
+            addLog('Please enter a session ID');
+            return;
+        }
+
+        fetch(`http://localhost:8080/notifications/mark-read/${notificationId}`, {
+            method: 'POST',
+            headers: {
+                'Session-Id': sessionId
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to mark notification as read');
+                }
+
+                // Update UI
+                const notifDiv = document.querySelector(`.notification[data-id="${notificationId}"]`);
+                if (notifDiv) {
+                    notifDiv.classList.remove('unread');
+                }
+
+                // Update local data
+                const notif = notifications.find(n => n.notificationId == notificationId);
+                if (notif) {
+                    notif.read = true;
+                }
+
+                addLog(`Marked notification ${notificationId} as read`);
+            })
+            .catch(error => {
+                addLog('Error: ' + error.message);
+            });
+    }
+
+    function markAsReadViaWebSocket() {
+        const notificationId = document.getElementById('notificationId').value;
+        if (!notificationId) {
+            addLog('Please enter a notification ID');
+            return;
+        }
+
+        if (!stompClient) {
+            addLog('Please connect to WebSocket first');
+            return;
+        }
+
+        stompClient.send(
+            '/app/notification.markRead',
+            {},
+            JSON.stringify({ notificationId: notificationId })
+        );
+
+        addLog(`Sent WebSocket command to mark notification ${notificationId} as read`);
+
+        // Refresh after a short delay
+        setTimeout(loadNotifications, 500);
+    }
+
+    function markAllAsRead() {
+        const sessionId = document.getElementById('sessionId').value;
+        if (!sessionId) {
+            addLog('Please enter a session ID');
+            return;
+        }
+
+        fetch('http://localhost:8080/notifications/mark-all-read', {
+            method: 'POST',
+            headers: {
+                'Session-Id': sessionId
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to mark all notifications as read');
+                }
+
+                // Update UI to reflect all notifications as read
+                document.querySelectorAll('.notification.unread').forEach(el => {
+                    el.classList.remove('unread');
+                });
+
+                // Update local data
+                notifications.forEach(n => { n.read = true; });
+
+                addLog('Marked all notifications as read');
+            })
+            .catch(error => {
+                addLog('Error: ' + error.message);
+            });
+    }
+
+    function displayNotification(notification) {
+        const container = document.getElementById('notifications');
+
+        const notifDiv = document.createElement('div');
+        notifDiv.className = 'notification' + (notification.read ? '' : ' unread');
+        notifDiv.dataset.id = notification.notificationId;
+
+        // Content with notification type label
+        const content = document.createElement('div');
+        const typeLabel = `[${notification.type}] `;
+        content.textContent = typeLabel + notification.content;
+
+        // From info
+        const from = document.createElement('div');
+        from.textContent = `From: ${notification.senderName} (${notification.senderEmail})`;
+        from.style.fontSize = '0.9em';
+        from.style.color = '#6c757d';
+
+        // Time info
+        const time = document.createElement('div');
+        time.className = 'timestamp';
+        time.textContent = `Received: ${new Date(notification.createdAt).toLocaleString()}`;
+
+        // Actions container
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        // Mark as read button (only show for unread notifications)
+        if (!notification.read) {
+            const markReadBtn = document.createElement('button');
+            markReadBtn.textContent = 'Mark as Read';
+            markReadBtn.onclick = () => markAsRead(notification.notificationId);
+            actions.appendChild(markReadBtn);
+        }
+
+        // Add all components to the notification div
+        notifDiv.appendChild(content);
+        notifDiv.appendChild(from);
+        notifDiv.appendChild(time);
+        notifDiv.appendChild(actions);
+
+        container.appendChild(notifDiv);
+    }
+
+    function addLog(message) {
+        const log = document.getElementById('log');
+        const entry = document.createElement('div');
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        log.appendChild(entry);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function showBrowserNotification(notification) {
+        // Check if browser notifications are supported and permitted
+        if ('Notification' in window && Notification.permission === 'granted') {
+            const options = {
+                body: notification.content,
+                icon: '/favicon.ico',
+                tag: notification.type + (notification.notificationId || Date.now())
+            };
+
+            const notif = new Notification(`New ${notification.type} from ${notification.senderName}`, options);
+
+            notif.onclick = function() {
+                window.focus();
+            };
+        }
+        // Request permission if not yet granted
+        else if ('Notification' in window && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }
+
+    // Request notification permission on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        if ('Notification' in window && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    });
+</script>
+</body>
+</html>
