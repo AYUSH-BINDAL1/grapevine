@@ -51,6 +51,12 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/logout-all")
+    public ResponseEntity<Void> logoutAllSessions(@RequestHeader(name = "Session-Id", required = false) String sessionId) {
+        userService.logoutAllUserSessions(sessionId);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/{userEmail}")
     public User getUser(
             @PathVariable String userEmail,

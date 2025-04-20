@@ -36,8 +36,9 @@ public class ConversationService {
             // Get friend's user details
             User friend = userService.getUserByEmail(friendEmail);
 
-            // Check if there are unread messages
-            int unreadCount = messageRepository.countUnreadMessages(conversation.getConversationId(), userEmail);
+            // Count messages that are specifically unseen by this user
+            int unreadCount = messageRepository.countByConversationIdAndSenderEmailNotAndSeenFalse(
+                    conversation.getConversationId(), userEmail);
 
             return new ConversationPreview(
                     conversation.getConversationId(),
@@ -61,8 +62,10 @@ public class ConversationService {
             throw new ConversationNotFoundException("Conversation not found or you don't have access");
         }
 
-        // Mark messages as seen
-        messageRepository.markMessagesAsSeen(conversationId, userEmail);
+        // Mark messages as seen only if the user is online
+        if (userService.isUserOnline(userEmail)) {
+            messageRepository.markMessagesAsSeen(conversationId, userEmail);
+        }
 
         return conversation;
     }

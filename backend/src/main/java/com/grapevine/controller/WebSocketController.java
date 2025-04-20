@@ -2,6 +2,7 @@ package com.grapevine.controller;
 
 import com.grapevine.model.Message;
 import com.grapevine.service.MessageService;
+import com.grapevine.service.NotificationService;
 import com.grapevine.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -18,6 +19,7 @@ public class WebSocketController {
 
     private final MessageService messageService;
     private final UserService userService;
+    private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/chat.addUser")
@@ -26,12 +28,12 @@ public class WebSocketController {
         // User is already identified via Principal
         String userEmail = headerAccessor.getUser().getName();
 
-        // Send a connection confirmation if needed
         messagingTemplate.convertAndSendToUser(
                 userEmail,
                 "/queue/connect",
                 Map.of("status", "connected")
         );
+
     }
 
     @MessageMapping("/chat.sendMessage")
@@ -45,6 +47,14 @@ public class WebSocketController {
 
         // Process and send the message
         Message message = messageService.sendMessage(conversationId, senderEmail, content);
+    }
 
+    @MessageMapping("/notification.markRead")
+    public void markNotificationAsRead(@Payload Map<String, String> markReadRequest,
+                                       SimpMessageHeaderAccessor headerAccessor) {
+        String userEmail = headerAccessor.getUser().getName();
+        Long notificationId = Long.parseLong(markReadRequest.get("notificationId"));
+
+        notificationService.markAsRead(notificationId, userEmail);
     }
 }
