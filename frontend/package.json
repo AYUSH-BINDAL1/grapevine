@@ -1,21 +1,16 @@
 {
-  "homepage": "https://johndavbrooks.github.io/gvfrontend/",
   "name": "frontend",
-  "homepage": "/",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.7.9",
-    "gh-pages": "^6.3.0",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.8",
     "react": "^19.0.0",
