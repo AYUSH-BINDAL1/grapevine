@@ -20,6 +20,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("UPDATE Message m SET m.seen = true WHERE m.conversationId = :conversationId AND m.senderEmail <> :viewerEmail AND m.seen = false")
     void markMessagesAsSeen(@Param("conversationId") Long conversationId, @Param("viewerEmail") String viewerEmail);
 
-    @Query("SELECT COUNT(m) FROM Message m WHERE m.conversationId = :conversationId AND m.senderEmail <> :receiverEmail AND m.seen = false")
-    int countUnreadMessages(@Param("conversationId") Long conversationId, @Param("receiverEmail") String receiverEmail);
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.conversationId = :conversationId AND m.senderEmail != :userEmail AND m.seen = false")
+    int countUnreadMessages(@Param("conversationId") Long conversationId, @Param("userEmail") String userEmail);
+
+    int countByConversationIdAndSenderEmailNotAndSeenFalse(Long conversationId, String userEmail);
 }

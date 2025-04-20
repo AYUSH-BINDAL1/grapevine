@@ -22,7 +22,6 @@ public class DataInitializer {
         return args -> {
             if (locationRepository.count() == 0) {
 
-                //Will need to be updated to be more dynamic but this works for now
                 createLocation(locationRepository, "WALC", "Wilmeth Active Learning Center", "https://www.google.com/maps/search/Wilmeth+Active+Learning+Center+Purdue+University");
                 createLocation(locationRepository, "LWSN", "Lawson Computer Science Building", "https://www.google.com/maps/search/Lawson+Computer+Science+Building+Purdue+University");
                 createLocation(locationRepository, "PMUC", "Purdue Memorial Union", "https://www.google.com/maps/search/Purdue+Memorial+Union+Purdue+University");
