@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -23,21 +24,42 @@ public class NotificationService {
                                            Notification.NotificationType type,
                                            String content, Long referenceId) {
 
-        User sender = userService.getUserByEmail(senderEmail);
+        // For system notifications (like reminders), we use a special indicator
+        String senderName = "SYSTEM";
+        if ("N/A".equals(senderEmail)) {
+            senderName = "SYSTEM";
+        } else {
+            User sender = userService.getUserByEmail(senderEmail);
+            senderName = sender.getName();
+        }
 
         Notification notification = new Notification();
         notification.setRecipientEmail(recipientEmail);
         notification.setSenderEmail(senderEmail);
-        notification.setSenderName(sender.getName());
+        notification.setSenderName(senderName);
         notification.setType(type);
         notification.setContent(content);
         notification.setReferenceId(referenceId);
-
-        // Always set read to false for new notifications
-        // It will only be marked as read when the user explicitly views it
         notification.setRead(false);
 
         return notificationRepository.save(notification);
+    }
+
+    // Method to send notification via WebSocket
+    public void sendNotificationToUser(Notification notification) {
+        messagingTemplate.convertAndSendToUser(
+                notification.getRecipientEmail(),
+                "/queue/notifications",
+                Map.of(
+                        "notificationId", notification.getNotificationId(),
+                        "type", notification.getType(),
+                        "content", notification.getContent(),
+                        "senderName", notification.getSenderName(),
+                            "senderEmail", notification.getSenderEmail(),
+                        "referenceId", notification.getReferenceId(),
+                        "createdAt", notification.getCreatedAt()
+                )
+        );
     }
 
     // New method to mark notifications as read when viewing conversation
