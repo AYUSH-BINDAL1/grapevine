@@ -175,6 +175,10 @@ function Messaging() {
   };
 
   const getOtherParticipantEmail = (participantEmails) => {
+    // Add null check and type check
+    if (!participantEmails || !Array.isArray(participantEmails) || participantEmails.length === 0) {
+      return 'Unknown User';
+    }
     return participantEmails.find(email => email !== currentUserEmail) || 'Unknown User';
   };
 
@@ -191,7 +195,7 @@ function Messaging() {
             className="toggle-search-button"
             onClick={() => setIsSearchMode(!isSearchMode)}
           >
-            {isSearchMode ? 'Back to Conversations' : 'New Message'}
+            {isSearchMode ? 'Back' : 'Search'}
           </button>
         </div>
 
