@@ -1162,8 +1162,6 @@ function Profile() {
 
         // Dispatch event to notify other components
         window.dispatchEvent(new Event('storage'));
-
-        toast.success("Profile picture updated successfully!");
         
         // Try one field at a time to find which one works
         const updateMethods = [

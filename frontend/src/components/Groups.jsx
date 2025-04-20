@@ -297,6 +297,104 @@ function Groups() {
   const [reviews, setReviews] = useState([]);
   const [existingReview, setExistingReview] = useState(null);
 
+  // Add these state variables near your other state declarations
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    maxUsers: 0,
+    location: '',
+    meetingTimes: '',
+    description: '',
+    image: null,
+    imagePreview: null
+  });
+
+  // Update the openEditForm function to include the new fields
+  const openEditForm = () => {
+    setEditFormData({
+      name: group.title,
+      maxUsers: group.maxUsers || 50, // Default to 50 if not set
+      location: group.location || '',
+      meetingTimes: group.meetingTimes || '',
+      description: group.description || '',
+      image: null,
+      imagePreview: group.image
+    });
+    setShowEditForm(true);
+  };
+
+  // Handle form field changes
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle image selection
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditFormData(prev => ({
+          ...prev,
+          image: file,
+          imagePreview: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Update the handleSubmitGroupEdit function to include the new fields in the form data
+  const handleSubmitGroupEdit = async (e) => {
+    e.preventDefault();
+    
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+    
+    // Show loading toast
+    toast.info("Updating group details...", { autoClose: false, toastId: 'update-group' });
+    
+    // Use FormData to handle file upload
+    const formData = new FormData();
+    formData.append('name', editFormData.name);
+    formData.append('maxUsers', editFormData.maxUsers);
+    formData.append('location', editFormData.location);
+    formData.append('meetingTimes', editFormData.meetingTimes);
+    formData.append('description', editFormData.description);
+    if (editFormData.image) {
+      formData.append('image', editFormData.image);
+    }
+    
+    try {
+      await axios.put(
+        `${base_url}/groups/${id}/update`,
+        formData,
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      toast.dismiss('update-group');
+      toast.success('Group details updated successfully');
+      setShowEditForm(false);
+      fetchData(); // Refresh the group data
+    } catch (error) {
+      console.error('Error updating group:', error);
+      toast.dismiss('update-group');
+      toast.error('Failed to update group details');
+    }
+  };
+
   // Memoize the average rating calculation
   const calculateAverageRating = useCallback((reviews) => {
     if (!reviews || reviews.length === 0) return 0;
@@ -1007,6 +1105,17 @@ function Groups() {
         <img src={group.image} alt={group.title} className="group-image" />
         <div className="group-title-section">
           <h1>{group.title}</h1>
+          {userMembership.isHost && (
+            <button 
+              className="edit-group-button"
+              onClick={openEditForm}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '6px' }}>
+                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
+              Edit Group
+            </button>
+          )}
           <div className="group-meta">
             <div className="group-meta-item">
               <span className="meta-icon">👥</span>
@@ -1188,6 +1297,111 @@ function Groups() {
           <ReviewsList reviews={reviews} />
         </div>
       </div>
+
+      {/* Add this at the end of the component, before the final closing div */}
+      {showEditForm && (
+        <div className="edit-group-form-container">
+          <div className="edit-group-form-overlay" onClick={() => setShowEditForm(false)}></div>
+          <div className="edit-group-form">
+            <h3>Edit Group Details</h3>
+            <form onSubmit={handleSubmitGroupEdit}>
+              <div className="form-group">
+                <label htmlFor="group-name">Group Name</label>
+                <input
+                  id="group-name"
+                  name="name"
+                  type="text"
+                  value={editFormData.name}
+                  onChange={handleEditFormChange}
+                  placeholder="Enter group name"
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="max-users">Maximum Users</label>
+                <input
+                  id="max-users"
+                  name="maxUsers"
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={editFormData.maxUsers}
+                  onChange={handleEditFormChange}
+                  required
+                />
+                <small>Set the maximum number of users allowed in this group</small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="group-location">Location</label>
+                <input
+                  id="group-location"
+                  name="location"
+                  type="text"
+                  value={editFormData.location}
+                  onChange={handleEditFormChange}
+                  placeholder="Enter meeting location"
+                />
+                <small>Where does this group typically meet?</small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="group-schedule">Meeting Schedule</label>
+                <input
+                  id="group-schedule"
+                  name="meetingTimes"
+                  type="text"
+                  value={editFormData.meetingTimes}
+                  onChange={handleEditFormChange}
+                  placeholder="E.g., Mondays at 5 PM, Weekly on Thursdays"
+                />
+                <small>When does this group typically meet?</small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="group-description">Description</label>
+                <textarea
+                  id="group-description"
+                  name="description"
+                  value={editFormData.description}
+                  onChange={handleEditFormChange}
+                  placeholder="Describe your group's purpose, activities, and goals"
+                  rows={5}
+                />
+                <small>Tell others what your group is all about</small>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="group-image">Group Image</label>
+                <div className="image-preview-container">
+                  {editFormData.imagePreview && (
+                    <img 
+                      src={editFormData.imagePreview} 
+                      alt="Group preview" 
+                      className="image-preview" 
+                    />
+                  )}
+                </div>
+                <input
+                  id="group-image"
+                  name="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                />
+                <small>Upload a new image or leave blank to keep the current one</small>
+              </div>
+              
+              <div className="form-actions">
+                <button type="button" className="cancel-button" onClick={() => setShowEditForm(false)}>Cancel</button>
+                <button type="submit" className="save-button">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <ToastContainer 
         position="bottom-left"
         autoClose={5000}
