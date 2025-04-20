@@ -458,7 +458,6 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/events" element={<Events />} />
             <Route path="/create-event" element={<CreateEvent />} />
-            <Route path="/messages" element={<Nopath />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/courseSearch" element={<CourseSearch />} />
             <Route path="/view-students" element={<ViewStudents />} />
@@ -466,7 +465,7 @@ function App() {
             <Route path="/event/:eventId" element={<EventDetails />} />
             <Route path="/forum" element={<Forum />} />
             <Route path="/forum/thread/:threadId" element={<Thread />} />
-            <Route path="/messaging" element={<Messaging />} />
+            <Route path="/messages" element={<Messaging />} />
           </Route>
         </Routes>
       </Router>

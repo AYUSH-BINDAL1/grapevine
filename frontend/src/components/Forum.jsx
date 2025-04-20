@@ -9,7 +9,8 @@ import { base_url } from '../config';
 function Forum() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [threads, setThreads] = useState([]);
+  const [unsortedThreads, setUnsortedThreads] = useState([]);
+  const [displayThreads, setDisplayThreads] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -21,6 +22,28 @@ function Forum() {
     totalThreads: 0,
     totalReplies: 0
   });
+
+  // Add function to check if thread has been read
+  const isThreadRead = (threadId) => {
+    const readThreads = JSON.parse(localStorage.getItem('readThreads') || '{}');
+    return !!readThreads[threadId];
+  };
+
+  // Function to mark thread as read when clicked
+  const markThreadAsRead = (threadId) => {
+    const readThreads = JSON.parse(localStorage.getItem('readThreads') || '{}');
+    readThreads[threadId] = Date.now();
+    
+    // Clean up old entries (older than 30 days)
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    Object.keys(readThreads).forEach(id => {
+      if (readThreads[id] < thirtyDaysAgo) {
+        delete readThreads[id];
+      }
+    });
+    
+    localStorage.setItem('readThreads', JSON.stringify(readThreads));
+  };
 
   const fetchForumData = useCallback(async () => {
     setLoading(true);
@@ -50,7 +73,7 @@ function Forum() {
         // Process the response data
         if (Array.isArray(response.data)) {
           console.log(`Processing ${response.data.length} threads from array response`);
-          setThreads(response.data);
+          setUnsortedThreads(response.data);
           setTotalPages(Math.ceil(response.data.length / 10));
           
           // Calculate and set forum stats
@@ -62,7 +85,7 @@ function Forum() {
           console.log('Thread IDs:', response.data.map(thread => thread.threadId));
         } else if (response.data.threads && Array.isArray(response.data.threads)) {
           console.log(`Processing ${response.data.threads.length} threads from nested response`);
-          setThreads(response.data.threads);
+          setUnsortedThreads(response.data.threads);
           setTotalPages(response.data.totalPages || Math.ceil(response.data.threads.length / 10));
           
           // Calculate and set forum stats
@@ -74,7 +97,7 @@ function Forum() {
           console.log('Thread IDs:', response.data.threads.map(thread => thread.id));
         } else {
           console.warn('Unexpected response format:', response.data);
-          setThreads([]);
+          setUnsortedThreads([]);
           setTotalPages(1);
         }
       } catch (error) {
@@ -95,9 +118,9 @@ function Forum() {
   }, [fetchForumData]);
 
   useEffect(() => {
-    if (!threads.length) return;
+    if (!unsortedThreads.length) return;
     
-    let sortedThreads = [...threads];
+    let sortedThreads = [...unsortedThreads];
     
     switch(sortOrder) {
       case 'recent':
@@ -115,8 +138,32 @@ function Forum() {
         break;
     }
     
-    setThreads(sortedThreads);
-  }, [sortOrder, threads]);
+    setDisplayThreads(sortedThreads);
+  }, [sortOrder, unsortedThreads]);
+
+  useEffect(() => {
+    // Load saved draft when component mounts
+    const savedDraft = localStorage.getItem('threadDraft');
+    if (savedDraft) {
+      try {
+        setNewThread(JSON.parse(savedDraft));
+      } catch (e) {
+        console.error("Error parsing saved draft", e);
+      }
+    }
+  }, []);
+
+  // Auto-save draft when user types
+  useEffect(() => {
+    if (newThread.title.trim() || newThread.content.trim()) {
+      localStorage.setItem('threadDraft', JSON.stringify(newThread));
+    }
+  }, [newThread]);
+
+  const clearDraft = () => {
+    setNewThread({ title: '', content: '' });
+    localStorage.removeItem('threadDraft');
+  };
 
   const handleCreateThread = async (e) => {
     e.preventDefault();
@@ -165,6 +212,8 @@ function Forum() {
         if (Array.isArray(forumData)) {
           const newThread = response.data;
           setForumData([newThread, ...forumData]);
+          console.log('New thread added to forumData:', newThread);
+          navigate(`/forum/thread/${newThread.threadId}`);
         }
         
       } catch (apiError) {
@@ -242,6 +291,7 @@ function Forum() {
       toast.error('Cannot view this thread: Invalid thread ID');
       return;
     }
+    markThreadAsRead(threadId);
     navigate(`/forum/thread/${threadId}`);
   };
 
@@ -270,7 +320,12 @@ function Forum() {
       
       {showNewThreadForm && (
         <div className="new-thread-form">
-          <h2>Create New Thread</h2>
+          <div className="form-header">
+            <h2>Create New Thread</h2>
+            {(newThread.title || newThread.content) && (
+              <span className="draft-status">Draft saved</span>
+            )}
+          </div>
           <form onSubmit={handleCreateThread}>
             <div className="form-group">
               <label htmlFor="thread-title">Title</label>
@@ -304,6 +359,13 @@ function Forum() {
                 onClick={() => setShowNewThreadForm(false)}
               >
                 Cancel
+              </button>
+              <button 
+                type="button"
+                className="clear-button"
+                onClick={clearDraft}
+              >
+                Clear Draft
               </button>
             </div>
           </form>
@@ -398,7 +460,7 @@ function Forum() {
               <div className="spinner"></div>
               <p>Loading threads...</p>
             </div>
-          ) : threads.length === 0 ? (
+          ) : displayThreads.length === 0 ? (
             <div className="empty-state">
               <p>No threads found. Be the first to start a discussion!</p>
               <button 
@@ -411,10 +473,10 @@ function Forum() {
           ) : (
             <>
               <ul className="threads-list">
-                {threads.map((thread, index) => (
+                {displayThreads.map((thread, index) => (
                   <li 
                     key={thread.threadId || `thread-${index}`} 
-                    className="thread-item" 
+                    className={`thread-item ${isThreadRead(thread.threadId) ? 'thread-read' : ''}`}
                     onClick={() => goToThread(thread.threadId)}
                   >
                     <div className="thread-avatar">
