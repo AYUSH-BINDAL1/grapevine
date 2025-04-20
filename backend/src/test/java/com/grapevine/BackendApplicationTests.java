@@ -9,22 +9,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 
 @Suite
 @SelectPackages("com.grapevine")
 @SpringBootTest
-@TestPropertySource(properties = {
-        "spring.cloud.aws.credentials.access-key=test",
-        "spring.cloud.aws.credentials.secret-key=test",
-        "spring.cloud.aws.region.static=us-east-1",
-        "spring.cloud.aws.s3.bucket=test-bucket"
-})
+@ActiveProfiles("test")
 class BackendApplicationTests {
 
     @Test
     void contextLoads() {
-        // This test ensures Spring context loads correctly
+        // This test verifies the Spring context loads correctly
     }
 
     @TestConfiguration
