@@ -180,10 +180,35 @@
   border: 1px solid #ddd;
 }
 
+/* Add these styles for the scrollable threads list */
 .threads-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  max-height: 600px; /* Set a fixed height to enable scrolling */
+  overflow-y: auto; /* Enable vertical scrolling */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #c4c4c4 #f5f5f5; /* Firefox: thumb and track color */
+}
+
+/* Webkit scrollbar styling (Chrome, Safari, Edge) */
+.threads-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.threads-list::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.threads-list::-webkit-scrollbar-thumb {
+  background-color: #c4c4c4;
+  border-radius: 4px;
+  border: 2px solid #f5f5f5;
+}
+
+.threads-list::-webkit-scrollbar-thumb:hover {
+  background-color: #a8a8a8;
 }
 
 .thread-item {
@@ -321,7 +346,9 @@
   justify-content: center;
   align-items: center;
   margin-top: 20px;
+  padding-top: 15px;
   gap: 10px;
+  border-top: 1px solid #eee;
 }
 
 .pagination-button {
@@ -458,6 +485,10 @@
   .search-input {
     flex-grow: 1;
   }
+
+  .threads-list {
+    max-height: 500px;
+  }
 }
 
 /* Add these styles to Forum.css */
@@ -535,6 +566,10 @@
   .stats-badge {
     padding: 1px 6px;
     font-size: 10px;
+  }
+
+  .threads-list {
+    max-height: 400px;
   }
 }
 
@@ -625,3 +660,53 @@
 .checkbox-label input {
   margin: 0;
 }
+
+/* Styles for read threads */
+.thread-read .thread-title {
+  color: #777977;
+}
+
+.thread-read {
+  background-color: #ebeaea;
+}
+
+/* Draft status styles */
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.draft-status {
+  font-size: 12px;
+  color: #666;
+  background-color: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.clear-button {
+  background-color: transparent;
+  color: #777;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+/* Loading more indicator */
+.thread-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #777;
+}
+
+.spinner.small {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+  margin-right: 10px;
+}
+
