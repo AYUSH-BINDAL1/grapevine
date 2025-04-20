@@ -1,88 +1,313 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import profileImage from '../assets/temp-profile.webp';
 import './Messaging.css';
-
-// Mock data for testing
-const mockUsers = [
-  { id: 1, name: 'John Smith', email: 'john@example.com', lastMessage: 'Hey, how are you?' },
-  { id: 2, name: 'Sarah Johnson', email: 'sarah@example.com', lastMessage: 'Did you get my notes?' },
-  { id: 3, name: 'Mike Wilson', email: 'mike@example.com', lastMessage: 'See you at the event!' },
-];
-
-const mockMessages = {
-  1: [
-    { id: 1, sender: 'john@example.com', text: 'Hey, how are you?', timestamp: '2024-04-10T10:00:00' },
-    { id: 2, sender: 'user@example.com', text: 'I\'m good, thanks! How about you?', timestamp: '2024-04-10T10:01:00' },
-    { id: 3, sender: 'john@example.com', text: 'Doing great! Ready for the exam?', timestamp: '2024-04-10T10:02:00' },
-  ],
-  2: [
-    { id: 1, sender: 'sarah@example.com', text: 'Did you get my notes?', timestamp: '2024-04-10T09:00:00' },
-    { id: 2, sender: 'user@example.com', text: 'Yes, thank you so much!', timestamp: '2024-04-10T09:05:00' },
-  ],
-  3: [
-    { id: 1, sender: 'mike@example.com', text: 'See you at the event!', timestamp: '2024-04-10T11:00:00' },
-  ],
-};
+import { base_url } from '../config';
 
 function Messaging() {
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const currentUserEmail = 'user@example.com'; // This would come from your auth system
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
 
-  const handleSendMessage = (e) => {
+  // Get current user's email from localStorage
+  const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
+
+  const fetchConversations = useCallback(async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${base_url}/conversations`,
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      setConversations(response.data);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      toast.error('Failed to load conversations');
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedConversation) return;
+
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `${base_url}/conversations/${selectedConversation.conversationId}`,
+          {
+            headers: {
+              'Session-Id': sessionId,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        setMessages(response.data);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+        toast.error('Failed to load messages');
+      }
+    };
+
+    fetchMessages();
+  }, [selectedConversation, navigate]);
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !selectedConversation) return;
+  
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+  
+    try {
+      await axios.post(
+        `${base_url}/messages/${selectedConversation.conversationId}/send`,
+        { content: newMessage.trim() },
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+  
+      // Clear input and fetch updated messages
+      setNewMessage('');
+      await fetchMessages();
+      await fetchConversations(); // Refresh conversation list to update last message
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    }
+  };
 
-    // For now, just log the message
-    console.log('Sending message:', newMessage);
-    setNewMessage('');
+  const handleProfileClick = useCallback((userEmail) => {
+    navigate(`/user/${userEmail}`);
+  }, [navigate]);
+
+  const handleSearch = async (query) => {
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${base_url}/conversations/search-friends?query=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      setSearchResults(response.data);
+    } catch (error) {
+      console.error('Error searching friends:', error);
+      toast.error('Failed to search friends');
+    }
+  };
+
+  const handleCreateConversation = async (friendEmail) => {
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${base_url}/conversations/create/${friendEmail}`,
+        {},
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      setSelectedConversation(response.data);
+      setIsSearchMode(false);
+      fetchConversations();
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast.error('Failed to create conversation');
+    }
   };
 
   const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
+
+  const getOtherParticipantEmail = (participantEmails) => {
+    // Add null check and type check
+    if (!participantEmails || !Array.isArray(participantEmails) || participantEmails.length === 0) {
+      return 'Unknown User';
+    }
+    return participantEmails.find(email => email !== currentUserEmail) || 'Unknown User';
+  };
+
+  if (loading) {
+    return <div className="messaging-loading">Loading conversations...</div>;
+  }
 
   return (
     <div className="messaging-container">
       <div className="contacts-sidebar">
-        <h2>Messages</h2>
-        <div className="contacts-list">
-          {mockUsers.map(user => (
-            <div
-              key={user.id}
-              className={`contact-card ${selectedUser?.id === user.id ? 'selected' : ''}`}
-              onClick={() => setSelectedUser(user)}
-            >
-              <img src={profileImage} alt={user.name} className="contact-avatar" />
-              <div className="contact-info">
-                <h3>{user.name}</h3>
-                <p className="last-message">{user.lastMessage}</p>
-              </div>
-            </div>
-          ))}
+        <div className="sidebar-header">
+          <h2>Messages</h2>
+          <button 
+            className="toggle-search-button"
+            onClick={() => setIsSearchMode(!isSearchMode)}
+          >
+            {isSearchMode ? 'Back' : 'Search'}
+          </button>
         </div>
+
+        {isSearchMode ? (
+          <div className="search-container">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                handleSearch(e.target.value);
+              }}
+              placeholder="Search friends..."
+              className="search-input"
+            />
+            <div className="search-results">
+              {searchResults.map(friend => (
+                <div
+                  key={friend.userEmail}
+                  className="contact-card"
+                  onClick={() => handleCreateConversation(friend.userEmail)}
+                >
+                  <img 
+                    src={profileImage} 
+                    alt={friend.name} 
+                    className="contact-avatar" 
+                  />
+                  <div className="contact-info">
+                    <h3>{friend.name}</h3>
+                    <p className="friend-email">{friend.userEmail}</p>
+                  </div>
+                </div>
+              ))}
+              {searchQuery && searchResults.length === 0 && (
+                <div className="no-results">
+                  <p>No friends found matching "{searchQuery}"</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="contacts-list">
+            {conversations.map(conversation => (
+              <div
+                key={conversation.conversationId}
+                className={`contact-card ${
+                  selectedConversation?.conversationId === conversation.conversationId 
+                    ? 'selected' 
+                    : ''
+                }`}
+                onClick={() => setSelectedConversation(conversation)}
+              >
+                <img 
+                  src={profileImage} 
+                  alt="Profile" 
+                  className="contact-avatar" 
+                />
+                <div className="contact-info">
+                  <h3>{getOtherParticipantEmail(conversation.participantEmails)}</h3>
+                  <p className="last-message">
+                    {conversation.lastMessage || 'No messages yet'}
+                  </p>
+                </div>
+                {conversation.unreadCount > 0 && (
+                  <div className="unread-count">
+                    {conversation.unreadCount}
+                  </div>
+                )}
+              </div>
+            ))}
+            {conversations.length === 0 && (
+              <div className="no-conversations">
+                <p>No conversations yet</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="chat-window">
-        {selectedUser ? (
+        {selectedConversation ? (
           <>
-            <div className="chat-header">
-              <img src={profileImage} alt={selectedUser.name} className="chat-avatar" />
+            <div 
+              className="chat-header"
+              onClick={() => handleProfileClick(getOtherParticipantEmail(selectedConversation.participantEmails))}
+              style={{ cursor: 'pointer' }}
+            >
+              <img 
+                src={profileImage} 
+                alt="Profile" 
+                className="chat-avatar" 
+              />
               <div className="chat-user-info">
-                <h3>{selectedUser.name}</h3>
-                <p>{selectedUser.email}</p>
+                <h3>
+                  {getOtherParticipantEmail(selectedConversation.participantEmails)}
+                </h3>
               </div>
             </div>
 
             <div className="messages-container">
-              {mockMessages[selectedUser.id].map(message => (
+              {messages.map(message => (
                 <div
                   key={message.id}
-                  className={`message ${message.sender === currentUserEmail ? 'sent' : 'received'}`}
+                  className={`message ${
+                    message.senderEmail === currentUserEmail ? 'sent' : 'received'
+                  }`}
                 >
                   <div className="message-content">
-                    <p>{message.text}</p>
-                    <span className="message-time">{formatTime(message.timestamp)}</span>
+                    <p>{message.content}</p>
+                    <span className="message-time">
+                      {formatTime(message.timestamp)}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -96,7 +321,11 @@ function Messaging() {
                 placeholder="Type a message..."
                 className="message-input"
               />
-              <button type="submit" className="send-button">
+              <button 
+                type="submit" 
+                className="send-button"
+                disabled={!newMessage.trim()}
+              >
                 Send
               </button>
             </form>
