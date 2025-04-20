@@ -47,6 +47,8 @@ function Login() {
     setIsSubmitting(true);
     
     try {
+      console.log('Login URL:', `${base_url}/users/login`);
+      console.log('Form Data:', formData);
       // Show loading toast
       const loadingToast = toast.loading("Logging in...");
       
