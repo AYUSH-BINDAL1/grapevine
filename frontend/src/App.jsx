@@ -151,8 +151,7 @@ const Taskbar = memo(function Taskbar() {
         navigate("/");
       }, 5000);
       
-      //TODO: logout-all
-      await axios.delete(`${base_url}/users/logout`, {
+      await axios.delete(`${base_url}/users/logout-all`, { // Updated endpoint
         headers: { 'Session-Id': sessionId },
         timeout: 4000 // Add axios timeout
       });

@@ -246,10 +246,21 @@
 }
 
 .thread-excerpt {
-  margin: 0 0 10px 0;
-  color: var(--text-medium);
-  font-size: 15px;
-  line-height: 1.4;
+  margin: 5px 0;
+  color: #555;
+  font-size: 14px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.thread-excerpt-content p {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .thread-stats {
@@ -795,11 +806,10 @@
   height: auto;
 }
 
-/* Markdown hint text */
-.markdown-hint {
-  margin-top: 8px;
-  color: #666;
-  font-style: italic;
+.markdown-excerpt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Empty preview message */
@@ -1007,4 +1017,18 @@
   background-color: #f5f5f5;
   border-color: #999;
 }
+
+/* Virtualized list styles */
+.virtualized-thread-container {
+  height: 600px;
+  width: 100%;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.virtualized-threads-list {
+  scrollbar-width: thin;
+  scrollbar-color: #c4c4c4 #f5f5f5;
+}
+
 
