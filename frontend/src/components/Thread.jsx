@@ -5,6 +5,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import { base_url } from '../config';
 import './Thread.css';
+import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 function Thread() {
   const { threadId } = useParams();
@@ -16,6 +20,7 @@ function Thread() {
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
   
   const [threadVotes, setThreadVotes] = useState({
     score: thread?.likes || 0,
@@ -33,7 +38,19 @@ function Thread() {
     });
   };
   
-  // Fetch thread data
+  useEffect(() => {
+    if (newComment.trim()) {
+      localStorage.setItem(`commentDraft-${threadId}`, newComment);
+    }
+  }, [newComment, threadId]);
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(`commentDraft-${threadId}`);
+    if (savedDraft) {
+      setNewComment(savedDraft);
+    }
+  }, [threadId]);
+
   const fetchThreadData = useCallback(async () => {
     if (!threadId) {
       setError('Invalid thread ID');
@@ -96,11 +113,6 @@ function Thread() {
       } else {
         console.log('No comments found in thread data');
         setComments([]);
-        
-        // Optionally fetch comments separately if needed
-        // try {
-        //   const commentsResponse = await axios.get...
-        // } ...
       }
       
       // Increment view count (commented out in your original code)
@@ -191,8 +203,8 @@ function Thread() {
         return updatedComments;
       });
       
-      // Clear the comment input
       setNewComment('');
+      localStorage.removeItem(`commentDraft-${threadId}`);
       toast.success('Comment posted successfully');
       
     } catch (error) {
@@ -229,15 +241,14 @@ function Thread() {
         // If same vote type clicked, remove the vote (toggle behavior)
         if (prev.userVote === vote) {
           return {
-            score: prev.score - vote, // Adjust score in opposite direction
-            userVote: 0 // Reset to no vote
+            score: prev.score - vote,
+            userVote: 0
           };
         }
         
-        // If changing vote direction (e.g., from upvote to downvote)
         if (prev.userVote !== 0 && prev.userVote !== vote) {
           return {
-            score: prev.score + 2 * vote, // Double the effect (remove old vote + add new vote)
+            score: prev.score + 2 * vote,
             userVote: vote
           };
         }
@@ -366,7 +377,30 @@ function Thread() {
 
       <div className="thread-view-content">
         <div className="thread-view-body">
-          <p>{thread.content || thread.description}</p>
+          <ReactMarkdown
+            rehypePlugins={[rehypeSanitize]}
+            components={{
+              code({ inline, className, children, ...props}) {
+                const match = /language-(\w+)/.exec(className || '');
+                return !inline && match ? (
+                  <SyntaxHighlighter
+                    style={tomorrow}
+                    language={match[1]}
+                    PreTag="div"
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              }
+            }}
+          >
+            {thread.content || thread.description}
+          </ReactMarkdown>
         </div>
       </div>
       
@@ -375,21 +409,96 @@ function Thread() {
         
         <div className="comment-form">
           <form onSubmit={handleSubmitComment}>
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment..."
-              rows={4}
-              disabled={submitting}
-              required
-            ></textarea>
-            <button 
-              type="submit" 
-              className="submit-comment" 
-              disabled={submitting}
-            >
-              {submitting ? 'Posting...' : 'Post Comment'}
-            </button>
+            {newComment && localStorage.getItem(`commentDraft-${threadId}`) && (
+              <div className="draft-indicator">
+                <span>Draft saved</span>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setNewComment('');
+                    localStorage.removeItem(`commentDraft-${threadId}`);
+                  }}
+                  className="discard-draft"
+                >
+                  Discard draft
+                </button>
+              </div>
+            )}
+            
+            <div className="comment-tabs">
+              <button 
+                type="button"
+                className={`tab ${!showPreview ? 'active' : ''}`}
+                onClick={() => setShowPreview(false)}
+              >
+                Write
+              </button>
+              <button 
+                type="button"
+                className={`tab ${showPreview ? 'active' : ''}`}
+                onClick={() => setShowPreview(true)}
+              >
+                Preview
+              </button>
+            </div>
+            
+            {!showPreview ? (
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment... Support markdown formatting!"
+                rows={4}
+                disabled={submitting}
+                required
+              ></textarea>
+            ) : (
+              <div className="comment-preview">
+                {newComment ? (
+                  <ReactMarkdown
+                    rehypePlugins={[rehypeSanitize]}
+                    components={{
+                      code({ inline, className, children, ...props}) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={tomorrow}
+                            language={match[1]}
+                            PreTag="div"
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      }
+                    }}
+                  >
+                    {newComment}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="empty-preview">Nothing to preview</p>
+                )}
+              </div>
+            )}
+            
+            <div className="markdown-hint">
+              <small>
+                Formatting supported: **bold**, *italic*, [link](url), ```code blocks```, and more!
+              </small>
+            </div>
+            
+            <div className="form-actions">
+              <button 
+                type="submit" 
+                className="submit-comment" 
+                disabled={submitting || !newComment.trim()}
+              >
+                {submitting ? 'Posting...' : 'Post Comment'}
+              </button>
+            </div>
           </form>
         </div>
         
@@ -423,7 +532,30 @@ function Thread() {
                     </div>
                   </div>
                   <div className="thread-view-comment-body">
-                    <p>{comment.content}</p>
+                    <ReactMarkdown
+                      rehypePlugins={[rehypeSanitize]}
+                      components={{
+                        code({ inline, className, children, ...props}) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          return !inline && match ? (
+                            <SyntaxHighlighter
+                              style={tomorrow}
+                              language={match[1]}
+                              PreTag="div"
+                              {...props}
+                            >
+                              {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                          ) : (
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          );
+                        }
+                      }}
+                    >
+                      {comment.content}
+                    </ReactMarkdown>
                   </div>
                 </div>
               );

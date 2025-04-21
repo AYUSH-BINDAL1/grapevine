@@ -6,6 +6,17 @@
   color: #333;
 }
 
+/* Add smooth animations */
+.thread-view-comment-item {
+  animation: fadeIn 0.3s ease-in-out;
+  transition: background-color 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Thread Header */
 .thread-view-header {
   margin-bottom: 30px;
@@ -110,6 +121,121 @@
 
 .thread-view-body p {
   margin-bottom: 16px;
+}
+
+/* Draft indicator */
+.draft-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background-color: #f0f7ff;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #4a6da7;
+}
+
+.discard-draft {
+  background: none;
+  border: none;
+  color: #e53e3e;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+/* Markdown styling */
+.thread-view-body h1, 
+.thread-view-comment-body h1 {
+  font-size: 1.8em;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.thread-view-body h2, 
+.thread-view-comment-body h2 {
+  font-size: 1.5em;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.thread-view-body h3, 
+.thread-view-comment-body h3 {
+  font-size: 1.3em;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.thread-view-body p, 
+.thread-view-comment-body p {
+  margin-bottom: 1em;
+}
+
+.thread-view-body a, 
+.thread-view-comment-body a {
+  color: #4a6da7;
+  text-decoration: none;
+}
+
+.thread-view-body a:hover, 
+.thread-view-comment-body a:hover {
+  text-decoration: underline;
+}
+
+.thread-view-body blockquote, 
+.thread-view-comment-body blockquote {
+  border-left: 3px solid #ddd;
+  color: #666;
+  margin-left: 0;
+  padding-left: 15px;
+}
+
+.thread-view-body pre, 
+.thread-view-comment-body pre {
+  margin-bottom: 1em;
+  border-radius: 4px;
+  overflow: auto;
+}
+
+.thread-view-body code, 
+.thread-view-comment-body code {
+  background-color: #f0f0f0;
+  border-radius: 3px;
+  font-family: monospace;
+  padding: 2px 4px;
+}
+
+.thread-view-body ul, 
+.thread-view-comment-body ul,
+.thread-view-body ol, 
+.thread-view-comment-body ol {
+  margin-left: 20px;
+  margin-bottom: 1em;
+}
+
+.thread-view-body li, 
+.thread-view-comment-body li {
+  margin-bottom: 0.5em;
+}
+
+.thread-view-body img, 
+.thread-view-comment-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Markdown hint */
+.markdown-hint {
+  color: #666;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+/* Code block specific styling */
+.thread-view-body pre div, 
+.thread-view-comment-body pre div {
+  border-radius: 4px;
 }
 
 /* Comments Section */
@@ -366,4 +492,39 @@
   .thread-view-title {
     font-size: 24px;
   }
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+/* Comment preview styling */
+.comment-tabs {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.comment-tabs .tab {
+  padding: 8px 16px;
+  background: none;
+  color: var(--primary-color);
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.comment-tabs .tab.active {
+  border-bottom: 2px solid var(--secondary-color);
+  font-weight: 600;
+}
+
+.comment-preview {
+  min-height: 100px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 12px;
+  background-color: #f9f9f9;
 }

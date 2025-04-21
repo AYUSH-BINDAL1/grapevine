@@ -710,3 +710,124 @@
   margin-right: 10px;
 }
 
+/* Thread Editor Tabs */
+.thread-editor-tabs {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.thread-editor-tabs .tab {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.thread-editor-tabs .tab.active {
+  border-bottom: 2px solid var(--secondary-color);
+  font-weight: 600;
+}
+
+/* Markdown Preview */
+.markdown-preview {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  min-height: 200px;
+  max-height: 500px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+}
+
+.markdown-preview h1, 
+.markdown-preview h2, 
+.markdown-preview h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.markdown-preview h1 {
+  font-size: 1.8em;
+}
+
+.markdown-preview h2 {
+  font-size: 1.5em;
+}
+
+.markdown-preview h3 {
+  font-size: 1.3em;
+}
+
+.markdown-preview p {
+  margin-bottom: 1em;
+}
+
+.markdown-preview a {
+  color: #4a6da7;
+  text-decoration: none;
+}
+
+.markdown-preview a:hover {
+  text-decoration: underline;
+}
+
+.markdown-preview blockquote {
+  border-left: 3px solid #ddd;
+  color: #666;
+  margin-left: 0;
+  padding-left: 15px;
+}
+
+.markdown-preview pre {
+  margin-bottom: 1em;
+  border-radius: 4px;
+  overflow: auto;
+}
+
+.markdown-preview code {
+  background-color: #f0f0f0;
+  border-radius: 3px;
+  font-family: monospace;
+  padding: 2px 4px;
+}
+
+.markdown-preview ul, 
+.markdown-preview ol {
+  margin-left: 20px;
+  margin-bottom: 1em;
+}
+
+.markdown-preview li {
+  margin-bottom: 0.5em;
+}
+
+.markdown-preview img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Markdown hint text */
+.markdown-hint {
+  margin-top: 8px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Empty preview message */
+.empty-preview {
+  color: #777;
+  font-style: italic;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* Thread excerpt styling */
+.markdown-excerpt {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #444;
+}
+

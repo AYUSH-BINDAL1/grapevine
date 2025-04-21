@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
+import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'react-toastify/dist/ReactToastify.css';
 import './Forum.css';
 import { base_url } from '../config';
@@ -15,13 +19,19 @@ function Forum() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showNewThreadForm, setShowNewThreadForm] = useState(false);
-  const [newThread, setNewThread] = useState({ title: '', content: '' });
+  const [newThread, setNewThread] = useState({ 
+    title: '', 
+    content: '',
+    format: 'markdown' // Add format property
+  });
   const [forumData, setForumData] = useState([]);
   const [sortOrder, setSortOrder] = useState('recent');
   const [forumStats, setForumStats] = useState({
     totalThreads: 0,
     totalReplies: 0
   });
+  const [showThreadPreview, setShowThreadPreview] = useState(false);
+
 
   // Add function to check if thread has been read
   const isThreadRead = (threadId) => {
@@ -213,6 +223,10 @@ function Forum() {
           const newThread = response.data;
           setForumData([newThread, ...forumData]);
           console.log('New thread added to forumData:', newThread);
+          
+          // Clear draft before navigating away
+          clearDraft();
+          
           navigate(`/forum/thread/${newThread.threadId}`);
         }
         
@@ -222,7 +236,6 @@ function Forum() {
       }
       
       setShowNewThreadForm(false);
-      setNewThread({ title: '', content: '' });
       
       // Refresh the data
       fetchForumData();
@@ -341,14 +354,72 @@ function Forum() {
             
             <div className="form-group">
               <label htmlFor="thread-content">Content</label>
-              <textarea
-                id="thread-content"
-                value={newThread.content}
-                onChange={(e) => setNewThread({...newThread, content: e.target.value})}
-                placeholder="Thread content"
-                rows={5}
-                required
-              />
+              
+              <div className="thread-editor-tabs">
+                <button 
+                  type="button"
+                  className={`tab ${!showThreadPreview ? 'active' : ''}`}
+                  onClick={() => setShowThreadPreview(false)}
+                >
+                  Write
+                </button>
+                <button 
+                  type="button"
+                  className={`tab ${showThreadPreview ? 'active' : ''}`}
+                  onClick={() => setShowThreadPreview(true)}
+                >
+                  Preview
+                </button>
+              </div>
+              
+              {!showThreadPreview ? (
+                <textarea
+                  id="thread-content"
+                  value={newThread.content}
+                  onChange={(e) => setNewThread({...newThread, content: e.target.value})}
+                  placeholder="Write your thread content here. Markdown formatting is supported!"
+                  rows={10}
+                  required
+                />
+              ) : (
+                <div className="markdown-preview">
+                  {newThread.content ? (
+                    <ReactMarkdown
+                      rehypePlugins={[rehypeSanitize]}
+                      components={{
+                        code({node, inline, className, children, ...props}) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          return !inline && match ? (
+                            <SyntaxHighlighter
+                              style={tomorrow}
+                              language={match[1]}
+                              PreTag="div"
+                              {...props}
+                            >
+                              {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                          ) : (
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          );
+                        }
+                      }}
+                    >
+                      {newThread.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="empty-preview">Nothing to preview yet. Start writing to see how your post will look!</p>
+                  )}
+                </div>
+              )}
+              
+              <div className="markdown-hint">
+                <small>
+                  <strong>Formatting Tips:</strong> **bold**, *italic*, [link](url), 
+                  ```code blocks```, # Heading, - bullet list
+                </small>
+              </div>
             </div>
             
             <div className="form-actions">
@@ -495,10 +566,19 @@ function Forum() {
                         <span className="thread-author">by {thread.authorName || "Anonymous"}</span>
                         <span className="thread-date">Posted on {formatDate(thread.createdAt)}</span>
                       </div>
-                      <p className="thread-excerpt">
-                        {(thread.content || thread.description || "").substring(0, 120)}
-                        {(thread.content || thread.description || "").length > 120 ? "..." : ""}
-                      </p>
+                      <div className="thread-excerpt">
+                        {thread.format === 'markdown' ? (
+                          <div className="markdown-excerpt">
+                            {(thread.content || thread.description || "").substring(0, 150)}
+                            {(thread.content || thread.description || "").length > 150 ? "..." : ""}
+                          </div>
+                        ) : (
+                          <p>
+                            {(thread.content || thread.description || "").substring(0, 150)}
+                            {(thread.content || thread.description || "").length > 150 ? "..." : ""}
+                          </p>
+                        )}
+                      </div>
                       <div className="thread-stats">
                         <div className="stats-item comments">
                           <svg className="stats-icon" viewBox="0 0 24 24" width="16" height="16">
