@@ -35,12 +35,24 @@ public class GroupServiceTest {
     @Mock
     private EmailService emailService;
 
+    private User instructorUser;
+    private User studentUser;
     private Group testGroup;
     private User testUser;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        instructorUser = new User();
+        instructorUser.setUserEmail("instructor@example.com");
+        instructorUser.setName("Instructor");
+        instructorUser.setRole(User.Role.INSTRUCTOR);
+
+        studentUser = new User();
+        studentUser.setUserEmail("student@example.com");
+        studentUser.setName("Student");
+        studentUser.setRole(User.Role.STUDENT);
 
         // Set up test group using no-args constructor
         testGroup = new Group();
@@ -1205,5 +1217,46 @@ public class GroupServiceTest {
 
             assertEquals("Invalid action: invalid", exception.getMessage());
         }
+
+    // STORY3.1 As an instructor, I would like to be able to specify my group as an instructor led group (Ayush)
+    @Test
+    void toggleInstructorLedStatus_TogglesStatus_WhenUserIsInstructor() {
+        // Arrange
+        // Initialize the hosts list and add the instructor as a host
+        testGroup.setHosts(new ArrayList<>());
+        testGroup.getHosts().add(instructorUser.getUserEmail());
+
+        // Set initial instructor-led status to false
+        testGroup.setInstructorLed(false);
+
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(testGroup));
+        when(groupRepository.save(any(Group.class))).thenReturn(testGroup);
+
+        // Act
+        Group result = groupService.toggleInstructorLedStatus(1L, instructorUser);
+
+        // Assert
+        assertTrue(result.isInstructorLed());
+        verify(groupRepository).findById(1L);
+        verify(groupRepository).save(testGroup);
+    }
+
+    // STORY3.1 As an instructor, I would like to be able to specify my group as an instructor led group (Ayush)
+    @Test
+    void createGroup_SetsInstructorLedFalse_WhenNotInstructor() {
+        // Arrange
+        Group newGroup = new Group();
+        newGroup.setName("Student Group");
+        newGroup.setInstructorLed(true); // Student tries to set instructor-led
+
+        when(groupRepository.save(any(Group.class))).thenAnswer(i -> i.getArgument(0));
+
+        // Act
+        Group result = groupService.createGroup(newGroup, studentUser);
+
+        // Assert
+        assertFalse(result.isInstructorLed());
+        verify(groupRepository).save(any(Group.class));
+    }
 
 }

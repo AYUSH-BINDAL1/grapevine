@@ -174,7 +174,7 @@ const Taskbar = memo(function Taskbar() {
     { path: '/home', label: 'Groups' },
     { path: '/events', label: 'Events' },
     { path: '/forum', label: 'Forum' },
-    { path: '/messages', label: 'Messages' },
+    { path: '/messaging', label: 'Messages' },
     { path: '/friends', label: 'Friends' }
   ], []);
 

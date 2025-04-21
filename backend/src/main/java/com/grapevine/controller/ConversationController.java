@@ -3,6 +3,7 @@ package com.grapevine.controller;
 import com.grapevine.model.*;
 import com.grapevine.service.ConversationService;
 import com.grapevine.service.MessageService;
+import com.grapevine.service.NotificationService;
 import com.grapevine.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ public class ConversationController {
     private final UserService userService;
     private final ConversationService conversationService;
     private final MessageService messageService;
+    private final NotificationService notificationService;
 
     @GetMapping("/search-friends")
     public ResponseEntity<?> searchFriends(
@@ -95,6 +97,9 @@ public class ConversationController {
             // Get messages
             List<Message> messages =
                     messageService.getConversationMessages(conversationId, currentUser.getUserEmail());
+
+            // Mark notifications for this conversation as read
+            notificationService.markNotificationsReadForConversation(conversationId, currentUser.getUserEmail());
 
             // Prepare response
             Map<String, Object> response = Map.of(

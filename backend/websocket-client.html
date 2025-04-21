@@ -4,90 +4,355 @@
     <title>WebSocket Test</title>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        .notification {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .unread {
+            background-color: #e2f0fd;
+            font-weight: bold;
+        }
+        #notifications {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+    </style>
 </head>
 <body>
+<div>
+    <h2>WebSocket Test Client</h2>
     <div>
-        <h2>WebSocket Test Client</h2>
-        <div>
-            <label for="email">Your Email:</label>
-            <input type="text" id="email" placeholder="your@email.com"/>
-            <button onclick="connect()">Connect</button>
-        </div>
-        <hr/>
-        <div>
-            <label for="conversationId">Conversation ID:</label>
-            <input type="text" id="conversationId" />
-            <label for="content">Message:</label>
-            <input type="text" id="content" />
-            <button onclick="sendMessage()">Send</button>
-        </div>
-        <hr/>
-        <h3>Messages:</h3>
-        <ul id="messages"></ul>
+        <label for="email">Your Email:</label>
+        <input type="text" id="email" placeholder="your@email.com"/>
+        <label for="sessionId">Session ID:</label>
+        <input type="text" id="sessionId" placeholder="your-session-id"/>
+        <button onclick="connect()">Connect</button>
+        <button onclick="loadNotifications()">Load Notifications</button>
     </div>
+    <hr/>
+    <div>
+        <label for="conversationId">Conversation ID:</label>
+        <input type="text" id="conversationId" />
+        <label for="content">Message:</label>
+        <input type="text" id="content" />
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="viewConversation()">View Conversation</button>
+    </div>
+    <hr/>
+    <div style="display: flex; gap: 20px;">
+        <div style="flex: 1;">
+            <h3>Messages:</h3>
+            <ul id="messages"></ul>
+        </div>
+        <div style="flex: 1;">
+            <h3>Notifications: <button onclick="markAllAsRead()">Mark All Read</button></h3>
+            <div id="notifications"></div>
+        </div>
+    </div>
+</div>
 
-    <script>
-        let stompClient = null;
+<script>
+    let stompClient = null;
+    const notifications = [];
 
-        function connect() {
-            const email = document.getElementById('email').value;
-            // include email on the handshake URL so UserHandshakeHandler picks it up
-            const socket = new SockJS(
-                `http://localhost:8080/ws?email=${encodeURIComponent(email)}`
-            );
-            stompClient = Stomp.over(socket);
+    function connect() {
+        const email = document.getElementById('email').value;
+        // include email on the handshake URL so UserHandshakeHandler picks it up
+        const socket = new SockJS(
+            `http://localhost:8080/ws?email=${encodeURIComponent(email)}`
+        );
+        stompClient = Stomp.over(socket);
 
-            stompClient.connect(
-                {},                     // no need to pass STOMP headers now
-                frame => {
-                    addMessage(`Connected as ${frame.headers['user-name']}`);
-                    // -------------------------------------------------------
-                    // 2) subscribe to your personal queue so you actually see messages
-                    stompClient.subscribe(
-                        '/user/queue/messages',
-                        msg => {
-                            const m = JSON.parse(msg.body);
-                            addMessage(`Received: ${m.content} (from ${m.senderEmail})`);
-                        }
-                    );
-                    // optional: subscribe to your connect‐confirmation queue
-                    stompClient.subscribe(
-                        '/user/queue/connect',
-                        msg => {
-                            const data = JSON.parse(msg.body);
-                            addMessage(`Connect status: ${data.status}`);
-                        }
-                    );
-                    // tell the server “I’m here”
-                    stompClient.send('/app/chat.addUser', {}, '{}');
-                    // -------------------------------------------------------
-                },
-                err => addMessage('Error: ' + err)
-            );
-        }
+        stompClient.connect(
+            {},                     // no need to pass STOMP headers now
+            frame => {
+                addMessage(`Connected as ${frame.headers['user-name']}`);
 
-        function sendMessage() {
-            const conversationId = document.getElementById('conversationId').value;
-            const content = document.getElementById('content').value;
-
-            if (stompClient && conversationId && content) {
-                stompClient.send(
-                    '/app/chat.sendMessage',
-                    {},
-                    JSON.stringify({ conversationId, content })
+                // Subscribe to messages (these are push notifications)
+                stompClient.subscribe(
+                    '/user/queue/messages',
+                    msg => {
+                        const m = JSON.parse(msg.body);
+                        addMessage(`Received: ${m.content} (from ${m.senderEmail})`);
+                        showBrowserNotification({
+                            type: 'MESSAGE',
+                            content: m.content,
+                            senderName: m.senderEmail,
+                            senderEmail: m.senderEmail,
+                            referenceId: m.conversationId
+                        });
+                    }
                 );
-                addMessage(`Sent: ${content}`);
-            } else {
-                addMessage('Please connect first and fill all fields');
-            }
+
+                // Subscribe to connection confirmations
+                stompClient.subscribe(
+                    '/user/queue/connect',
+                    msg => {
+                        const data = JSON.parse(msg.body);
+                        addMessage(`Connect status: ${data.status}`);
+
+                        // Load notifications after connecting
+                        loadNotifications();
+                    }
+                );
+
+                // Tell the server "I'm here"
+                stompClient.send('/app/chat.addUser', {}, '{}');
+            },
+            err => addMessage('Error: ' + err)
+        );
+    }
+
+    function loadNotifications() {
+        const sessionId = document.getElementById('sessionId').value;
+        if (!sessionId) {
+            alert('Please enter a session ID');
+            return;
         }
 
-        function addMessage(txt) {
-            const ul = document.getElementById('messages');
-            const li = document.createElement('li');
-            li.textContent = txt;
-            ul.appendChild(li);
+        // Load unread notifications specifically
+        fetch('http://localhost:8080/notifications?unreadOnly=true', {
+            headers: {
+                'Session-Id': sessionId
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load notifications');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Clear existing notifications display
+                document.getElementById('notifications').innerHTML = '';
+                notifications.length = 0;
+
+                // Display each notification
+                data.forEach(notification => {
+                    notifications.push(notification);
+                    displayNotification(notification);
+                });
+
+                addMessage(`Loaded ${data.length} unread notifications`);
+            })
+            .catch(error => {
+                addMessage('Error loading notifications: ' + error.message);
+            });
+    }
+
+    function sendMessage() {
+        const conversationId = document.getElementById('conversationId').value;
+        const content = document.getElementById('content').value;
+
+        if (stompClient && conversationId && content) {
+            stompClient.send(
+                '/app/chat.sendMessage',
+                {},
+                JSON.stringify({ conversationId, content })
+            );
+            addMessage(`Sent: ${content}`);
+        } else {
+            addMessage('Please connect first and fill all fields');
         }
-    </script>
+    }
+
+    function viewConversation() {
+        const conversationId = document.getElementById('conversationId').value;
+        const sessionId = document.getElementById('sessionId').value;
+
+        if (!conversationId || !sessionId) {
+            alert('Please enter conversation ID and session ID');
+            return;
+        }
+
+        fetch(`http://localhost:8080/conversations/${conversationId}`, {
+            headers: {
+                'Session-Id': sessionId
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load conversation');
+                }
+                return response.json();
+            })
+            .then(data => {
+                addMessage(`Viewed conversation ${conversationId} with ${data.messages.length} messages`);
+
+                // This would mark related notifications as read, so refresh notifications
+                setTimeout(loadNotifications, 500);
+            })
+            .catch(error => {
+                addMessage('Error viewing conversation: ' + error.message);
+            });
+    }
+
+    function addMessage(txt) {
+        const ul = document.getElementById('messages');
+        const li = document.createElement('li');
+        li.textContent = txt;
+        ul.appendChild(li);
+    }
+
+    function displayNotification(notification) {
+        const container = document.getElementById('notifications');
+
+        const notifDiv = document.createElement('div');
+        notifDiv.className = 'notification' + (notification.read ? '' : ' unread');
+        notifDiv.dataset.id = notification.notificationId;
+
+        // Content with notification type label
+        const content = document.createElement('div');
+        const typeLabel = `[${notification.type}] `;
+        content.textContent = typeLabel + notification.content;
+
+        // From info
+        const from = document.createElement('div');
+        from.textContent = `From: ${notification.senderName} (${notification.senderEmail})`;
+        from.style.fontSize = '0.9em';
+        from.style.color = '#6c757d';
+
+        // Time info
+        const time = document.createElement('div');
+        time.className = 'timestamp';
+        time.textContent = `Received: ${new Date(notification.createdAt).toLocaleString()}`;
+
+        // Actions container
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        // Mark as read button
+        const markReadBtn = document.createElement('button');
+        markReadBtn.textContent = 'Mark as Read';
+        markReadBtn.onclick = () => markAsRead(notification.notificationId);
+        actions.appendChild(markReadBtn);
+
+        // Go to conversation button (if it's a message notification)
+        if (notification.type === 'MESSAGE' && notification.referenceId) {
+            const goToBtn = document.createElement('button');
+            goToBtn.textContent = 'Go to Conversation';
+            goToBtn.onclick = () => {
+                document.getElementById('conversationId').value = notification.referenceId;
+                viewConversation(); // Automatically view the conversation
+            };
+            actions.appendChild(goToBtn);
+        }
+
+        notifDiv.appendChild(content);
+        notifDiv.appendChild(from);
+        notifDiv.appendChild(time);
+        notifDiv.appendChild(actions);
+
+        container.prepend(notifDiv);
+    }
+
+    function markAsRead(notificationId) {
+        const sessionId = document.getElementById('sessionId').value;
+        if (!sessionId) {
+            alert('Please enter a session ID');
+            return;
+        }
+
+        fetch(`http://localhost:8080/notifications/mark-read/${notificationId}`, {
+            method: 'POST',
+            headers: {
+                'Session-Id': sessionId
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to mark notification as read');
+                }
+
+                // Update UI
+                const notifDiv = document.querySelector(`.notification[data-id="${notificationId}"]`);
+                if (notifDiv) {
+                    notifDiv.classList.remove('unread');
+                }
+
+                // Update local data
+                const notif = notifications.find(n => n.notificationId == notificationId);
+                if (notif) {
+                    notif.read = true;
+                }
+
+                addMessage(`Marked notification ${notificationId} as read`);
+            })
+            .catch(error => {
+                addMessage('Error marking as read: ' + error.message);
+            });
+    }
+
+    function markAllAsRead() {
+        const sessionId = document.getElementById('sessionId').value;
+        if (!sessionId) {
+            alert('Please enter a session ID');
+            return;
+        }
+
+        fetch('http://localhost:8080/notifications/mark-all-read', {
+            method: 'POST',
+            headers: {
+                'Session-Id': sessionId
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to mark all notifications as read');
+                }
+
+                // Update UI to reflect all notifications as read
+                document.querySelectorAll('.notification.unread').forEach(el => {
+                    el.classList.remove('unread');
+                });
+
+                // Update local data
+                notifications.forEach(n => { n.read = true; });
+
+                addMessage('Marked all notifications as read');
+            })
+            .catch(error => {
+                addMessage('Error marking all as read: ' + error.message);
+            });
+    }
+
+    function showBrowserNotification(notification) {
+        // Check if browser notifications are supported and permitted
+        if ('Notification' in window && Notification.permission === 'granted') {
+            const options = {
+                body: notification.content,
+                icon: '/favicon.ico',  // You could use an app icon here
+                tag: notification.type + (notification.notificationId || Date.now())
+            };
+
+            const notif = new Notification(`New ${notification.type} from ${notification.senderName}`, options);
+
+            notif.onclick = function() {
+                window.focus();
+                if (notification.type === 'MESSAGE' && notification.referenceId) {
+                    document.getElementById('conversationId').value = notification.referenceId;
+                }
+            };
+        }
+        // Request permission if not yet granted
+        else if ('Notification' in window && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }
+</script>
 </body>
 </html>
