@@ -284,6 +284,28 @@ function Thread() {
     }
   };
 
+  const insertMarkdown = (prefix, suffix, placeholder) => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+    
+    const insertion = selectedText || placeholder;
+    const newText = text.substring(0, start) + prefix + insertion + suffix + text.substring(end);
+    
+    setNewComment(newText);
+    
+    // Set cursor position after insertion when component updates
+    setTimeout(() => {
+      textarea.focus();
+      const cursorPosition = start + prefix.length + insertion.length;
+      textarea.setSelectionRange(cursorPosition, cursorPosition);
+    }, 0);
+  };
+
   if (loading) {
     return (
       <div className="thread-view-container loading">
@@ -380,21 +402,70 @@ function Thread() {
           <ReactMarkdown
             rehypePlugins={[rehypeSanitize]}
             components={{
-              code({ inline, className, children, ...props}) {
+              code({  inline, className, children, ...props}) {
                 const match = /language-(\w+)/.exec(className || '');
                 return !inline && match ? (
-                  <SyntaxHighlighter
-                    style={tomorrow}
-                    language={match[1]}
-                    PreTag="div"
-                    {...props}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
+                  <div className="code-block-container">
+                    <div className="code-header">
+                      <span className="code-language">{match[1]}</span>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
+                          toast.info('Code copied to clipboard!', {autoClose: 1000})
+                        }}
+                        className="copy-code-button"
+                        aria-label="Copy code"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <SyntaxHighlighter
+                      style={tomorrow}
+                      language={match[1]}
+                      PreTag="div"
+                      {...props}
+                    >
+                      {String(children).replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                  </div>
                 ) : (
                   <code className={className} {...props}>
                     {children}
                   </code>
+                );
+              },
+              a({  children, href, ...props }) {
+                // Special handling for links
+                return (
+                  <a 
+                    href={href} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="markdown-link"
+                    {...props}
+                  >
+                    {children}
+                    <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24">
+                      <path fill="currentColor" d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                    </svg>
+                  </a>
+                );
+              },
+              img({  src, alt, ...props }) {
+                return (
+                  <div className="markdown-image-container">
+                    <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+                    {alt && <span className="image-caption">{alt}</span>}
+                  </div>
+                );
+              },
+              table({  children, ...props }) {
+                return (
+                  <div className="table-responsive">
+                    <table className="markdown-table" {...props}>
+                      {children}
+                    </table>
+                  </div>
                 );
               }
             }}
@@ -441,6 +512,32 @@ function Thread() {
                 Preview
               </button>
             </div>
+
+            {!showPreview && (
+              <div className="markdown-toolbar">
+                <button type="button" onClick={() => insertMarkdown('**', '**', 'bold text')} title="Bold">
+                  <strong>B</strong>
+                </button>
+                <button type="button" onClick={() => insertMarkdown('*', '*', 'italic text')} title="Italic">
+                  <em>I</em>
+                </button>
+                <button type="button" onClick={() => insertMarkdown('[', '](url)', 'link text')} title="Link">
+                  <span>🔗</span>
+                </button>
+                <button type="button" onClick={() => insertMarkdown('```\n', '\n```', 'code')} title="Code Block">
+                  <span>{'</>'}</span>
+                </button>
+                <button type="button" onClick={() => insertMarkdown('> ', '', 'blockquote')} title="Quote">
+                  <span>❝</span>
+                </button>
+                <button type="button" onClick={() => insertMarkdown('- ', '', 'list item')} title="List">
+                  <span>•</span>
+                </button>
+                <button type="button" onClick={() => insertMarkdown('### ', '', 'heading')} title="Heading">
+                  <span>H</span>
+                </button>
+              </div>
+            )}
             
             {!showPreview ? (
               <textarea
@@ -457,21 +554,70 @@ function Thread() {
                   <ReactMarkdown
                     rehypePlugins={[rehypeSanitize]}
                     components={{
-                      code({ inline, className, children, ...props}) {
+                      code({  inline, className, children, ...props}) {
                         const match = /language-(\w+)/.exec(className || '');
                         return !inline && match ? (
-                          <SyntaxHighlighter
-                            style={tomorrow}
-                            language={match[1]}
-                            PreTag="div"
-                            {...props}
-                          >
-                            {String(children).replace(/\n$/, '')}
-                          </SyntaxHighlighter>
+                          <div className="code-block-container">
+                            <div className="code-header">
+                              <span className="code-language">{match[1]}</span>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
+                                  toast.info('Code copied to clipboard!', {autoClose: 1000})
+                                }}
+                                className="copy-code-button"
+                                aria-label="Copy code"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                            <SyntaxHighlighter
+                              style={tomorrow}
+                              language={match[1]}
+                              PreTag="div"
+                              {...props}
+                            >
+                              {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                          </div>
                         ) : (
                           <code className={className} {...props}>
                             {children}
                           </code>
+                        );
+                      },
+                      a({  children, href, ...props }) {
+                        // Special handling for links
+                        return (
+                          <a 
+                            href={href} 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="markdown-link"
+                            {...props}
+                          >
+                            {children}
+                            <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24">
+                              <path fill="currentColor" d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                            </svg>
+                          </a>
+                        );
+                      },
+                      img({  src, alt, ...props }) {
+                        return (
+                          <div className="markdown-image-container">
+                            <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+                            {alt && <span className="image-caption">{alt}</span>}
+                          </div>
+                        );
+                      },
+                      table({  children, ...props }) {
+                        return (
+                          <div className="table-responsive">
+                            <table className="markdown-table" {...props}>
+                              {children}
+                            </table>
+                          </div>
                         );
                       }
                     }}
@@ -535,21 +681,70 @@ function Thread() {
                     <ReactMarkdown
                       rehypePlugins={[rehypeSanitize]}
                       components={{
-                        code({ inline, className, children, ...props}) {
+                        code({  inline, className, children, ...props}) {
                           const match = /language-(\w+)/.exec(className || '');
                           return !inline && match ? (
-                            <SyntaxHighlighter
-                              style={tomorrow}
-                              language={match[1]}
-                              PreTag="div"
-                              {...props}
-                            >
-                              {String(children).replace(/\n$/, '')}
-                            </SyntaxHighlighter>
+                            <div className="code-block-container">
+                              <div className="code-header">
+                                <span className="code-language">{match[1]}</span>
+                                <button 
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
+                                    toast.info('Code copied to clipboard!', {autoClose: 1000})
+                                  }}
+                                  className="copy-code-button"
+                                  aria-label="Copy code"
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                              <SyntaxHighlighter
+                                style={tomorrow}
+                                language={match[1]}
+                                PreTag="div"
+                                {...props}
+                              >
+                                {String(children).replace(/\n$/, '')}
+                              </SyntaxHighlighter>
+                            </div>
                           ) : (
                             <code className={className} {...props}>
                               {children}
                             </code>
+                          );
+                        },
+                        a({  children, href, ...props }) {
+                          // Special handling for links
+                          return (
+                            <a 
+                              href={href} 
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="markdown-link"
+                              {...props}
+                            >
+                              {children}
+                              <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                              </svg>
+                            </a>
+                          );
+                        },
+                        img({  src, alt, ...props }) {
+                          return (
+                            <div className="markdown-image-container">
+                              <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+                              {alt && <span className="image-caption">{alt}</span>}
+                            </div>
+                          );
+                        },
+                        table({  children, ...props }) {
+                          return (
+                            <div className="table-responsive">
+                              <table className="markdown-table" {...props}>
+                                {children}
+                              </table>
+                            </div>
                           );
                         }
                       }}

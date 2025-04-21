@@ -2,6 +2,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  padding-top: 80px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #333;
 }
@@ -20,29 +21,6 @@
 /* Thread Header */
 .thread-view-header {
   margin-bottom: 30px;
-}
-
-.thread-view-back-button {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px;
-  margin-bottom: 16px;
-  border: none;
-  background-color: #f0f2f5;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #444;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.thread-view-back-button svg {
-  margin-right: 8px;
-}
-
-.thread-view-back-button:hover {
-  background-color: #e4e6e9;
 }
 
 .thread-view-title {
@@ -236,6 +214,142 @@
 .thread-view-body pre div, 
 .thread-view-comment-body pre div {
   border-radius: 4px;
+}
+
+/* Markdown Toolbar */
+.markdown-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.markdown-toolbar button {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+
+.markdown-toolbar button:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+/* Enhanced Code Block Styling */
+.code-block-container {
+  position: relative;
+  margin: 16px 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #282c34;
+  color: #abb2bf;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.code-language {
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.copy-code-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.copy-code-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced Link Styling */
+.markdown-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.markdown-link:hover {
+  text-decoration: underline;
+}
+
+.external-link-icon {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+/* Image Styles */
+.markdown-image-container {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.markdown-image {
+  max-width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-caption {
+  margin-top: 8px;
+  font-style: italic;
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Table Styles */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.markdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+
+.markdown-table th {
+  background: #f5f5f5;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.markdown-table td {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+}
+
+.markdown-table tr:nth-child(even) {
+  background-color: #f9f9f9;
 }
 
 /* Comments Section */
@@ -527,4 +641,121 @@
   border-radius: 4px;
   padding: 12px;
   background-color: #f9f9f9;
+}
+
+/* Back button styling */
+.back-button {
+  display: flex;
+  align-items: center;
+  padding: 10px 18px;
+  margin-bottom: 20px;
+  border: none;
+  background-color: transparent;
+  color: var(--primary-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-light);
+}
+
+.back-button svg {
+  margin-right: 8px;
+}
+
+.back-button:hover {
+  background-color: transparent;
+  color: var(--secondary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.back-button:active {
+  transform: translateY(0);
+}
+
+/* Commenter info styles */
+.commenter-info {
+  display: flex;
+  align-items: center;
+}
+
+.commenter-avatar img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Empty preview state */
+.empty-preview {
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* No comments message */
+.no-comments {
+  text-align: center;
+  padding: 30px 0;
+  color: #777;
+  font-style: italic;
+  background-color: #f9f9fa;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+/* Comment form styling */
+.comment-form {
+  margin-bottom: 32px;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.comment-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.comment-form textarea:focus {
+  border-color: #4a6da7;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.2);
+}
+
+/* Submit comment button */
+.submit-comment {
+  padding: 10px 16px;
+  background-color: #4a6da7;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-comment:hover:not(:disabled) {
+  background-color: #3a5a94;
+}
+
+.submit-comment:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* Post date styling */
+.post-date {
+  font-size: 12px;
+  color: #777;
 }

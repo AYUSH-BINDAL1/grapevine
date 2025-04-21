@@ -31,7 +31,8 @@ function Forum() {
     totalReplies: 0
   });
   const [showThreadPreview, setShowThreadPreview] = useState(false);
-
+  const [bookmarks, setBookmarks] = useState([]);
+  const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
 
   // Add function to check if thread has been read
   const isThreadRead = (threadId) => {
@@ -130,17 +131,25 @@ function Forum() {
   useEffect(() => {
     if (!unsortedThreads.length) return;
     
-    let sortedThreads = [...unsortedThreads];
+    let filteredThreads = [...unsortedThreads];
     
+    // Apply bookmark filter if enabled
+    if (showBookmarksOnly) {
+      filteredThreads = filteredThreads.filter(thread => 
+        bookmarks.includes(thread.threadId)
+      );
+    }
+    
+    // Apply existing sort order
     switch(sortOrder) {
       case 'recent':
-        sortedThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        filteredThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         break;
       case 'comments':
-        sortedThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+        filteredThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
         break;
       case 'score':
-        sortedThreads.sort((a, b) => 
+        filteredThreads.sort((a, b) => 
           ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0))
         );
         break;
@@ -148,8 +157,8 @@ function Forum() {
         break;
     }
     
-    setDisplayThreads(sortedThreads);
-  }, [sortOrder, unsortedThreads]);
+    setDisplayThreads(filteredThreads);
+  }, [sortOrder, unsortedThreads, bookmarks, showBookmarksOnly]);
 
   useEffect(() => {
     // Load saved draft when component mounts
@@ -163,6 +172,12 @@ function Forum() {
     }
   }, []);
 
+  useEffect(() => {
+    // Load saved bookmarks when component mounts
+    const savedBookmarks = JSON.parse(localStorage.getItem('threadBookmarks') || '[]');
+    setBookmarks(savedBookmarks);
+  }, []);
+
   // Auto-save draft when user types
   useEffect(() => {
     if (newThread.title.trim() || newThread.content.trim()) {
@@ -173,6 +188,22 @@ function Forum() {
   const clearDraft = () => {
     setNewThread({ title: '', content: '' });
     localStorage.removeItem('threadDraft');
+  };
+
+  const toggleBookmark = (e, threadId) => {
+    e.stopPropagation(); // Prevent navigating to thread when clicking bookmark
+    
+    const updatedBookmarks = bookmarks.includes(threadId)
+      ? bookmarks.filter(id => id !== threadId)
+      : [...bookmarks, threadId];
+      
+    setBookmarks(updatedBookmarks);
+    localStorage.setItem('threadBookmarks', JSON.stringify(updatedBookmarks));
+    
+    toast.info(
+      bookmarks.includes(threadId) ? 'Thread removed from bookmarks' : 'Thread bookmarked!', 
+      { autoClose: 1500 }
+    );
   };
 
   const handleCreateThread = async (e) => {
@@ -314,21 +345,7 @@ function Forum() {
       
       <div className="forum-header">
         <h1>Student Forums</h1>
-        <div className="forum-search-controls">
-          <input
-            type="text"
-            placeholder="Search threads..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-          <button 
-            className="new-thread-button"
-            onClick={() => setShowNewThreadForm(!showNewThreadForm)}
-          >
-            {showNewThreadForm ? 'Cancel' : 'New Thread'}
-          </button>
-        </div>
+        <p>Join the discussion and connect with your peers!</p>
       </div>
       
       {showNewThreadForm && (
@@ -387,7 +404,7 @@ function Forum() {
                     <ReactMarkdown
                       rehypePlugins={[rehypeSanitize]}
                       components={{
-                        code({node, inline, className, children, ...props}) {
+                        code({ inline, className, children, ...props}) {
                           const match = /language-(\w+)/.exec(className || '');
                           return !inline && match ? (
                             <SyntaxHighlighter
@@ -504,6 +521,10 @@ function Forum() {
               <span className="stat-value">{formatNumber(forumStats.totalReplies)}</span>
             </div>
             <div className="stat-item">
+              <span className="stat-label">Your Bookmarks:</span>
+              <span className="stat-value">{formatNumber(bookmarks.length)}</span>
+            </div>
+            <div className="stat-item">
               <span className="stat-label">Activity Score:</span>
               <span className="stat-value">{formatNumber(forumStats.totalThreads + forumStats.totalReplies * 2)}</span>
             </div>
@@ -523,23 +544,60 @@ function Forum() {
                 <option value="comments">Most Comments</option>
                 <option value="score">Highest Score</option>
               </select>
+              <label className="bookmark-filter">
+                <input 
+                  type="checkbox" 
+                  checked={showBookmarksOnly} 
+                  onChange={(e) => setShowBookmarksOnly(e.target.checked)} 
+                />
+                Show Bookmarks Only
+              </label>
             </div>
           </div>
           
           {loading ? (
-            <div className="loading-indicator">
-              <div className="spinner"></div>
-              <p>Loading threads...</p>
+            <div className="skeleton-loading">
+              {[...Array(5)].map((_, index) => (
+                <div key={index} className="thread-skeleton">
+                  <div className="skeleton-avatar skeleton"></div>
+                  <div className="skeleton-content">
+                    <div className="skeleton-title skeleton"></div>
+                    <div className="skeleton-meta skeleton"></div>
+                    <div className="skeleton-excerpt skeleton"></div>
+                    <div className="skeleton-stats">
+                      <div className="skeleton-stat-item skeleton"></div>
+                      <div className="skeleton-stat-item skeleton"></div>
+                      <div className="skeleton-stat-item skeleton"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : displayThreads.length === 0 ? (
             <div className="empty-state">
-              <p>No threads found. Be the first to start a discussion!</p>
-              <button 
-                className="new-thread-button"
-                onClick={() => setShowNewThreadForm(true)}
-              >
-                Create Thread
-              </button>
+              {showBookmarksOnly ? (
+                <>
+                  <p>No bookmarked threads found.</p>
+                  <div className="bookmark-actions">
+                    <button 
+                      className="clear-bookmarks"
+                      onClick={() => setShowBookmarksOnly(false)}
+                    >
+                      Show all threads
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>No threads found. Be the first to start a discussion!</p>
+                  <button 
+                    className="new-thread-button"
+                    onClick={() => setShowNewThreadForm(true)}
+                  >
+                    Create Thread
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <>
@@ -547,7 +605,7 @@ function Forum() {
                 {displayThreads.map((thread, index) => (
                   <li 
                     key={thread.threadId || `thread-${index}`} 
-                    className={`thread-item ${isThreadRead(thread.threadId) ? 'thread-read' : ''}`}
+                    className={`thread-item ${isThreadRead(thread.threadId) ? 'thread-read' : ''} ${bookmarks.includes(thread.threadId) ? 'thread-bookmarked' : ''}`}
                     onClick={() => goToThread(thread.threadId)}
                   >
                     <div className="thread-avatar">
@@ -561,7 +619,23 @@ function Forum() {
                       />
                     </div>
                     <div className="thread-content">
-                      <h3 className="thread-title">{thread.title}</h3>
+                      <div className="thread-header">
+                        <h3 className="thread-title">{thread.title}</h3>
+                        <button 
+                          className="bookmark-button" 
+                          onClick={(e) => toggleBookmark(e, thread.threadId)}
+                          aria-label={bookmarks.includes(thread.threadId) ? "Remove bookmark" : "Bookmark thread"}
+                        >
+                          <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path 
+                              fill="currentColor" 
+                              d={bookmarks.includes(thread.threadId) 
+                                ? "M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" // Filled bookmark
+                                : "M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"} // Outlined bookmark
+                            />
+                          </svg>
+                        </button>
+                      </div>
                       <div className="thread-meta">
                         <span className="thread-author">by {thread.authorName || "Anonymous"}</span>
                         <span className="thread-date">Posted on {formatDate(thread.createdAt)}</span>
@@ -569,12 +643,39 @@ function Forum() {
                       <div className="thread-excerpt">
                         {thread.format === 'markdown' ? (
                           <div className="markdown-excerpt">
-                            {(thread.content || thread.description || "").substring(0, 150)}
-                            {(thread.content || thread.description || "").length > 150 ? "..." : ""}
+                            <ReactMarkdown
+                              rehypePlugins={[rehypeSanitize]}
+                              className="thread-excerpt-content"
+                              components={{
+                                // Use simplified code renderer for excerpts
+                                code({ inline, className, children }) {
+                                  return inline ? (
+                                    <code className={className}>{children}</code>
+                                  ) : (
+                                    <code className="code-block-preview">{'{code block}'}</code>
+                                  );
+                                },
+                                // Simplify headings to avoid layout issues
+                                h1: ({children}) => <strong>{children}</strong>,
+                                h2: ({children}) => <strong>{children}</strong>,
+                                h3: ({children}) => <strong>{children}</strong>,
+                                h4: ({children}) => <strong>{children}</strong>,
+                                h5: ({children}) => <strong>{children}</strong>,
+                                h6: ({children}) => <strong>{children}</strong>,
+                                // Limit image size in excerpts
+                                img: () => <span>[image]</span>,
+                              }}
+                            >
+                              {(thread.content || thread.description || "").substring(0, 150)}
+                              {(thread.content || thread.description || "").length > 150 ? "..." : ""}
+                            </ReactMarkdown>
                           </div>
                         ) : (
                           <p>
-                            {(thread.content || thread.description || "").substring(0, 150)}
+                            {/* Strip any markdown syntax for non-markdown content */}
+                            {(thread.content || thread.description || "")
+                              .replace(/[#*_~`[\]]/g, '') // Remove common markdown symbols
+                              .substring(0, 150)}
                             {(thread.content || thread.description || "").length > 150 ? "..." : ""}
                           </p>
                         )}
@@ -609,6 +710,16 @@ function Forum() {
                             <path fill="currentColor" d="M7 10l5 5 5-5H7z"/>
                           </svg>
                           <span>{formatNumber(thread.downvotes || 0)}</span>
+                        </div>
+                        
+                        <div 
+                          className={`stats-item bookmark ${bookmarks.includes(thread.threadId) ? 'bookmarked' : ''}`}
+                          onClick={(e) => toggleBookmark(e, thread.threadId)}
+                        >
+                          <svg className="stats-icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v16l9-4 9 4V5c0-1.1-.9-2-2-2z"/>
+                          </svg>
+                          <span>{bookmarks.includes(thread.threadId) ? 'Bookmarked' : 'Bookmark'}</span>
                         </div>
                         
                         {thread.isRecent && (

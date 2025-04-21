@@ -2,6 +2,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  padding-top: 80px;
   color: var(--text-dark);
 }
 
@@ -13,7 +14,7 @@
 }
 
 .forum-header h1 {
-  color: var(--secondary-color);
+  color: var(--primary-color);
   font-size: 28px;
   margin: 0;
 }
@@ -28,21 +29,6 @@
   border: 1px solid #ddd;
   border-radius: var(--border-radius-sm);
   width: 250px;
-}
-
-.new-thread-button {
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.new-thread-button:hover {
-  background-color: var(--primary-hover);
 }
 
 /* Change forum-content back to flex layout */
@@ -827,7 +813,198 @@
 /* Thread excerpt styling */
 .markdown-excerpt {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.6;
+  line-height: 1.5;
   color: #444;
+  max-height: 100px;
+  overflow: hidden;
+}
+
+.markdown-excerpt p {
+  margin: 0 0 6px 0;
+}
+
+.markdown-excerpt a {
+  color: #4a6da7;
+  text-decoration: none;
+}
+
+.markdown-excerpt strong, 
+.markdown-excerpt b {
+  font-weight: 600;
+}
+
+.markdown-excerpt em, 
+.markdown-excerpt i {
+  font-style: italic;
+}
+
+.markdown-excerpt .code-block-preview {
+  background-color: #f7f7f7;
+  padding: 2px 5px;
+  border: 1px dashed #ddd;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #666;
+}
+
+.thread-excerpt-content {
+  margin: 0;
+  padding: 0;
+}
+
+/* Enhance read/unread distinction */
+.thread-read .thread-excerpt {
+  opacity: 0.85;
+}
+
+/* Add skeleton loading animations */
+@keyframes pulse {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: -135% 0%;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, 
+    #f0f0f0 25%, 
+    #e0e0e0 50%, 
+    #f0f0f0 75%);
+  background-size: 400% 100%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.thread-skeleton {
+  display: flex;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.thread-skeleton:last-child {
+  border-bottom: none;
+}
+
+.skeleton-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 15px;
+}
+
+.skeleton-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 70%;
+  border-radius: 4px;
+}
+
+.skeleton-meta {
+  height: 12px;
+  width: 40%;
+  border-radius: 4px;
+}
+
+.skeleton-excerpt {
+  height: 40px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+.skeleton-stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.skeleton-stat-item {
+  height: 16px;
+  width: 60px;
+  border-radius: 4px;
+}
+
+/* Thread bookmark styles */
+.thread-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.bookmark-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  margin-left: 5px;
+  color: #888;
+}
+
+.bookmark-button:hover {
+  background-color: rgba(0,0,0,0.05);
+  color: var(--primary-color);
+}
+
+.thread-bookmarked .bookmark-button {
+  color: var(--primary-color);
+}
+
+.thread-bookmarked {
+  border-left: 3px solid var(--primary-color);
+}
+
+/* Bookmark filter styling */
+.bookmark-filter {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.bookmark-filter svg {
+  margin-right: 5px;
+}
+
+.bookmark-filter input:checked + span {
+  color: var(--primary-color);
+}
+
+.bookmark-filter input:checked + span svg {
+  fill: var(--primary-color);
+}
+
+/* No bookmarks message */
+.no-bookmarks {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+}
+
+.bookmark-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.clear-bookmarks {
+  background-color: transparent;
+  color: #666;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.clear-bookmarks:hover {
+  background-color: #f5f5f5;
+  border-color: #999;
 }
 

@@ -151,6 +151,7 @@ const Taskbar = memo(function Taskbar() {
         navigate("/");
       }, 5000);
       
+      //TODO: logout-all
       await axios.delete(`${base_url}/users/logout`, {
         headers: { 'Session-Id': sessionId },
         timeout: 4000 // Add axios timeout
@@ -465,7 +466,7 @@ function App() {
             <Route path="/event/:eventId" element={<EventDetails />} />
             <Route path="/forum" element={<Forum />} />
             <Route path="/forum/thread/:threadId" element={<Thread />} />
-            <Route path="/messages" element={<Messaging />} />
+            <Route path="/messaging" element={<Messaging />} />
           </Route>
         </Routes>
       </Router>
