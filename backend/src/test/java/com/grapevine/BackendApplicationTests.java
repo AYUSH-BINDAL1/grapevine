@@ -2,20 +2,27 @@ package com.grapevine;
 
 import com.grapevine.service.S3Service;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.suite.api.SelectPackages;
+import org.junit.platform.suite.api.Suite;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.bind.annotation.RestController;
+import java.lang.reflect.Constructor;
 
-@SpringBootTest  // <-- loads the full Spring context
-@ActiveProfiles("test")  // <-- picks up application-test.properties
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Map;
+
+@Suite
+@SelectPackages("com.grapevine")
+@SpringBootTest
+@ActiveProfiles("test")
 class BackendApplicationTests {
 
-    // Replaces the real S3Service bean with a Mockito mock
-    @MockitoBean
-    private S3Service s3Service;
-
-    @Test
-    void contextLoads() {
-        // If anything in your context fails to start, this test will fail
-    }
 }

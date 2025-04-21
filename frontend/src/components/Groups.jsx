@@ -9,6 +9,36 @@ import 'react-toastify/dist/ReactToastify.css';
 import { FixedSizeList as List } from 'react-window';
 import { base_url, image_url } from '../config';
 
+// Add this constant at the top of your file, after the imports
+const CAMPUS_BUILDINGS = [
+  { code: "WALC", name: "Wilmeth Active Learning Center" },
+  { code: "LWSN", name: "Lawson Computer Science Building" },
+  { code: "PMUC", name: "Purdue Memorial Union Club" },
+  { code: "HAMP", name: "Hampton Hall of Civil Engineering" },
+  { code: "RAWL", name: "Krannert Building (Rawls Hall)" },
+  { code: "CHAS", name: "Chaney-Hale Hall of Science" },
+  { code: "CL50", name: "Class of 1950 Lecture Hall" },
+  { code: "FRNY", name: "Forney Hall of Chemical Engineering" },
+  { code: "KRAN", name: "Krannert Building" },
+  { code: "MSEE", name: "Materials and Electrical Engineering Building" },
+  { code: "MATH", name: "Mathematical Sciences Building" },
+  { code: "PHYS", name: "Physics Building" },
+  { code: "POTR", name: "Potter Engineering Center" },
+  { code: "HAAS", name: "Haas Hall" },
+  { code: "HIKS", name: "Hicks Undergraduate Library" },
+  { code: "BRWN", name: "Brown Laboratory of Chemistry" },
+  { code: "HEAV", name: "Heavilon Hall" },
+  { code: "BRNG", name: "Beering Hall of Liberal Arts and Education" },
+  { code: "SC", name: "Stewart Center" },
+  { code: "WTHR", name: "Wetherill Laboratory of Chemistry" },
+  { code: "UNIV", name: "University Hall" },
+  { code: "YONG", name: "Young Hall" },
+  { code: "ME", name: "Mechanical Engineering Building" },
+  { code: "ELLT", name: "Elliott Hall of Music" },
+  { code: "PMU", name: "Purdue Memorial Union" },
+  { code: "STEW", name: "Stewart Center" }
+];
+
 // Optimize the ProfileImage component
 const ProfileImage = memo(({ user, altText }) => {
   const [imageUrl, setImageUrl] = useState('');
@@ -309,12 +339,90 @@ function Groups() {
     imagePreview: null
   });
 
-  // Update the openEditForm function to include the new fields
+  // Add this function to handle group image fetching
+  const fetchGroupImage = useCallback(async (imageUrl) => {
+    if (!imageUrl || imageUrl === 'undefined') {
+      return 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image';
+    }
+    
+    // Check for cached image URL first
+    const cachedUrl = sessionStorage.getItem(`group-image-${id}`);
+    if (cachedUrl) {
+      return cachedUrl;
+    }
+    
+    try {
+      // For database stored URLs, check if it's a full URL or just an ID
+      let fullImageUrl;
+      
+      if (imageUrl.startsWith('http')) {
+        // If it's a full URL, use it directly
+        fullImageUrl = imageUrl;
+      } else {
+        // Otherwise construct the URL using the file ID
+        fullImageUrl = `${image_url}/images/${imageUrl}`;
+      }
+      
+      // Verify the image loads correctly
+      const img = new Image();
+      
+      // Create a promise to handle image loading
+      const imageLoadPromise = new Promise((resolve, reject) => {
+        img.onload = () => {
+          resolve(fullImageUrl);
+        };
+        
+        img.onerror = () => {
+          // Try alternative URL format if the first one fails
+          if (!imageUrl.startsWith('http')) {
+            const alternativeUrl = `${base_url}/api/files/getImage/${imageUrl}`;
+            
+            const altImg = new Image();
+            altImg.onload = () => {
+              resolve(alternativeUrl);
+            };
+            
+            altImg.onerror = () => {
+              reject(new Error("Failed to load group image"));
+            };
+            
+            altImg.src = alternativeUrl;
+          } else {
+            reject(new Error("Failed to load group image"));
+          }
+        };
+      });
+      
+      // Start loading the image
+      img.src = fullImageUrl;
+      
+      // Wait for image load resolution
+      const successfulUrl = await imageLoadPromise;
+      
+      // Cache the successful URL
+      sessionStorage.setItem(`group-image-${id}`, successfulUrl);
+      return successfulUrl;
+      
+    } catch (error) {
+      console.error('Error fetching group image:', error);
+      // Fall back to default image
+      return 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image';
+    }
+  }, [id]);
+
+  // Update the openEditForm function:
   const openEditForm = () => {
+    // Check if the current location matches any of the building codes
+    const existingBuilding = CAMPUS_BUILDINGS.find(b => 
+      group.location.startsWith(b.code) || group.location === b.code
+    );
+    
     setEditFormData({
       name: group.title,
-      maxUsers: group.maxUsers || 50, // Default to 50 if not set
-      location: group.location || '',
+      maxUsers: group.maxUsers || 50,
+      // If location matches a building code, use it; otherwise set to 'custom'
+      location: existingBuilding ? existingBuilding.code : 'custom',
+      customLocation: !existingBuilding ? group.location : '',
       meetingTimes: group.meetingTimes || '',
       description: group.description || '',
       image: null,
@@ -332,23 +440,39 @@ function Groups() {
     }));
   };
 
-  // Handle image selection
-  const handleImageSelect = (e) => {
+  // Replace the existing handleImageSelect function with this enhanced version
+  const handleImageSelect = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditFormData(prev => ({
-          ...prev,
-          image: file,
-          imagePreview: reader.result
-        }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload an image file (JPEG, PNG, GIF, or WEBP)");
+      return;
     }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size should be less than 2MB");
+      return;
+    }
+
+    // Show preview immediately for better UX
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditFormData(prev => ({
+        ...prev,
+        imagePreview: reader.result,
+        image: file
+      }));
+    };
+    reader.readAsDataURL(file);
+    
+    // We'll handle the actual upload when the form is submitted
   };
 
-  // Update the handleSubmitGroupEdit function to include the new fields in the form data
+  // Replace the existing handleSubmitGroupEdit function
   const handleSubmitGroupEdit = async (e) => {
     e.preventDefault();
     
@@ -361,33 +485,76 @@ function Groups() {
     // Show loading toast
     toast.info("Updating group details...", { autoClose: false, toastId: 'update-group' });
     
-    // Use FormData to handle file upload
-    const formData = new FormData();
-    formData.append('name', editFormData.name);
-    formData.append('maxUsers', editFormData.maxUsers);
-    formData.append('location', editFormData.location);
-    formData.append('meetingTimes', editFormData.meetingTimes);
-    formData.append('description', editFormData.description);
-    if (editFormData.image) {
-      formData.append('image', editFormData.image);
-    }
-    
     try {
-      await axios.put(
+      // Handle text fields update
+      const groupDataUpdate = {
+        name: editFormData.name,
+        maxUsers: editFormData.maxUsers,
+        // Use custom location if selected, otherwise use the building code
+        location: editFormData.location === 'custom' ? editFormData.customLocation : 
+                  editFormData.location ? CAMPUS_BUILDINGS.find(b => b.code === editFormData.location)?.code + ' - ' + 
+                                          CAMPUS_BUILDINGS.find(b => b.code === editFormData.location)?.name : '',
+        meetingTimes: editFormData.meetingTimes,
+        description: editFormData.description
+      };
+      
+      // If we have a new image, upload it first
+      if (editFormData.image) {
+        const formData = new FormData();
+        formData.append('file', editFormData.image);
+        
+        // Upload the image file
+        const uploadResponse = await axios.post(
+          `${base_url}/api/files/upload`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Session-Id': sessionId
+            }
+          }
+        );
+        
+        if (uploadResponse.status === 200 && uploadResponse.data) {
+          // Extract the file ID and URL from the response
+          const fileId = uploadResponse.data.fileName || uploadResponse.data.fileId;
+          const publicUrl = uploadResponse.data.publicUrl;
+          
+          // Use the public URL if available, otherwise construct it
+          const imageUrl = publicUrl || `${image_url}/images/${fileId}`;
+          
+          // Add the image URL to the group update data
+          groupDataUpdate.image = imageUrl;
+        } else {
+          toast.warning("Failed to upload image. Group details will be updated without the new image.");
+        }
+      }
+      
+      // Update the group data
+      const updateResponse = await axios.put(
         `${base_url}/groups/${id}/update`,
-        formData,
+        groupDataUpdate,
         {
           headers: {
-            'Session-Id': sessionId,
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
           }
         }
       );
       
-      toast.dismiss('update-group');
-      toast.success('Group details updated successfully');
-      setShowEditForm(false);
-      fetchData(); // Refresh the group data
+      if (updateResponse.status === 200) {
+        toast.dismiss('update-group');
+        toast.success('Group details updated successfully');
+        setShowEditForm(false);
+        
+        // Cache the image URL if we uploaded a new one
+        if (editFormData.image && groupDataUpdate.image) {
+          sessionStorage.setItem(`group-image-${id}`, groupDataUpdate.image);
+        }
+        
+        // Refresh the group data
+        fetchData();
+      }
     } catch (error) {
       console.error('Error updating group:', error);
       toast.dismiss('update-group');
@@ -580,12 +747,27 @@ function Groups() {
           // Process group data
           const { isUserHost, isUserMember, formattedGroup } = processGroupData(apiGroup, userData.userEmail);
           
+          // Fetch and set the group image
+          if (formattedGroup.image) {
+            fetchGroupImage(formattedGroup.image)
+              .then(imageUrl => {
+                setGroup({
+                  ...formattedGroup,
+                  image: imageUrl
+                });
+              })
+              .catch(() => {
+                // If image fetch fails, continue with the original image URL
+                setGroup(formattedGroup);
+              });
+          } else {
+            setGroup(formattedGroup);
+          }
+          
           setUserMembership({
             isHost: isUserHost,
             isMember: isUserMember
           });
-          
-          setGroup(formattedGroup);
           
           // Fetch ratings and reviews in parallel if user is a member
           if (isUserHost || isUserMember) {
@@ -704,7 +886,7 @@ function Groups() {
     } finally {
       setLoading(false);
     }
-  }, [calculateAverageRating, id, navigate, processGroupData]);
+  }, [calculateAverageRating, id, navigate, processGroupData, fetchGroupImage]);
   
   // Function to process reviews data
   const processReviewsData = (reviewsData) => {
@@ -1111,7 +1293,7 @@ function Groups() {
               onClick={openEditForm}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '6px' }}>
-                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39 0-1.41l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
               </svg>
               Edit Group
             </button>
@@ -1333,16 +1515,39 @@ function Groups() {
                 <small>Set the maximum number of users allowed in this group</small>
               </div>
 
+              {/* Replace the existing location input with this dropdown */}
               <div className="form-group">
                 <label htmlFor="group-location">Location</label>
-                <input
+                <select
                   id="group-location"
                   name="location"
-                  type="text"
                   value={editFormData.location}
                   onChange={handleEditFormChange}
-                  placeholder="Enter meeting location"
-                />
+                  className="campus-building-select"
+                >
+                  <option value="">Select a building</option>
+                  {CAMPUS_BUILDINGS.map(building => (
+                    <option key={building.code} value={building.code}>
+                      {building.code} - {building.name}
+                    </option>
+                  ))}
+                  <option value="custom">Other location (specify below)</option>
+                </select>
+                
+                {editFormData.location === 'custom' && (
+                  <input
+                    type="text"
+                    name="customLocation"
+                    value={editFormData.customLocation || ''}
+                    onChange={(e) => setEditFormData(prev => ({
+                      ...prev,
+                      customLocation: e.target.value,
+                      location: 'custom'
+                    }))}
+                    placeholder="Enter custom location"
+                    className="mt-2"
+                  />
+                )}
                 <small>Where does this group typically meet?</small>
               </div>
 

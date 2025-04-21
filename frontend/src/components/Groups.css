@@ -1215,3 +1215,23 @@ h1 {
 .save-button:hover {
   background-color: #3a5a94;
 }
+
+.campus-building-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  background-color: black;
+  margin-bottom: 8px;
+}
+
+.campus-building-select:focus {
+  border-color: #4a6da7;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.2);
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
