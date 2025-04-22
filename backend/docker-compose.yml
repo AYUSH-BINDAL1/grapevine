@@ -6,7 +6,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      # Remove mailpit dependency
     environment:
       # postgres db authentication
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/postgres
@@ -50,13 +49,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  #mailpit:
-   # image: axllent/mailpit
-   # ports:
-   #   - "1025:1025"
-   #   - "8025:8025"
-   # restart: unless-stopped
 
   minio:
     image: minio/minio

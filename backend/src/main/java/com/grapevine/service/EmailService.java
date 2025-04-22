@@ -55,7 +55,6 @@ public class EmailService {
         }
     }
 
-    // Helper method unchanged
     String extractUrl(String htmlContent, String buttonType) {
         try {
             String searchStart = buttonType.equals("Accept") ?
