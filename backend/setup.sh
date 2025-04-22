@@ -108,7 +108,7 @@ setup_bucket() {
   echo -e "\n${GREEN}Setting up MinIO bucket...${NC}"
 
   echo "Waiting for MinIO to become available..."
-  MAX_RETRIES=30
+  MAX_RETRIES=2
   RETRY_COUNT=0
 
   while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
@@ -178,15 +178,40 @@ fi
 echo -e "${GREEN}Starting Docker containers...${NC}"
 $DOCKER_COMPOSE up -d --build
 
+# Show logs from the app container
+echo -e "${GREEN}Showing logs from Spring Boot application:${NC}"
+$DOCKER_COMPOSE logs -f app &
+LOG_PID=$!
+
 # Set the backend URL
 BACKEND_URL="http://localhost:8080"
 
 # Wait for the application to be ready
 echo -e "${GREEN}Waiting for Spring Boot application to start...${NC}"
-while ! curl -s $BACKEND_URL/users/register >/dev/null 2>&1; do
-  echo "Waiting for application to become available..."
+MAX_RETRIES=2
+RETRY_COUNT=0
+APPLICATION_READY=false
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  if curl -s $BACKEND_URL/users/register >/dev/null 2>&1; then
+    echo -e "${GREEN}Spring Boot application is running!${NC}"
+    APPLICATION_READY=true
+    break
+  fi
+  echo "Waiting for application to become available... ($(($RETRY_COUNT + 1))/$MAX_RETRIES)"
+  RETRY_COUNT=$((RETRY_COUNT + 1))
   sleep 5
+
+  if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo -e "${RED}Application failed to start within the expected time.${NC}"
+    echo -e "${YELLOW}Showing more detailed logs:${NC}"
+    $DOCKER_COMPOSE logs --tail=100 app
+    break
+  fi
 done
+
+# Kill the log following process
+kill $LOG_PID 2>/dev/null
 
 echo -e "${GREEN}Spring Boot application is running!${NC}"
 
