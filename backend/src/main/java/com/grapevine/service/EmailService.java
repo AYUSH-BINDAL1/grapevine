@@ -2,6 +2,7 @@ package com.grapevine.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -13,8 +14,12 @@ import lombok.RequiredArgsConstructor;
 public class EmailService {
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.from:noreply@studygrapevine.com}")
+    private String fromAddress;
+
     public void sendVerificationEmail(String to, String token) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);  // Add from address
         message.setTo(to);
         message.setSubject("Email Verification");
         message.setText("Your verification code is: " + token);
@@ -23,6 +28,7 @@ public class EmailService {
 
     public void sendVerificationEmail(String to, String subject, String content) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);  // Add from address
         message.setTo(to);
         message.setSubject(subject);
         message.setText(content);
@@ -34,6 +40,7 @@ public class EmailService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
+            helper.setFrom(fromAddress);  // Add from address
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true); // true indicates HTML content
@@ -48,7 +55,7 @@ public class EmailService {
         }
     }
 
-    // Helper method to extract URLs from HTML content
+    // Helper method unchanged
     String extractUrl(String htmlContent, String buttonType) {
         try {
             String searchStart = buttonType.equals("Accept") ?

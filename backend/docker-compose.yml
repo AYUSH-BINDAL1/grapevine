@@ -6,17 +6,25 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mailpit:
-        condition: service_started
+      # Remove mailpit dependency
     environment:
       # postgres db authentication
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/postgres
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres@123
 
-      # mail server for sending emails (currently local using mailpit)
-      - SPRING_MAIL_HOST=mailpit
-      - SPRING_MAIL_PORT=1025
+      # AWS SES configuration
+      - SPRING_MAIL_HOST=email-smtp.us-east-2.amazonaws.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=AKIASVQPUNPYIUIZ4VMH
+      - SPRING_MAIL_PASSWORD=BLBLGuGb+JZp2O1DxuLNZ+Fzu+IVMXjZLJm+oy9OdL52
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_TIMEOUT=5000
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT=5000
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_WRITETIMEOUT=5000
+      - SPRING_MAIL_DEFAULT_ENCODING=UTF-8
+      - SPRING_MAIL_FROM=noreply@studygrapevine.com
 
       # static image hosting on buckets (currently local using minio)
       - SPRING_CLOUD_AWS_ENDPOINT=http://minio:9000
@@ -43,12 +51,12 @@ services:
       timeout: 5s
       retries: 5
 
-  mailpit:
-    image: axllent/mailpit
-    ports:
-      - "1025:1025"
-      - "8025:8025"
-    restart: unless-stopped
+  #mailpit:
+   # image: axllent/mailpit
+   # ports:
+   #   - "1025:1025"
+   #   - "8025:8025"
+   # restart: unless-stopped
 
   minio:
     image: minio/minio
