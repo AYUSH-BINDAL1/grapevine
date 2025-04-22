@@ -1,9 +1,11 @@
 .forum-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 20px 15px;
   padding-top: 80px;
   color: var(--text-dark);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .forum-header {
@@ -31,7 +33,7 @@
   width: 250px;
 }
 
-/* Change forum-content back to flex layout */
+/* More fluid forum content layout */
 .forum-content {
   display: flex;
   gap: 20px;
@@ -459,6 +461,31 @@
 }
 
 /* Responsive styles */
+@media (max-width: 1024px) {
+  .forum-container {
+    padding: 15px;
+    padding-top: 80px;
+  }
+  
+  .forum-content {
+    gap: 15px;
+  }
+  
+  .threads-container {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 900px) {
+  .forum-sidebar {
+    width: 240px;
+  }
+  
+  .threads-container {
+    max-width: calc(100% - 260px);
+  }
+}
+
 @media (max-width: 768px) {
   .forum-content {
     flex-direction: column;
@@ -466,25 +493,75 @@
   
   .forum-sidebar {
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    position: static;
   }
   
-  .forum-header {
+  .threads-container {
+    max-width: 100%;
+  }
+  
+  /* Make sidebar sections collapsible on mobile */
+  .sidebar-search h3,
+  .forum-stats h3 {
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .sidebar-search h3:after,
+  .forum-stats h3:after {
+    content: '▼';
+    font-size: 12px;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar-search h3.collapsed:after,
+  .forum-stats h3.collapsed:after {
+    transform: translateY(-50%) rotate(-90deg);
+  }
+  
+  .filter-options,
+  .stat-items-container {
+    max-height: 300px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  
+  .filter-options.collapsed,
+  .stat-items-container.collapsed {
+    max-height: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .forum-container {
+    padding: 10px;
+    padding-top: 70px;
+  }
+  
+  .forum-header h1 {
+    font-size: 24px;
+  }
+  
+  .threads-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
+    gap: 10px;
   }
   
-  .forum-search-controls {
+  .thread-filters {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
   
-  .search-input {
-    flex-grow: 1;
-  }
-
-  .threads-list {
-    max-height: 500px;
+  .sort-select {
+    width: 100%;
   }
 }
 

@@ -235,42 +235,42 @@ const availableMajors = [
 
 // Friend skeleton component
 const FriendSkeleton = () => (
-    <div className="friend-card skeleton">
-        <div className="friend-card-content">
-            <div className="skeleton-image"></div>
-            <div className="skeleton-text"></div>
+    <div className="fr_friend-card skeleton">
+        <div className="fr_friend-card-content">
+            <div className="fr_skeleton-image"></div>
+            <div className="fr_skeleton-text"></div>
         </div>
     </div>
 );
 
 // Friend request skeleton component
 const FriendRequestSkeleton = () => (
-    <div className="friend-request-card skeleton">
-        <div className="user-info">
-            <div className="skeleton-avatar"></div>
-            <div className="request-details">
-                <div className="skeleton-text-short"></div>
-                <div className="skeleton-text-shorter"></div>
+    <div className="fr_friend-request-card skeleton">
+        <div className="fr_user-info">
+            <div className="fr_skeleton-avatar"></div>
+            <div className="fr_request-details">
+                <div className="fr_skeleton-text-short"></div>
+                <div className="fr_skeleton-text-shorter"></div>
             </div>
         </div>
-        <div className="request-actions">
-            <div className="skeleton-button"></div>
-            <div className="skeleton-button"></div>
+        <div className="fr_request-actions">
+            <div className="fr_skeleton-button"></div>
+            <div className="fr_skeleton-button"></div>
         </div>
     </div>
 );
 
 // Search result skeleton
 const SearchResultSkeleton = () => (
-    <div className="search-result-card skeleton">
-        <div className="user-info">
-            <div className="skeleton-avatar"></div>
-            <div className="search-result-details">
-                <div className="skeleton-text-short"></div>
-                <div className="skeleton-text-shorter"></div>
+    <div className="fr_search-result-card skeleton">
+        <div className="fr_user-info">
+            <div className="fr_skeleton-avatar"></div>
+            <div className="fr_search-result-details">
+                <div className="fr_skeleton-text-short"></div>
+                <div className="fr_skeleton-text-shorter"></div>
             </div>
         </div>
-        <div className="skeleton-button-wide"></div>
+        <div className="fr_skeleton-button-wide"></div>
     </div>
 );
 
@@ -287,11 +287,11 @@ const FilterPanel = ({
   handleResetFilters
 }) => {
   return (
-    <div className="filter-panel">
-      <div className="filter-header">
+    <div className="fr_filter-panel">
+      <div className="fr_filter-header">
         <h4>Filter Results</h4>
         <button 
-          className="reset-filters-btn" 
+          className="fr_reset-filters-btn" 
           onClick={handleResetFilters}
           disabled={!filterRole && !filterMajor && filterLocations.length === 0}
         >
@@ -299,11 +299,11 @@ const FilterPanel = ({
         </button>
       </div>
       
-      <div className="filter-content">
-        <div className="filter-group">
-          <label className="filter-label">Major/Minor:</label>
+      <div className="fr_filter-content">
+        <div className="fr_filter-group">
+          <label className="fr_filter-label">Major/Minor:</label>
           <select 
-            className="filter-select"
+            className="fr_filter-select"
             value={filterMajor}
             onChange={(e) => setFilterMajor(e.target.value)}
           >
@@ -314,10 +314,10 @@ const FilterPanel = ({
           </select>
         </div>
         
-        <div className="filter-group">
-          <label className="filter-label">Role:</label>
+        <div className="fr_filter-group">
+          <label className="fr_filter-label">Role:</label>
           <select 
-            className="filter-select"
+            className="fr_filter-select"
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
           >
@@ -329,10 +329,10 @@ const FilterPanel = ({
           </select>
         </div>
         
-        <div className="filter-group">
-          <label className="filter-label">Study Location:</label>
+        <div className="fr_filter-group">
+          <label className="fr_filter-label">Study Location:</label>
           <select 
-            className="filter-select"
+            className="fr_filter-select"
             value={filterLocations.join(',')}
             onChange={(e) => {
               const value = e.target.value;
@@ -350,10 +350,10 @@ const FilterPanel = ({
           </select>
         </div>
         
-        <div className="filter-group">
-          <label className="filter-label">Sort By:</label>
+        <div className="fr_filter-group">
+          <label className="fr_filter-label">Sort By:</label>
           <select 
-            className="filter-select"
+            className="fr_filter-select"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           >
@@ -460,14 +460,14 @@ const ProfileImage = ({ user, altText }) => {
   }, [user.profilePictureUrl, user.profilePictureId]);
   
   if (loading) {
-    return <div className="profile-image skeleton-image"></div>;
+    return <div className="fr_profile-image skeleton-image"></div>;
   }
   
   if (error) {
-    return <img src={profileImage} alt={altText || 'User'} className="profile-image default-image" />;
+    return <img src={profileImage} alt={altText || 'User'} className="fr_profile-image default-image" />;
   }
   
-  return <img src={imageUrl} alt={altText || 'User'} className="profile-image" onError={(e) => {
+  return <img src={imageUrl} alt={altText || 'User'} className="fr_profile-image" onError={(e) => {
     e.target.onerror = null; 
     e.target.src = profileImage;
   }} />;
@@ -1073,21 +1073,21 @@ function Friends() {
     };
 
     return (
-        <div className="friends-page">
+        <div className="fr_friends-page">
             {/* Updated friends section */}
-            <div className="friends-container">
+            <div className="fr_friends-container">
                 <h2>My Friends</h2>
 
                 {loadingFriends ? (
-                    <div className="friends-list">
+                    <div className="fr_friends-list">
                         {[1, 2, 3, 4].map(i => <FriendSkeleton key={i} />)}
                     </div>
                 ) : friends.length > 0 ? (
-                    <div className="friends-list" ref={friendsListRef}>
+                    <div className="fr_friends-list" ref={friendsListRef}>
                         {friends.map(user => (
-                            <div className="friend-card" key={user.userEmail}>
+                            <div className="fr_friend-card" key={user.userEmail}>
                                 <button
-                                    className="remove-friend-btn"
+                                    className="fr_remove-friend-btn"
                                     onClick={(e) => {
                                         e.stopPropagation(); // Prevent navigation when clicking the button
                                         handleRemoveFriend(user.name, user.userEmail);
@@ -1097,7 +1097,7 @@ function Friends() {
                                     Remove
                                 </button>
                                 <div
-                                    className="friend-card-content"
+                                    className="fr_friend-card-content"
                                     onClick={() => handleFriendClick(user.userEmail)}
                                 >
                                     <ProfileImage user={user} altText={user.name} />
@@ -1107,8 +1107,8 @@ function Friends() {
                         ))}
                     </div>
                 ) : (
-                    <div className="no-friends-message">
-                        <div className="empty-state-icon">👋</div>
+                    <div className="fr_no-friends-message">
+                        <div className="fr_empty-state-icon">👋</div>
                         <h3>No friends yet</h3>
                         <p>Search below to find and add friends to your network!</p>
                     </div>
@@ -1116,34 +1116,34 @@ function Friends() {
             </div>
 
             {/* Updated friend requests section */}
-            <div className="friend-requests-container">
-                <h2>Friend Requests {friendRequests.length > 0 && <span className="request-count">{friendRequests.length}</span>}</h2>
+            <div className="fr_friend-requests-container">
+                <h2>Friend Requests {friendRequests.length > 0 && <span className="fr_request-count">{friendRequests.length}</span>}</h2>
 
                 {loadingRequests ? (
-                    <div className="friend-requests-list">
+                    <div className="fr_friend-requests-list">
                         {[1, 2].map(i => <FriendRequestSkeleton key={i} />)}
                     </div>
                 ) : friendRequests.length > 0 ? (
-                    <div className="friend-requests-list">
+                    <div className="fr_friend-requests-list">
                         {friendRequests.map(request => (
-                            <div className="friend-request-card" key={request.id}>
-                                <div className="user-info" onClick={() => handleFriendClick(request.userEmail)}>
-                                    <ProfileImage user={request} altText={request.name} className="request-avatar" />
-                                    <div className="request-details">
+                            <div className="fr_friend-request-card" key={request.id}>
+                                <div className="fr_user-info" onClick={() => handleFriendClick(request.userEmail)}>
+                                    <ProfileImage user={request} altText={request.name} className="fr_request-avatar" />
+                                    <div className="fr_request-details">
                                         <h4>{request.name}</h4>
                                         <p>{request.major || 'No major listed'}</p>
                                     </div>
                                 </div>
-                                <div className="request-actions">
+                                <div className="fr_request-actions">
                                     <button 
                                         aria-label={`Accept friend request from ${request.name}`} 
-                                        className="accept-request-btn"
+                                        className="fr_accept-request-btn"
                                         onClick={() => handleAcceptRequest(request)}
                                     >
                                         Accept
                                     </button>
                                     <button
-                                        className="reject-request-btn"
+                                        className="fr_reject-request-btn"
                                         onClick={() => handleRejectRequest(request.id, request.name, request.userEmail)}
                                     >
                                         Decline
@@ -1153,19 +1153,19 @@ function Friends() {
                         ))}
                     </div>
                 ) : (
-                    <div className="no-requests-message">
+                    <div className="fr_no-requests-message">
                         <p>You don&apos;t have any friend requests right now.</p>
                     </div>
                 )}
             </div>
 
-            <div className="search-section">
-                <div className="search-filter-container">
-                    <form className="search-container" onSubmit={handleSearch}>
-                        <div className="search-input-container">
+            <div className="fr_search-section">
+                <div className="fr_search-filter-container">
+                    <form className="fr_search-container" onSubmit={handleSearch}>
+                        <div className="fr_search-input-container">
                             <input
                                 type="text"
-                                className="search-bar"
+                                className="fr_search-bar"
                                 placeholder="Search to add friends..."
                                 value={searchQuery}
                                 onChange={handleSearchChange}
@@ -1177,23 +1177,23 @@ function Friends() {
                             />
                             
                             {searchHistory.length > 0 && searchQuery.length === 0 && document.activeElement === document.querySelector('.search-bar') && (
-                                <div className="search-history-dropdown">
-                                    <div className="search-history-header">Recent Searches</div>
+                                <div className="fr_search-history-dropdown">
+                                    <div className="fr_search-history-header">Recent Searches</div>
                                     {searchHistory.map((query, index) => (
                                         <div 
                                             key={index} 
-                                            className="search-history-item"
+                                            className="fr_search-history-item"
                                             onClick={() => {
                                                 setSearchQuery(query);
                                                 performSearch(query);
                                             }}
                                         >
-                                            <i className="history-icon">↩️</i>
+                                            <i className="fr_history-icon">↩️</i>
                                             <span>{query}</span>
                                         </div>
                                     ))}
                                     <div 
-                                        className="clear-history"
+                                        className="fr_clear-history"
                                         onClick={() => {
                                             localStorage.removeItem('friendSearchHistory');
                                             setSearchHistory([]);
@@ -1207,18 +1207,18 @@ function Friends() {
                         
                         <button 
                             type="submit" 
-                            className={`search-button ${isSearching ? 'loading' : ''}`} 
+                            className={`fr_search-button ${isSearching ? 'loading' : ''}`} 
                             onClick={handleSearch} 
                             disabled={isSearching}
                         >
                             {isSearching ? (
                                 <>
-                                    <span className="loading-spinner"></span>
+                                    <span className="fr_loading-spinner"></span>
                                     <span>Searching...</span>
                                 </>
                             ) : (
                                 <>
-                                    <i className="friend-search"></i>
+                                    <i className="fr_friend-search"></i>
                                     <span>Search</span>
                                 </>
                             )}
@@ -1240,35 +1240,35 @@ function Friends() {
 
                 {/* Rest of your search results section remains unchanged */}
                 {isSearching ? (
-                    <div className="search-results">
+                    <div className="fr_search-results">
                         <h3>Loading Results...</h3>
-                        <div className="search-results-list">
+                        <div className="fr_search-results-list">
                             {[1, 2, 3].map(i => <SearchResultSkeleton key={i} />)}
                         </div>
                     </div>
                 ) : searchResults.length > 0 ? (
-                    <div className="search-results">
+                    <div className="fr_search-results">
                         <h3>Search Results</h3>
-                        <div className="search-results-list">
+                        <div className="fr_search-results-list">
                             {searchResults.map(user => (
-                                <div key={user.userEmail} className="search-result-card">
-                                    <div className="user-info" onClick={() => handleFriendClick(user.userEmail)}>
-                                        <ProfileImage user={user} altText={user.name} className="search-result-avatar" />
-                                        <div className="search-result-details">
+                                <div key={user.userEmail} className="fr_search-result-card">
+                                    <div className="fr_user-info" onClick={() => handleFriendClick(user.userEmail)}>
+                                        <ProfileImage user={user} altText={user.name} className="fr_search-result-avatar" />
+                                        <div className="fr_search-result-details">
                                             <h4>{user.name}</h4>
                                             <p>{user.major || 'No major listed'}</p>
                                         </div>
                                     </div>
                                     {user.isAlreadyFriend ? (
                                         <button
-                                            className="already-friend-btn"
+                                            className="fr_already-friend-btn"
                                             disabled
                                         >
                                             Already Friends
                                         </button>
                                     ) : (
                                         <button
-                                            className="add-friend-btn"
+                                            className="fr_add-friend-btn"
                                             onClick={() => handleAddFriend(user)}
                                         >
                                             Add Friend
@@ -1279,14 +1279,14 @@ function Friends() {
                         </div>
                     </div>
                 ) : noResultsFound ? (
-                    <div className="no-results">
+                    <div className="fr_no-results">
                         <p>No users found matching search &#34;{searchQuery}&#34; with applied filters;</p>
                     </div>
                 ) : null}
             </div>
 
-            <button onClick={refreshData} className="refresh-button">
-                <i className="refresh-icon"></i> Refresh
+            <button onClick={refreshData} className="fr_refresh-button">
+                <i className="fr_refresh-icon"></i> Refresh
             </button>
 
             <ToastContainer 

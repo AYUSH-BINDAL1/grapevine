@@ -888,7 +888,7 @@ function Thread() {
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Write a comment... Support markdown formatting!"
+                placeholder="Write a comment... Supports markdown formatting!"
                 rows={4}
                 disabled={submitting}
                 required

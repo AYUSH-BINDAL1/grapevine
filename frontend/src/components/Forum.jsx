@@ -562,6 +562,7 @@ const ThreadListing = memo(({
             onChange={(e) => setSortOrder(e.target.value)}
           >
             <option value="recent">Most Recent</option>
+            <option value="oldest">Oldest</option>
             <option value="comments">Most Comments</option>
             <option value="score">Highest Score</option>
           </select>
@@ -1026,6 +1027,8 @@ function Forum() {
     switch(sortOrder) {
       case 'recent':
         return filteredThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case 'oldest':
+        return filteredThreads.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       case 'comments':
         return filteredThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
       case 'score':

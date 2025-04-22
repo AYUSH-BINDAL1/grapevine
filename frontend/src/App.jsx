@@ -30,13 +30,20 @@ export let searchEnabled = true;
 */
 const Login = lazy(() => import('./components/Login'));
 
-// Optimize the Taskbar with memo to prevent unnecessary re-renders
+// Replace the current Taskbar component with this improved version
+
 const Taskbar = memo(function Taskbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userProfileImage, setUserProfileImage] = useState(profileImage);
   const [userDataVersion, setUserDataVersion] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Close mobile menu when changing routes
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
   
   // Memoize this function to prevent recreation on each render
   const isActive = useCallback((path) => {
@@ -171,54 +178,92 @@ const Taskbar = memo(function Taskbar() {
 
   // Memoize the navbar items to prevent unnecessary re-renders
   const navItems = useMemo(() => [
-    { path: '/home', label: 'Groups' },
-    { path: '/events', label: 'Events' },
-    { path: '/forum', label: 'Forum' },
-    { path: '/messaging', label: 'Messages' },
-    { path: '/friends', label: 'Friends' }
+    { path: '/home', label: 'Groups', icon: '👥' },
+    { path: '/events', label: 'Events', icon: '📅' },
+    { path: '/forum', label: 'Forum', icon: '💬' },
+    { path: '/messaging', label: 'Messages', icon: '✉️' },
+    { path: '/friends', label: 'Friends', icon: '👋' }
   ], []);
+
+  const toggleMobileMenu = useCallback(() => {
+    setMenuOpen(prev => !prev);
+  }, []);
 
   return (
     <div className="taskbar">
-      <nav className="taskbar-elem">
-        {navItems.map(item => (
-          <h3 
-            key={item.path}
-            onClick={() => navigate(item.path)} 
-            className={`elem ${isActive(item.path) ? 'active' : ''}`}
-          >
-            {item.label}
-          </h3>
-        ))}
-        
-        {searchEnabled && (
-          <h3 
-            onClick={() => navigate("/courseSearch")} 
-            className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}
-          >
-            Courses
-          </h3>
-        )}
-
-        <div className="navbar">
-          <NotificationDropdown />
+      <nav className={`taskbar-elem ${menuOpen ? 'menu-open' : ''}`}>
+        <div className="taskbar-logo" onClick={() => navigate('/home')}>
+          <span className="logo-text">Grapevine</span>
         </div>
         
-        <img 
-          onClick={() => navigate("/profile")} 
-          className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
-          src={userProfileImage} 
-          alt="Profile" 
-          loading="lazy" // Add lazy loading
-        />
-        
-        <h3 
-          onClick={handleLogout} 
-          className={`elem logout ${isLoggingOut ? 'disabled' : ''}`}
-          style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={toggleMobileMenu}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
         >
-          {isLoggingOut ? 'Logging out...' : 'Logout'}
-        </h3>
+          <span className="menu-bar"></span>
+          <span className="menu-bar"></span>
+          <span className="menu-bar"></span>
+        </button>
+        
+        <div className={`nav-items ${menuOpen ? 'show' : ''}`}>
+          {navItems.map(item => (
+            <div 
+              key={item.path}
+              onClick={() => navigate(item.path)} 
+              className={`elem ${isActive(item.path) ? 'active' : ''}`}
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && navigate(item.path)}
+            >
+              <span className="nav-icon mobile-only">{item.icon}</span>
+              <span className="nav-text">{item.label}</span>
+            </div>
+          ))}
+          
+          {searchEnabled && (
+            <div 
+              onClick={() => navigate("/courseSearch")} 
+              className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && navigate("/courseSearch")}
+            >
+              <span className="nav-icon mobile-only">🔍</span>
+              <span className="nav-text">Courses</span>
+            </div>
+          )}
+        </div>
+        
+        <div className="taskbar-right">
+          <div className="navbar">
+            <NotificationDropdown />
+          </div>
+          
+          <img 
+            onClick={() => navigate("/profile")} 
+            className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
+            src={userProfileImage} 
+            alt="Profile" 
+            loading="lazy"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && navigate("/profile")}
+          />
+          
+          <div 
+            onClick={handleLogout} 
+            className={`elem logout ${isLoggingOut ? 'disabled' : ''}`}
+            style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && !isLoggingOut && handleLogout()}
+            aria-disabled={isLoggingOut}
+          >
+            <span className="nav-icon mobile-only">🚪</span>
+            <span className="nav-text">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+          </div>
+        </div>
       </nav>
     </div>
   );
