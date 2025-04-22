@@ -66,8 +66,9 @@ public class ThreadController {
                     "You can only create threads using your own account");
         }
 
-        // Set the author name from the validated user
+        // Set the author name and role from the validated user
         thread.setAuthorName(currentUser.getName());
+        thread.setAuthorRole(currentUser.getRole());
 
         Thread createdThread = threadService.createThread(thread);
         return new ResponseEntity<>(createdThread, HttpStatus.CREATED);
@@ -152,5 +153,23 @@ public class ThreadController {
         User currentUser = userService.validateSession(sessionId);
         Integer vote = threadService.getUserVote(id, currentUser.getUserEmail());
         return ResponseEntity.ok(Map.of("vote", vote));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Thread>> searchThreads(
+            @RequestParam(required = false) String major,
+            @RequestParam(required = false) String course,
+            @RequestParam(required = false) User.Role authorRole,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        userService.validateSession(sessionId);
+
+        // Convert empty strings to null for proper query handling
+        major = (major != null && major.isEmpty()) ? null : major;
+        course = (course != null && course.isEmpty()) ? null : course;
+
+        List<Thread> threads = threadService.searchThreads(major, course, authorRole);
+        return ResponseEntity.ok(threads);
     }
 }

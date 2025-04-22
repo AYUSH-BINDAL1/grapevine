@@ -2,6 +2,7 @@ package com.grapevine.service;
 
 import com.grapevine.model.Comment;
 import com.grapevine.model.Thread;
+import com.grapevine.model.User;
 import com.grapevine.repository.ThreadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -105,5 +106,9 @@ public class ThreadService {
     public Integer getUserVote(Long id, String userEmail) {
         Thread thread = getThreadById(id);
         return thread.getVotes().getOrDefault(userEmail, 0);
+    }
+
+    public List<Thread> searchThreads(String major, String course, User.Role authorRole) {
+        return threadRepository.searchThreads(major, course, authorRole);
     }
 }

@@ -70,4 +70,14 @@ public class Thread {
     @JsonManagedReference
     @OneToMany(mappedBy = "thread", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
+
+    @Column(name = "major")
+    private String major;
+
+    @Column(name = "course")
+    private String course;
+
+    @Column(name = "author_role")
+    @Enumerated(EnumType.STRING)
+    private User.Role authorRole;
 }
