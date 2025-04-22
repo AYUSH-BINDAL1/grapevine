@@ -17,6 +17,41 @@ import MarkdownToolbar from './MarkdownToolbar';
 import { getProfilePictureUrl } from '../utils/imageUtils';
 import { getCachedUserByEmail } from '../utils/userUtils';
 
+const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+// Cache management functions
+const getCachedData = (key) => {
+  try {
+    const cachedData = localStorage.getItem(key);
+    if (!cachedData) return null;
+    
+    const { data, timestamp } = JSON.parse(cachedData);
+    
+    // Check if cache has expired
+    if (Date.now() - timestamp > CACHE_EXPIRY) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.warn(`Error retrieving cached ${key}:`, error);
+    return null;
+  }
+};
+
+const setCachedData = (key, data) => {
+  try {
+    const cacheItem = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(key, JSON.stringify(cacheItem));
+  } catch (error) {
+    console.warn(`Error caching ${key}:`, error);
+  }
+};
+
 // Add this debounce hook near your imports
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -34,17 +69,77 @@ const useDebounce = (value, delay) => {
   return debouncedValue;
 };
 
-// Add these functions near the top of your file with other utility functions
+// Add this custom hook for reusable memoized data fetching
+const useMemoizedApiData = (fetchFunction, cacheKey, processFunction) => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const fetchData = useCallback(async (forceRefresh = false) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Check cache first, unless forced refresh
+      if (!forceRefresh) {
+        const cachedData = getCachedData(cacheKey);
+        if (cachedData) {
+          const processedData = processFunction(cachedData);
+          setData(processedData);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Fetch fresh data
+      const freshData = await fetchFunction();
+      
+      // Process and set the data
+      const processedData = processFunction(freshData);
+      setData(processedData);
+      
+      // Cache the raw data
+      setCachedData(cacheKey, freshData);
+    } catch (err) {
+      console.error(`Error fetching ${cacheKey}:`, err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchFunction, cacheKey, processFunction]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+  
+  return { data, loading, error, refreshData: () => fetchData(true) };
+};
 
+// Update these functions to use memoization
 const fetchAllCourses = async () => {
+  // Try to get data from cache first
+  const cachedCourses = getCachedData('cachedCourses');
+  if (cachedCourses) {
+    console.log('Using cached courses data');
+    return cachedCourses;
+  }
+
+  // If not in cache, fetch from API
   const sessionId = localStorage.getItem('sessionId');
   if (!sessionId) return [];
   
   try {
+    console.log('Fetching courses from API');
     const response = await axios.get(`${base_url}/courses/all`, {
       headers: { 'Session-Id': sessionId }
     });
-    return response.data || [];
+    
+    const coursesData = response.data || [];
+    
+    // Cache the results
+    setCachedData('cachedCourses', coursesData);
+    
+    return coursesData;
   } catch (error) {
     console.error("Error fetching courses:", error);
     return [];
@@ -52,15 +147,28 @@ const fetchAllCourses = async () => {
 };
 
 const fetchAllMajors = async () => {
+  // Try to get data from cache first
+  const cachedMajors = getCachedData('cachedMajors');
+  if (cachedMajors) {
+    console.log('Using cached majors data');
+    return cachedMajors;
+  }
+  
   const sessionId = localStorage.getItem('sessionId');
   if (!sessionId) return [];
   
   try {
+    console.log('Fetching majors from API');
     const response = await axios.get(`${base_url}/courses/subjects`, {
       headers: { 'Session-Id': sessionId }
     });
     
-    return response.data || [];
+    const majorsData = response.data || [];
+    
+    // Cache the results
+    setCachedData('cachedMajors', majorsData);
+    
+    return majorsData;
   } catch (error) {
     console.error("Error fetching subjects/majors:", error);
     return [];
@@ -967,8 +1075,6 @@ function Forum() {
   const [filterMajor, setFilterMajor] = useState('');
   const [filterCourse, setFilterCourse] = useState('');
   const [filterRole, setFilterRole] = useState('');
-  const [availableMajors, setAvailableMajors] = useState([]);
-  const [availableCourses, setAvailableCourses] = useState([]);
 
   const [threadForm, dispatchThreadForm] = useReducer(threadFormReducer, {
     title: '',
@@ -977,6 +1083,58 @@ function Forum() {
     major: '',
     showPreview: false
   });
+
+  // Process functions
+  const processMajors = useCallback((data) => {
+    return [...new Set(data.map(major => major.name || major))].sort();
+  }, []);
+  
+  const processCourses = useCallback((data) => {
+    return data
+      .filter(course => course && course.courseKey)
+      .map(course => course.courseKey)
+      .sort();
+  }, []);
+  
+  // Use the hook for majors and courses
+  const { 
+    data: availableMajors
+  } = useMemoizedApiData(fetchAllMajors, 'cachedMajors', processMajors);
+  
+  const {
+    data: availableCourses
+  } = useMemoizedApiData(fetchAllCourses, 'cachedCourses', processCourses);
+  
+
+  // Add a function to force refresh the data (useful for admin functions or manual refresh)
+  const refreshCourseAndMajorData = useCallback(async () => {
+    // Clear the cache
+    localStorage.removeItem('cachedCourses');
+    localStorage.removeItem('cachedMajors');
+    
+    // Re-fetch the data
+    try {
+      fetchAllMajors(),
+      fetchAllCourses()
+      
+      toast.success("Filter data refreshed successfully.");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast.error("Failed to refresh filter data.");
+    }
+  }, []);
+
+  // Optional: Add a version check to invalidate cache when app version changes
+  useEffect(() => {
+    const APP_VERSION = "1.0.0"; // Update this when your app version changes
+    const cachedVersion = localStorage.getItem('appVersion');
+    
+    if (cachedVersion !== APP_VERSION) {
+      console.log("App version changed, refreshing cached data");
+      refreshCourseAndMajorData();
+      localStorage.setItem('appVersion', APP_VERSION);
+    }
+  }, [refreshCourseAndMajorData]);
 
   // Memoize these utility functions
   const formatDate = useCallback((dateString) => {
@@ -1146,41 +1304,6 @@ function Forum() {
     const savedBookmarks = JSON.parse(localStorage.getItem('threadBookmarks') || '[]');
     setBookmarks(savedBookmarks);
   }, []);
-
-  // Update the course processing in your useEffect that loads filter data
-  useEffect(() => {
-    const loadFilterData = async () => {
-      try {
-        // Fetch majors and courses in parallel
-        const [majorsData, coursesData] = await Promise.all([
-          fetchAllMajors(),
-          fetchAllCourses()
-        ]);
-        
-        // Process majors
-        if (Array.isArray(majorsData)) {
-          const majors = [...new Set(majorsData.map(major => major.name || major))].sort();
-          setAvailableMajors(majors);
-          console.log(`Loaded ${majors.length} majors from API`);
-        }
-        
-        // Extract only courseKeys from course data
-        if (Array.isArray(coursesData)) {
-          const courseKeys = coursesData
-            .filter(course => course && course.courseKey)
-            .map(course => course.courseKey)
-            .sort();
-          setAvailableCourses(courseKeys);
-          console.log(`Loaded ${courseKeys.length} course keys from API`);
-        }
-      } catch (error) {
-        console.error("Error loading filter data:", error);
-        toast.error("Failed to load filter options. Some filters may be incomplete.");
-      }
-    };
-
-    loadFilterData();
-  }, []); // Run once when component mounts
 
   // Auto-save draft when user types
   useEffect(() => {
@@ -1388,6 +1511,38 @@ function Forum() {
     formatDate,
     isHotThread
   }), [displayThreads, bookmarks, toggleBookmark, goToThread, formatNumber, formatDate, isHotThread]);
+
+  useEffect(() => {
+    const loadFilterData = async () => {
+      try {
+        // Fetch majors and courses in parallel
+        const [majorsData, coursesData] = await Promise.all([
+          fetchAllMajors(),
+          fetchAllCourses()
+        ]);
+        
+        // Process majors without useMemo
+        if (Array.isArray(majorsData)) {
+          const uniqueMajors = [...new Set(majorsData.map(major => major.name || major))].sort();
+          console.log(`Processed ${uniqueMajors.length} majors`);
+        }
+        
+        // Extract courseKeys from course data without useMemo
+        if (Array.isArray(coursesData)) {
+          const uniqueCourseKeys = coursesData
+            .filter(course => course && course.courseKey)
+            .map(course => course.courseKey)
+            .sort();
+          console.log(`Processed ${uniqueCourseKeys.length} course keys`);
+        }
+      } catch (error) {
+        console.error("Error loading filter data:", error);
+        toast.error("Failed to load filter options. Some filters may be incomplete.");
+      }
+    };
+
+    loadFilterData();
+  }, []);
 
   return (
     <div className="forum-container">
