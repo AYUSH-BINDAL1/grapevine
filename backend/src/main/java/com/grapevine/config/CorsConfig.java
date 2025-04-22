@@ -18,6 +18,8 @@ public class CorsConfig {
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://localhost:8000"); //TODO: Delete this after frontend messaging is implemented
 
+        config.addAllowedOrigin("https://grapevine-study.netlify.app");
+
         // Allow all headers
         config.addAllowedHeader("*");
 
