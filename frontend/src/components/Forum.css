@@ -239,6 +239,106 @@
   color: var(--text-dark);
 }
 
+/* Add these styles to your Forum.css file */
+
+/* Thread indicators styling */
+.thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-medium);
+  font-size: 13px;
+}
+
+.thread-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 12px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.thread-indicator:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.indicator-icon {
+  flex-shrink: 0;
+}
+
+.thread-major {
+  background-color: #d3b5b5;
+  color: #df1e1e;
+  border: 1px solid #d6acac;
+}
+
+.thread-course {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #e1bee7;
+}
+
+.thread-role {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+/* Role-specific colors */
+.role-student {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.role-instructor {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.role-ta, .role-uta, .role-gta {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.role-admin {
+  background-color: #fce4ec;
+  color: #c2185b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .thread-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .thread-indicator {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+}
+
+/* Make indicators work well when thread is hovered */
+.thread-item:hover .thread-indicator {
+  opacity: 0.9;
+}
+
+/* Adjust existing styles */
+.thread-author, .thread-date {
+  margin-right: 5px;
+}
+
 .thread-meta {
   display: flex;
   gap: 15px;
@@ -666,30 +766,15 @@
 .search-form {
   display: flex;
   margin-bottom: 12px;
+
 }
 
 .sidebar-search-input {
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #ddd;
-  border-radius: 4px 0 0 4px;
+  border-radius: 4px;
   font-size: 14px;
-}
-
-.search-button {
-  background-color: var(--primary-color, #4a6da7);
-  color: white;
-  border: none;
-  border-radius: 0 4px 4px 0;
-  padding: 0 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-button:hover {
-  background-color: var(--primary-hover, #3a5d97);
 }
 
 .filter-options {

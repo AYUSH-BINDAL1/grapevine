@@ -238,7 +238,38 @@ const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
           <div className="thread-meta">
             <span className="thread-author">by {author?.name || thread.authorName || "Anonymous"}</span>
             <span className="thread-date">Posted on {formatDate(thread.createdAt)}</span>
+            
+            {/* Thread indicators for major and course */}
+            {(thread.major || thread.authorMajor || thread.subject) && (
+              <span className="thread-indicator thread-major" title={thread.major || thread.authorMajor || thread.subject}>
+                <svg className="indicator-icon" viewBox="0 0 24 24" width="12" height="12">
+                  <path fill="currentColor" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+                </svg>
+                {(thread.major || thread.authorMajor || thread.subject).substring(0, 12)}
+                {(thread.major || thread.authorMajor || thread.subject).length > 12 ? "..." : ""}
+              </span>
+            )}
+            
+            {(thread.course || thread.courseKey) && (
+              <span className="thread-indicator thread-course" title={thread.course || thread.courseKey}>
+                <svg className="indicator-icon" viewBox="0 0 24 24" width="12" height="12">
+                  <path fill="currentColor" d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+                </svg>
+                {(thread.course || thread.courseKey).substring(0, 10)}
+                {(thread.course || thread.courseKey).length > 10 ? "..." : ""}
+              </span>
+            )}
+            
+            {thread.authorRole && (
+              <span className={`thread-indicator thread-role role-${thread.authorRole.toLowerCase()}`} title={`Posted by ${thread.authorRole}`}>
+                <svg className="indicator-icon" viewBox="0 0 24 24" width="12" height="12">
+                  <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                {thread.authorRole.substring(0, 4)}
+              </span>
+            )}
           </div>
+          
           <div className="thread-excerpt">
             {thread.format === 'markdown' ? (
               <div className="markdown-excerpt">
@@ -329,7 +360,7 @@ const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
 
 ThreadRowWithAuthor.displayName = 'ThreadRowWithAuthor';
 
-// Define thread shape for better documentation
+// Update the ThreadShape PropTypes definition
 const ThreadShape = PropTypes.shape({
   threadId: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
@@ -345,6 +376,12 @@ const ThreadShape = PropTypes.shape({
   }),
   authorEmail: PropTypes.string,
   authorName: PropTypes.string,
+  authorRole: PropTypes.string, // Add this line to fix the ESLint errors
+  major: PropTypes.string,      // Also adding these since you're using them
+  authorMajor: PropTypes.string,
+  subject: PropTypes.string,
+  course: PropTypes.string,
+  courseKey: PropTypes.string,
   format: PropTypes.string,
   isRecent: PropTypes.bool
 });
@@ -667,11 +704,6 @@ const ForumSidebar = memo(({
             onChange={(e) => setSearchInputValue(e.target.value)}
             className="sidebar-search-input"
           />
-          <button className="search-button">
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-          </button>
         </div>
         
         <div className="filter-options">
@@ -695,7 +727,7 @@ const ForumSidebar = memo(({
           
           {/* Role filter with searchable dropdown */}
           <SearchableDropdown
-            options={["Student", "Instructor", "UTA", "GTA"]}
+            options={["STUDENT", "INSTRUCTOR", "UTA", "GTA"]}
             value={filterRole}
             onChange={setFilterRole}
             placeholder="All Roles"
@@ -1325,7 +1357,7 @@ function Forum() {
     // Apply role filter
     if (filterRole) {
       filteredThreads = filteredThreads.filter(thread => 
-        thread.authorRole && thread.authorRole.toLowerCase() === filterRole
+        thread.authorRole && thread.authorRole === filterRole
       );
     }
     
