@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo, useMemo, useReducer } from 'react';
+import { useState, useEffect, useCallback, memo, useMemo, useReducer, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -33,6 +33,152 @@ const useDebounce = (value, delay) => {
 
   return debouncedValue;
 };
+
+// Add these functions near the top of your file with other utility functions
+
+const fetchAllCourses = async () => {
+  const sessionId = localStorage.getItem('sessionId');
+  if (!sessionId) return [];
+  
+  try {
+    const response = await axios.get(`${base_url}/courses/all`, {
+      headers: { 'Session-Id': sessionId }
+    });
+    return response.data || [];
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return [];
+  }
+};
+
+const fetchAllMajors = async () => {
+  const sessionId = localStorage.getItem('sessionId');
+  if (!sessionId) return [];
+  
+  try {
+    const response = await axios.get(`${base_url}/courses/subjects`, {
+      headers: { 'Session-Id': sessionId }
+    });
+    
+    return response.data || [];
+  } catch (error) {
+    console.error("Error fetching subjects/majors:", error);
+    return [];
+  }
+};
+
+// Create a new SearchableDropdown component for filter selections
+const SearchableDropdown = memo(({ 
+  options, 
+  value, 
+  onChange, 
+  placeholder,
+  label
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
+  
+  // Filter options based on search term
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm) return options;
+    return options.filter(option => 
+      option.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [options, searchTerm]);
+  
+  // Handle clicks outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Reset search when dropdown closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+    }
+  }, [isOpen]);
+  
+  const handleSelectOption = (option) => {
+    onChange(option);
+    setIsOpen(false);
+  };
+  
+  const displayValue = value || placeholder || "Select...";
+  
+  return (
+    <div className="filter-group searchable-dropdown-container" ref={dropdownRef}>
+      <label className="filter-label">{label}</label>
+      <div className="searchable-dropdown">
+        <div 
+          className={`dropdown-header ${isOpen ? 'open' : ''}`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <span className="selected-value">{displayValue}</span>
+          <span className="dropdown-arrow">▼</span>
+        </div>
+        
+        {isOpen && (
+          <div className="dropdown-content">
+            <div className="search-wrapper">
+              <input
+                type="text"
+                className="dropdown-search"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+              />
+            </div>
+            
+            <div className="dropdown-options">
+              <div 
+                className={`dropdown-option ${!value ? 'selected' : ''}`}
+                onClick={() => handleSelectOption('')}
+              >
+                All
+              </div>
+              
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((option, index) => (
+                  <div
+                    key={index}
+                    className={`dropdown-option ${option === value ? 'selected' : ''}`}
+                    onClick={() => handleSelectOption(option)}
+                  >
+                    {option}
+                  </div>
+                ))
+              ) : (
+                <div className="no-options">No matches found</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+SearchableDropdown.propTypes = {
+  options: PropTypes.array.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  label: PropTypes.string.isRequired
+};
+
+SearchableDropdown.displayName = 'SearchableDropdown';
 
 // Add a function to fetch user data for thread authors
 const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
@@ -232,17 +378,22 @@ ThreadRowWithAuthor.defaultProps = {
   }
 };
 
-// Add this thread form reducer
+// Update the threadFormReducer to handle course and major fields:
+
 const threadFormReducer = (state, action) => {
   switch (action.type) {
     case 'SET_TITLE':
       return { ...state, title: action.payload };
     case 'SET_CONTENT':
       return { ...state, content: action.payload };
+    case 'SET_COURSE':
+      return { ...state, course: action.payload };
+    case 'SET_MAJOR':
+      return { ...state, major: action.payload };
     case 'TOGGLE_PREVIEW':
       return { ...state, showPreview: !state.showPreview };
     case 'RESET':
-      return { title: '', content: '', showPreview: false };
+      return { title: '', content: '', course: '', major: '', showPreview: false };
     case 'LOAD_DRAFT':
       return { ...action.payload, showPreview: false };
     default:
@@ -256,7 +407,9 @@ const ThreadForm = memo(({
   dispatchThreadForm,
   handleCreateThread,
   setShowNewThreadForm,
-  clearDraft
+  clearDraft,
+  availableCourses,
+  availableMajors
 }) => {
   const insertMarkdown = (prefix, suffix, placeholder) => {
     const textarea = document.getElementById('thread-content');
@@ -413,6 +566,42 @@ const ThreadForm = memo(({
             </details>
           </div>
         </div>
+
+        <div className="form-group">
+          <label htmlFor="thread-course">Related Course (Optional)</label>
+          <select
+            id="thread-course"
+            value={threadForm.course || ""}
+            onChange={(e) => dispatchThreadForm({ 
+              type: 'SET_COURSE', 
+              payload: e.target.value 
+            })}
+            className="thread-select"
+          >
+            <option value="">None</option>
+            {availableCourses.map((course, index) => (
+              <option key={index} value={course}>{course}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="thread-major">Related Major (Optional)</label>
+          <select
+            id="thread-major"
+            value={threadForm.major || ""}
+            onChange={(e) => dispatchThreadForm({ 
+              type: 'SET_MAJOR', 
+              payload: e.target.value 
+            })}
+            className="thread-select"
+          >
+            <option value="">None</option>
+            {availableMajors.map((major, index) => (
+              <option key={index} value={major}>{major}</option>
+            ))}
+          </select>
+        </div>
         
         <div className="form-actions">
           <button type="submit" className="submit-button">Create Thread</button>
@@ -441,18 +630,30 @@ ThreadForm.propTypes = {
   dispatchThreadForm: PropTypes.func.isRequired,
   handleCreateThread: PropTypes.func.isRequired,
   setShowNewThreadForm: PropTypes.func.isRequired,
-  clearDraft: PropTypes.func.isRequired
+  clearDraft: PropTypes.func.isRequired,
+  availableCourses: PropTypes.array.isRequired,
+  availableMajors: PropTypes.array.isRequired
 };
 
 ThreadForm.displayName = 'ThreadForm';
 
-// Add this above your main Forum component
+// Update the ForumSidebar component with new filter options
+
 const ForumSidebar = memo(({
   searchInputValue,
   setSearchInputValue,
   forumStats,
   bookmarks,
-  formatNumber
+  formatNumber,
+  filterMajor,
+  setFilterMajor,
+  filterCourse,
+  setFilterCourse,
+  filterRole,
+  setFilterRole,
+  availableMajors,
+  availableCourses,
+  resetFilters
 }) => {
   return (
     <div className="forum-sidebar">
@@ -474,6 +675,42 @@ const ForumSidebar = memo(({
         </div>
         
         <div className="filter-options">
+          {/* Major filter with searchable dropdown */}
+          <SearchableDropdown
+            options={availableMajors}
+            value={filterMajor}
+            onChange={setFilterMajor}
+            placeholder="All Majors"
+            label="Major:"
+          />
+          
+          {/* Course filter with searchable dropdown */}
+          <SearchableDropdown
+            options={availableCourses}
+            value={filterCourse}
+            onChange={setFilterCourse}
+            placeholder="All Courses"
+            label="Course:"
+          />
+          
+          {/* Role filter with searchable dropdown */}
+          <SearchableDropdown
+            options={["Student", "Instructor", "UTA", "GTA"]}
+            value={filterRole}
+            onChange={setFilterRole}
+            placeholder="All Roles"
+            label="Author Role:"
+          />
+          
+          {/* Reset filters button */}
+          <button 
+            className="reset-filters-button" 
+            onClick={resetFilters}
+            disabled={!filterMajor && !filterCourse && !filterRole && !searchInputValue}
+          >
+            Reset Filters
+          </button>
+          
           <div className="filter-group">
             <label>Time period:</label>
             <select className="filter-select">
@@ -482,24 +719,6 @@ const ForumSidebar = memo(({
               <option value="week">This week</option>
               <option value="month">This month</option>
             </select>
-          </div>
-          
-          <div className="filter-group">
-            <label>Thread type:</label>
-            <div className="filter-checkboxes">
-              <label className="checkbox-label">
-                <input type="checkbox" defaultChecked />
-                <span>Questions</span>
-              </label>
-              <label className="checkbox-label">
-                <input type="checkbox" defaultChecked />
-                <span>Announcements</span>
-              </label>
-              <label className="checkbox-label">
-                <input type="checkbox" defaultChecked />
-                <span>Discussions</span>
-              </label>
-            </div>
           </div>
         </div>
       </div>
@@ -527,12 +746,22 @@ const ForumSidebar = memo(({
   );
 });
 
+// Update PropTypes for the ForumSidebar
 ForumSidebar.propTypes = {
   searchInputValue: PropTypes.string.isRequired,
   setSearchInputValue: PropTypes.func.isRequired,
   forumStats: PropTypes.object.isRequired,
   bookmarks: PropTypes.array.isRequired,
-  formatNumber: PropTypes.func.isRequired
+  formatNumber: PropTypes.func.isRequired,
+  filterMajor: PropTypes.string.isRequired,
+  setFilterMajor: PropTypes.func.isRequired,
+  filterCourse: PropTypes.string.isRequired,
+  setFilterCourse: PropTypes.func.isRequired,
+  filterRole: PropTypes.string.isRequired,
+  setFilterRole: PropTypes.func.isRequired,
+  availableMajors: PropTypes.array.isRequired,
+  availableCourses: PropTypes.array.isRequired,
+  resetFilters: PropTypes.func.isRequired
 };
 
 ForumSidebar.displayName = 'ForumSidebar';
@@ -703,10 +932,17 @@ function Forum() {
   });
   const [bookmarks, setBookmarks] = useState([]);
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
+  const [filterMajor, setFilterMajor] = useState('');
+  const [filterCourse, setFilterCourse] = useState('');
+  const [filterRole, setFilterRole] = useState('');
+  const [availableMajors, setAvailableMajors] = useState([]);
+  const [availableCourses, setAvailableCourses] = useState([]);
 
   const [threadForm, dispatchThreadForm] = useReducer(threadFormReducer, {
     title: '',
     content: '',
+    course: '',
+    major: '',
     showPreview: false
   });
 
@@ -879,6 +1115,41 @@ function Forum() {
     setBookmarks(savedBookmarks);
   }, []);
 
+  // Update the course processing in your useEffect that loads filter data
+  useEffect(() => {
+    const loadFilterData = async () => {
+      try {
+        // Fetch majors and courses in parallel
+        const [majorsData, coursesData] = await Promise.all([
+          fetchAllMajors(),
+          fetchAllCourses()
+        ]);
+        
+        // Process majors
+        if (Array.isArray(majorsData)) {
+          const majors = [...new Set(majorsData.map(major => major.name || major))].sort();
+          setAvailableMajors(majors);
+          console.log(`Loaded ${majors.length} majors from API`);
+        }
+        
+        // Extract only courseKeys from course data
+        if (Array.isArray(coursesData)) {
+          const courseKeys = coursesData
+            .filter(course => course && course.courseKey)
+            .map(course => course.courseKey)
+            .sort();
+          setAvailableCourses(courseKeys);
+          console.log(`Loaded ${courseKeys.length} course keys from API`);
+        }
+      } catch (error) {
+        console.error("Error loading filter data:", error);
+        toast.error("Failed to load filter options. Some filters may be incomplete.");
+      }
+    };
+
+    loadFilterData();
+  }, []); // Run once when component mounts
+
   // Auto-save draft when user types
   useEffect(() => {
     // Debounced draft saving
@@ -886,13 +1157,15 @@ function Forum() {
       if (threadForm.title.trim() || threadForm.content.trim()) {
         localStorage.setItem('threadDraft', JSON.stringify({
           title: threadForm.title,
-          content: threadForm.content
+          content: threadForm.content,
+          course: threadForm.course,
+          major: threadForm.major
         }));
       }
     }, 500); // 500ms debounce
     
     return () => clearTimeout(draftTimer);
-  }, [threadForm.title, threadForm.content]);
+  }, [threadForm.title, threadForm.content, threadForm.course, threadForm.major]);
 
   const clearDraft = useCallback(() => {
     dispatchThreadForm({ type: 'RESET' });
@@ -948,6 +1221,8 @@ function Forum() {
         title: threadForm.title,
         description: threadForm.content,
         authorEmail: userEmail,
+        course: threadForm.course,
+        major: threadForm.major
       };
       
       console.log('Creating thread with payload:', threadPayload);
@@ -1001,6 +1276,13 @@ function Forum() {
     navigate(`/forum/thread/${threadId}`);
   }, [navigate]);
 
+  const resetFilters = useCallback(() => {
+    setFilterMajor('');
+    setFilterCourse('');
+    setFilterRole('');
+    setSearchInputValue('');
+  }, []);
+
   const displayThreads = useMemo(() => {
     if (!unsortedThreads.length) return [];
     
@@ -1023,6 +1305,30 @@ function Forum() {
       );
     }
     
+    // Apply major filter
+    if (filterMajor) {
+      filteredThreads = filteredThreads.filter(thread => 
+        thread.authorMajor === filterMajor || 
+        (thread.subject && thread.subject === filterMajor) ||
+        (thread.major && thread.major === filterMajor)
+      );
+    }
+    
+    // Apply course filter
+    if (filterCourse) {
+      filteredThreads = filteredThreads.filter(thread => 
+        thread.courseKey === filterCourse || 
+        (thread.course && thread.course === filterCourse)
+      );
+    }
+    
+    // Apply role filter
+    if (filterRole) {
+      filteredThreads = filteredThreads.filter(thread => 
+        thread.authorRole && thread.authorRole.toLowerCase() === filterRole
+      );
+    }
+    
     // Apply existing sort order
     switch(sortOrder) {
       case 'recent':
@@ -1038,7 +1344,7 @@ function Forum() {
       default:
         return filteredThreads;
     }
-  }, [unsortedThreads, bookmarks, showBookmarksOnly, sortOrder, searchQuery]);
+  }, [unsortedThreads, bookmarks, showBookmarksOnly, sortOrder, searchQuery, filterMajor, filterCourse, filterRole]);
 
   const listData = useMemo(() => ({
     threads: displayThreads,
@@ -1067,6 +1373,8 @@ function Forum() {
           handleCreateThread={handleCreateThread}
           setShowNewThreadForm={setShowNewThreadForm}
           clearDraft={clearDraft}
+          availableCourses={availableCourses}
+          availableMajors={availableMajors}
         />
       )}
       
@@ -1077,6 +1385,15 @@ function Forum() {
           forumStats={forumStats}
           bookmarks={bookmarks}
           formatNumber={formatNumber}
+          filterMajor={filterMajor}
+          setFilterMajor={setFilterMajor}
+          filterCourse={filterCourse}
+          setFilterCourse={setFilterCourse}
+          filterRole={filterRole}
+          setFilterRole={setFilterRole}
+          availableMajors={availableMajors}
+          availableCourses={availableCourses}
+          resetFilters={resetFilters}
         />
         
         <ThreadListing
