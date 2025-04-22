@@ -26,4 +26,7 @@ public interface CourseRepository extends JpaRepository<Course, String> {
     // Use property projection syntax
     @Query("SELECT c.courseKey as courseKey, c.title as title FROM Course c WHERE LOWER(c.courseKey) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(c.title) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<ShortCourse> searchShortCourses(@Param("query") String query);
+
+    @Query("SELECT DISTINCT c.subject FROM Course c ORDER BY c.subject")
+    List<String> findAllUniqueSubjects();
 }
