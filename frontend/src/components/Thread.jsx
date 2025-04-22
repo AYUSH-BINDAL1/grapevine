@@ -159,25 +159,36 @@ function Thread() {
       const response = await axios.post(`${base_url}/threads/${threadId}/comments`, commentData, {
         headers: { 'Session-Id': sessionId }
       });
-      
-      console.log('Raw comment response:', response.data);
-      
-      // Extract comment properties properly
+
+      // Log the full response structure
+      console.log('Comment API response:', response);
+
+      // Check if response contains the comment directly or nested
+      let commentResponse = response.data;
+      if (response.data && response.data.comment) {
+        commentResponse = response.data.comment;
+      }
+      console.log('Comment data to process:', commentResponse);
+
+      // Extract comment properties with better fallbacks
       const newCommentData = {
-        commentId: response.data.commentId,
-        content: response.data.content, // Make sure this field exists
-        authorEmail: response.data.authorEmail,
-        authorName: response.data.authorName || userData.name,
-        likes: response.data.likes || 0,
-        createdAt: response.data.createdAt || new Date().toISOString() // Ensure createdAt exists
+        commentId: commentResponse.commentId || commentResponse.id || `new-${Date.now()}`,
+        content: commentResponse.content || commentResponse.body || commentResponse.text || newComment,
+        authorEmail: commentResponse.authorEmail || userData.userEmail,
+        authorName: commentResponse.authorName || commentResponse.author?.name || userData.name,
+        likes: commentResponse.likes || 0,
+        createdAt: commentResponse.createdAt || new Date().toISOString()
       };
-      
+
       console.log('Processed new comment:', newCommentData);
-      
-      // Add the new comment to the list and maintain sort order
+
+      // Add to state with new comment at the top
+      const currentLength = comments.length;
       setComments(prevComments => {
-        const updatedComments = [...prevComments, newCommentData];
-        return sortCommentsByDate(updatedComments);
+        // Place new comment at the beginning of the array
+        const updatedComments = [newCommentData, ...prevComments];
+        console.log('Updated comments array length:', updatedComments.length, 'Previous:', currentLength);
+        return updatedComments;
       });
       
       // Clear the comment input
