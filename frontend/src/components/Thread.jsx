@@ -1,10 +1,413 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import { base_url } from '../config';
 import './Thread.css';
+import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import remarkGfm from 'remark-gfm';
+import PropTypes from 'prop-types';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import MarkdownToolbar from './MarkdownToolbar';
+import { getCachedUserByEmail } from '../utils/userUtils';
+import { getProfilePictureUrl } from '../utils/imageUtils';
+
+const Comment = memo(({ comment, formatDate, onUserClick, className = '' }) => {
+  const [commentAuthor, setCommentAuthor] = useState(comment._authorData || null);
+  
+  useEffect(() => {
+    // Skip fetching if we already have the author data
+    if (commentAuthor || !comment?.authorEmail) return;
+    
+    const fetchCommentAuthor = async () => {
+      const userData = await getCachedUserByEmail(comment.authorEmail);
+      if (userData) {
+        setCommentAuthor(userData);
+      }
+    };
+    
+    fetchCommentAuthor();
+  }, [comment?.authorEmail, commentAuthor]);
+
+  return (
+    <div className={`thread-view-comment-item ${className}`}>
+      <div className="thread-view-comment-header">
+        <div className="commenter-info">
+          <div className="commenter-avatar">
+            <img 
+              src={getProfilePictureUrl(
+                commentAuthor || comment.author, 
+                comment.authorName?.charAt(0) || 'U', 
+                32
+              )}
+              alt={commentAuthor?.name || comment.authorName || "User"}
+              title={`View ${commentAuthor?.name || comment.authorName || "user"}'s profile`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onUserClick && onUserClick(commentAuthor?.email || comment.authorEmail);
+              }}
+              className="clickable-avatar"
+              loading="lazy"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = getProfilePictureUrl(null, comment.authorName?.charAt(0) || 'U', 32);
+              }}
+            />
+          </div>
+          <div className="commenter-details">
+            <span 
+              className="commenter-name clickable"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUserClick && onUserClick(commentAuthor?.email || comment.authorEmail);
+              }}
+            >
+              {commentAuthor?.name || comment.authorName || comment.author?.name || 'Anonymous'}
+            </span>
+            <span className="comment-date">{formatDate(comment.createdAt)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="thread-view-comment-body">
+        <ReactMarkdown
+          rehypePlugins={[rehypeSanitize]}
+          remarkPlugins={[remarkGfm]}
+          components={{
+            code({ inline, className, children, ...props}) {
+              const match = /language-(\w+)/.exec(className || '');
+              return !inline && match ? (
+                <div className="code-block-container">
+                  <div className="code-header">
+                    <span className="code-language">{match[1]}</span>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
+                        toast.info('Code copied to clipboard!', {autoClose: 1000})
+                      }}
+                      className="copy-code-button"
+                      aria-label="Copy code"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <SyntaxHighlighter
+                    style={tomorrow}
+                    language={match[1]}
+                    PreTag="div"
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                </div>
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            },
+            a({ children, href, ...props }) {
+              return (
+                <a 
+                  href={href} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="markdown-link"
+                  {...props}
+                >
+                  {children}
+                  <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                  </svg>
+                </a>
+              );
+            },
+            img({ src, alt, ...props }) {
+              return (
+                <div className="markdown-image-container">
+                  <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+                  {alt && <span className="image-caption">{alt}</span>}
+                </div>
+              );
+            },
+            table({ children, ...props }) {
+              return (
+                <div className="table-responsive">
+                  <table className="markdown-table" {...props}>
+                    {children}
+                  </table>
+                </div>
+              );
+            }
+          }}
+        >
+          {comment.content}
+        </ReactMarkdown>
+      </div>
+    </div>
+  );
+});
+
+Comment.propTypes = {
+  comment: PropTypes.shape({
+    commentId: PropTypes.string,
+    content: PropTypes.string.isRequired,
+    authorName: PropTypes.string,
+    authorEmail: PropTypes.string,
+    author: PropTypes.shape({
+      name: PropTypes.string,
+      profilePictureUrl: PropTypes.string
+    }),
+    createdAt: PropTypes.string,
+    likes: PropTypes.number,
+    _authorData: PropTypes.object
+  }).isRequired,
+  formatDate: PropTypes.func.isRequired,
+  onUserClick: PropTypes.func,
+  className: PropTypes.string
+};
+
+Comment.displayName = 'Comment';
+
+const MarkdownPreview = memo(({ content }) => {
+  if (!content) {
+    return <p className="empty-preview">Nothing to preview yet. Start writing to see how your comment will look!</p>;
+  }
+  
+  return (
+    <ReactMarkdown
+      rehypePlugins={[rehypeSanitize]}
+      remarkPlugins={[remarkGfm]}
+      components={{
+        code({ inline, className, children, ...props}) {
+          const match = /language-(\w+)/.exec(className || '');
+          return !inline && match ? (
+            <div className="code-block-container">
+              <div className="code-header">
+                <span className="code-language">{match[1]}</span>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
+                    toast.info('Code copied to clipboard!', {autoClose: 1000})
+                  }}
+                  className="copy-code-button"
+                  aria-label="Copy code"
+                >
+                  Copy
+                </button>
+              </div>
+              <SyntaxHighlighter
+                style={tomorrow}
+                language={match[1]}
+                PreTag="div"
+                {...props}
+              >
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            </div>
+          ) : (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        },
+        a({ children, href, ...props }) {
+          return (
+            <a 
+              href={href} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="markdown-link"
+              {...props}
+            >
+              {children}
+              <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+              </svg>
+            </a>
+          );
+        },
+        img({ src, alt, ...props }) {
+          return (
+            <div className="markdown-image-container">
+              <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+              {alt && <span className="image-caption">{alt}</span>}
+            </div>
+          );
+        },
+        table({ children, ...props }) {
+          return (
+            <div className="table-responsive">
+              <table className="markdown-table" {...props}>
+                {children}
+              </table>
+            </div>
+          );
+        }
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+});
+
+MarkdownPreview.propTypes = {
+  content: PropTypes.string
+};
+
+MarkdownPreview.defaultProps = {
+  content: ''
+};
+
+MarkdownPreview.displayName = 'MarkdownPreview';
+
+const ThreadContent = memo(({ content }) => {
+  return (
+    <div className="thread-view-body">
+      <ReactMarkdown
+        rehypePlugins={[rehypeSanitize]}
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code({ inline, className, children, ...props}) {
+            const match = /language-(\w+)/.exec(className || '');
+            return !inline && match ? (
+              <div className="code-block-container">
+                <div className="code-header">
+                  <span className="code-language">{match[1]}</span>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
+                      toast.info('Code copied to clipboard!', {autoClose: 1000})
+                    }}
+                    className="copy-code-button"
+                    aria-label="Copy code"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <SyntaxHighlighter
+                  style={tomorrow}
+                  language={match[1]}
+                  PreTag="div"
+                  {...props}
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              </div>
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          a({ children, href, ...props }) {
+            return (
+              <a 
+                href={href} 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="markdown-link"
+                {...props}
+              >
+                {children}
+                <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                </svg>
+              </a>
+            );
+          },
+          img({ src, alt, ...props }) {
+            return (
+              <div className="markdown-image-container">
+                <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+                {alt && <span className="image-caption">{alt}</span>}
+              </div>
+            );
+          },
+          table({ children, ...props }) {
+            return (
+              <div className="table-responsive">
+                <table className="markdown-table" {...props}>
+                  {children}
+                </table>
+              </div>
+            );
+          }
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+});
+
+ThreadContent.propTypes = {
+  content: PropTypes.string.isRequired
+};
+
+ThreadContent.displayName = 'ThreadContent';
+
+const ThreadSkeleton = memo(() => {
+  return (
+    <div className="thread-view-skeleton">
+      <div className="skeleton-header">
+        <div className="back-button-skeleton skeleton"></div>
+        <div className="thread-title-skeleton skeleton"></div>
+        <div className="thread-meta-skeleton">
+          <div className="author-skeleton">
+            <div className="avatar-skeleton skeleton"></div>
+            <div className="author-details-skeleton">
+              <div className="author-name-skeleton skeleton"></div>
+              <div className="post-date-skeleton skeleton"></div>
+            </div>
+          </div>
+          <div className="thread-stats-skeleton">
+            <div className="stat-item-skeleton skeleton"></div>
+            <div className="stat-item-skeleton skeleton"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="thread-voting-skeleton">
+        <div className="vote-button-skeleton skeleton"></div>
+        <div className="vote-score-skeleton skeleton"></div>
+        <div className="vote-button-skeleton skeleton"></div>
+      </div>
+      
+      <div className="thread-content-skeleton">
+        <div className="content-line-skeleton skeleton"></div>
+        <div className="content-line-skeleton skeleton"></div>
+        <div className="content-line-skeleton skeleton"></div>
+        <div className="content-line-skeleton skeleton" style={{ width: '75%' }}></div>
+        <div className="content-line-skeleton skeleton" style={{ width: '85%' }}></div>
+      </div>
+      
+      <div className="comments-section-skeleton">
+        <div className="comments-header-skeleton skeleton"></div>
+        <div className="comment-form-skeleton skeleton"></div>
+        
+        {/* Skeleton for 3 comments */}
+        {[...Array(3)].map((_, index) => (
+          <div key={`comment-skeleton-${index}`} className="comment-skeleton">
+            <div className="comment-header-skeleton">
+              <div className="comment-avatar-skeleton skeleton"></div>
+              <div className="comment-author-skeleton skeleton"></div>
+            </div>
+            <div className="comment-content-skeleton">
+              <div className="content-line-skeleton skeleton"></div>
+              <div className="content-line-skeleton skeleton"></div>
+              <div className="content-line-skeleton skeleton" style={{ width: '60%' }}></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+ThreadSkeleton.displayName = 'ThreadSkeleton';
 
 function Thread() {
   const { threadId } = useParams();
@@ -16,24 +419,66 @@ function Thread() {
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [authorData, setAuthorData] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   
   const [threadVotes, setThreadVotes] = useState({
     score: thread?.likes || 0,
     userVote: 0 // 1 for upvote, -1 for downvote, 0 for no vote
   });
   
-  // Add a function to sort comments by date (newest first)
-  const sortCommentsByDate = (commentsArray) => {
+  const formatDate = useCallback((dateString) => {
+    if (!dateString) return 'Unknown date';
+    const options = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  }, []);
+
+  const sortCommentsByDate = useCallback((commentsArray) => {
     return [...commentsArray].sort((a, b) => {
-      // Convert dates for comparison
       const dateA = new Date(a.createdAt || 0);
       const dateB = new Date(b.createdAt || 0);
-      // Sort descending (newer dates first)
       return dateB - dateA;
     });
-  };
+  }, []);
   
-  // Fetch thread data
+  useEffect(() => {
+    if (newComment.trim()) {
+      localStorage.setItem(`commentDraft-${threadId}`, newComment);
+    }
+  }, [newComment, threadId]);
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(`commentDraft-${threadId}`);
+    if (savedDraft) {
+      setNewComment(savedDraft);
+    }
+  }, [threadId]);
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      if (userData.userEmail) {
+        // Try to get cached user data first
+        const cachedUser = await getCachedUserByEmail(userData.userEmail);
+        if (cachedUser) {
+          setCurrentUser(cachedUser);
+        } else {
+          // Fallback to localStorage data
+          setCurrentUser(userData);
+        }
+      }
+    };
+    
+    loadCurrentUser();
+  }, []);
+
   const fetchThreadData = useCallback(async () => {
     if (!threadId) {
       setError('Invalid thread ID');
@@ -96,11 +541,6 @@ function Thread() {
       } else {
         console.log('No comments found in thread data');
         setComments([]);
-        
-        // Optionally fetch comments separately if needed
-        // try {
-        //   const commentsResponse = await axios.get...
-        // } ...
       }
       
       // Increment view count (commented out in your original code)
@@ -112,27 +552,26 @@ function Thread() {
     } finally {
       setLoading(false);
     }
-  }, [threadId, navigate]);
+  }, [threadId, navigate, sortCommentsByDate]);
   
   useEffect(() => {
     fetchThreadData();
   }, [fetchThreadData]);
+
+  useEffect(() => {
+    if (thread?.authorEmail) {
+      const fetchAuthorData = async () => {
+        const userData = await getCachedUserByEmail(thread.authorEmail);
+        if (userData) {
+          setAuthorData(userData);
+        }
+      };
+      
+      fetchAuthorData();
+    }
+  }, [thread?.authorEmail]);
   
-  // Format date display
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown date';
-    const options = { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-  
-  // Handle posting a new comment
-  const handleSubmitComment = async (e) => {
+  const handleSubmitComment = useCallback(async (e) => {
     e.preventDefault();
     
     if (!newComment.trim()) {
@@ -160,7 +599,6 @@ function Thread() {
         headers: { 'Session-Id': sessionId }
       });
 
-      // Log the full response structure
       console.log('Comment API response:', response);
 
       // Check if response contains the comment directly or nested
@@ -168,31 +606,31 @@ function Thread() {
       if (response.data && response.data.comment) {
         commentResponse = response.data.comment;
       }
-      console.log('Comment data to process:', commentResponse);
-
-      // Extract comment properties with better fallbacks
+      
+      // Create new comment with current user info already included
       const newCommentData = {
         commentId: commentResponse.commentId || commentResponse.id || `new-${Date.now()}`,
         content: commentResponse.content || commentResponse.body || commentResponse.text || newComment,
-        authorEmail: commentResponse.authorEmail || userData.userEmail,
-        authorName: commentResponse.authorName || commentResponse.author?.name || userData.name,
+        authorEmail: userData.userEmail,
+        authorName: userData.name,
         likes: commentResponse.likes || 0,
-        createdAt: commentResponse.createdAt || new Date().toISOString()
+        createdAt: commentResponse.createdAt || new Date().toISOString(),
+        // Pre-include author data to avoid loading delay
+        author: {
+          name: userData.name,
+          profilePictureUrl: userData.profilePictureUrl
+        }
       };
 
-      console.log('Processed new comment:', newCommentData);
+      // Add the current user information directly to make it available immediately
+      // This prevents the need for the Comment component to fetch it
+      newCommentData._authorData = currentUser || userData;
 
       // Add to state with new comment at the top
-      const currentLength = comments.length;
-      setComments(prevComments => {
-        // Place new comment at the beginning of the array
-        const updatedComments = [newCommentData, ...prevComments];
-        console.log('Updated comments array length:', updatedComments.length, 'Previous:', currentLength);
-        return updatedComments;
-      });
+      setComments(prevComments => [newCommentData, ...prevComments]);
       
-      // Clear the comment input
       setNewComment('');
+      localStorage.removeItem(`commentDraft-${threadId}`);
       toast.success('Comment posted successfully');
       
     } catch (error) {
@@ -201,14 +639,13 @@ function Thread() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [newComment, navigate, threadId, currentUser]);
   
-  // Navigate back to forum
-  const handleBackToForum = () => {
+  const handleBackToForum = useCallback(() => {
     navigate('/forum');
-  };
+  }, [navigate]);
 
-  const handleThreadVote = async (vote) => {
+  const handleThreadVote = useCallback(async (vote) => {
     try {
       const sessionId = localStorage.getItem('sessionId');
       if (!sessionId) {
@@ -229,15 +666,14 @@ function Thread() {
         // If same vote type clicked, remove the vote (toggle behavior)
         if (prev.userVote === vote) {
           return {
-            score: prev.score - vote, // Adjust score in opposite direction
-            userVote: 0 // Reset to no vote
+            score: prev.score - vote,
+            userVote: 0
           };
         }
         
-        // If changing vote direction (e.g., from upvote to downvote)
         if (prev.userVote !== 0 && prev.userVote !== vote) {
           return {
-            score: prev.score + 2 * vote, // Double the effect (remove old vote + add new vote)
+            score: prev.score + 2 * vote,
             userVote: vote
           };
         }
@@ -271,17 +707,37 @@ function Thread() {
         userVote: thread.votes ? thread.votes[userData?.userEmail] || 0 : 0
       }));
     }
-  };
+  }, [thread, threadId, threadVotes.userVote]);
+
+  const insertMarkdown = useCallback((prefix, suffix = '', placeholder = '') => {
+    const textarea = document.querySelector('.comment-form textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+    
+    const insertion = selectedText || placeholder;
+    const newText = text.substring(0, start) + prefix + insertion + suffix + text.substring(end);
+    
+    setNewComment(newText);
+    
+    // Set cursor position after insertion when component updates
+    setTimeout(() => {
+      textarea.focus();
+      const cursorPosition = start + prefix.length + insertion.length;
+      textarea.setSelectionRange(cursorPosition, cursorPosition);
+    }, 0);
+  }, []);
+
+  const navigateToUserProfile = useCallback((userEmail) => {
+    if (!userEmail) return;
+    navigate(`/user/${userEmail}`);
+  }, [navigate]);
 
   if (loading) {
-    return (
-      <div className="thread-view-container loading">
-        <div className="thread-view-loading">
-          <div className="thread-view-spinner"></div>
-          <p>Loading thread...</p>
-        </div>
-      </div>
-    );
+    return <ThreadSkeleton />;
   }
   
   if (error || !thread) {
@@ -312,16 +768,30 @@ function Thread() {
           <div className="thread-view-author-info">
             <div className="thread-view-author-avatar">
               <img 
-                src={thread.author?.profilePictureUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%234a6da7'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='16' fill='white' text-anchor='middle' dy='.3em'%3E${thread.authorName?.charAt(0) || 'U'}%3C/text%3E%3C/svg%3E`} 
-                alt={thread.authorName || "User"}
+                src={getProfilePictureUrl(authorData || thread.author, thread.authorName?.charAt(0) || 'U', 40)} 
+                alt={authorData?.name || thread.authorName || "User"}
+                title={`View ${authorData?.name || thread.authorName || "user"}'s profile`}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent other click handlers from firing
+                  navigateToUserProfile(authorData?.email || thread.authorEmail);
+                }}
+                className="clickable-avatar"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%234a6da7'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='16' fill='white' text-anchor='middle' dy='.3em'%3EU%3C/text%3E%3C/svg%3E`;
+                  e.target.src = getProfilePictureUrl(null, thread.authorName?.charAt(0) || 'U', 40);
                 }}
               />
             </div>
             <div className="thread-view-author-details">
-              <span className="thread-view-author-name">{thread.authorName || thread.author?.name || 'Anonymous'}</span>
+              <span 
+                className="thread-view-author-name clickable"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateToUserProfile(authorData?.email || thread.authorEmail);
+                }}
+              >
+                {thread.authorName || thread.author?.name || 'Anonymous'}
+              </span>
               <span className="post-date">Posted on {formatDate(thread.createdAt)}</span>
             </div>
           </div>
@@ -365,9 +835,7 @@ function Thread() {
       </div>
 
       <div className="thread-view-content">
-        <div className="thread-view-body">
-          <p>{thread.content || thread.description}</p>
-        </div>
+        <ThreadContent content={thread.content || thread.description} />
       </div>
       
       <div className="thread-view-comments-section">
@@ -375,21 +843,102 @@ function Thread() {
         
         <div className="comment-form">
           <form onSubmit={handleSubmitComment}>
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment..."
-              rows={4}
-              disabled={submitting}
-              required
-            ></textarea>
-            <button 
-              type="submit" 
-              className="submit-comment" 
-              disabled={submitting}
-            >
-              {submitting ? 'Posting...' : 'Post Comment'}
-            </button>
+            {newComment && localStorage.getItem(`commentDraft-${threadId}`) && (
+              <div className="draft-indicator">
+                <span>Draft saved</span>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setNewComment('');
+                    localStorage.removeItem(`commentDraft-${threadId}`);
+                  }}
+                  className="discard-draft"
+                >
+                  Discard draft
+                </button>
+              </div>
+            )}
+            
+            <div className="comment-tabs">
+              <button 
+                type="button"
+                className={`tab ${!showPreview ? 'active' : ''}`}
+                onClick={() => setShowPreview(false)}
+              >
+                Write
+              </button>
+              <button 
+                type="button"
+                className={`tab ${showPreview ? 'active' : ''}`}
+                onClick={() => setShowPreview(true)}
+              >
+                Preview
+              </button>
+            </div>
+
+            {!showPreview && (
+              <MarkdownToolbar onInsert={insertMarkdown} />
+            )}
+            
+            {showPreview ? (
+              <div className="comment-preview">
+                <MarkdownPreview content={newComment} />
+              </div>
+            ) : (
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment... Supports markdown formatting!"
+                rows={4}
+                disabled={submitting}
+                required
+              ></textarea>
+            )}
+            
+            <div className="markdown-hint">
+              <details>
+                <summary>Markdown formatting tips</summary>
+                <div className="markdown-tips-grid">
+                  <div className="tip-item">
+                    <code>**bold**</code> → <strong>bold</strong>
+                  </div>
+                  <div className="tip-item">
+                    <code>*italic*</code> → <em>italic</em>
+                  </div>
+                  <div className="tip-item">
+                    <code>[link](url)</code> → <a href="#">link</a>
+                  </div>
+                  <div className="tip-item">
+                    <code>![alt](image-url)</code> → image
+                  </div>
+                  <div className="tip-item">
+                    <code># Heading</code> → heading
+                  </div>
+                  <div className="tip-item">
+                    <code>- list item</code> → bullet list
+                  </div>
+                  <div className="tip-item">
+                    <code>1. numbered item</code> → numbered list
+                  </div>
+                  <div className="tip-item">
+                    <code>```code```</code> → code block
+                  </div>
+                  <div className="tip-item">
+                    <code>&gt; quote</code> → blockquote
+                  </div>
+                </div>
+              </details>
+            </div>
+            
+            <div className="form-actions">
+              <button 
+                type="submit" 
+                className="submit-comment" 
+                disabled={submitting || !newComment.trim()}
+              >
+                {submitting ? 'Posting...' : 'Post Comment'}
+              </button>
+            </div>
           </form>
         </div>
         
@@ -400,32 +949,16 @@ function Thread() {
         ) : (
           <div className="thread-view-comments-list">
             {comments.map((comment, index) => {
-              const commentId = comment.commentId || `comment-${index}`;
+              const isCurrentUser = comment.authorEmail === JSON.parse(localStorage.getItem('userData') || '{}').userEmail;
               
               return (
-                <div key={commentId} className="thread-view-comment-item">
-                  <div className="thread-view-comment-header">
-                    <div className="commenter-info">
-                      <div className="commenter-avatar">
-                        <img 
-                          src={comment.author?.profilePictureUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%234a6da7'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='14' fill='white' text-anchor='middle' dy='.3em'%3E${comment.authorName?.charAt(0) || 'U'}%3C/text%3E%3C/svg%3E`} 
-                          alt={comment.authorName || "User"}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%234a6da7'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='14' fill='white' text-anchor='middle' dy='.3em'%3EU%3C/text%3E%3C/svg%3E`;
-                          }}
-                        />
-                      </div>
-                      <div className="commenter-details">
-                        <span className="commenter-name">{comment.authorName || comment.author?.name || 'Anonymous'}</span>
-                        <span className="comment-date">{formatDate(comment.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="thread-view-comment-body">
-                    <p>{comment.content}</p>
-                  </div>
-                </div>
+                <Comment 
+                  key={comment.commentId || `comment-${index}`} 
+                  comment={comment} 
+                  formatDate={formatDate}
+                  onUserClick={navigateToUserProfile}
+                  className={isCurrentUser ? 'current-user' : ''}
+                />
               );
             })}
           </div>
@@ -435,4 +968,4 @@ function Thread() {
   );
 }
 
-export default Thread;
+export default memo(Thread);
