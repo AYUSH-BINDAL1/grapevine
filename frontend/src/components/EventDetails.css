@@ -177,30 +177,29 @@ textarea {
     border-radius: 12px;
 }
 
-.event-reminder-registration {
+.reminder-container {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    width: 100%;
+    gap: 10px;
     margin-bottom: 16px;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.reminder-setting {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     font-size: 14px;
+    padding: 10px 16px;
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    width: fit-content;
 }
 
-.reminder-setting select {
-    padding: 6px;
+.reminder-container label {
+    font-weight: 500;
+}
+
+.reminder-container select {
+    padding: 6px 10px;
     font-size: 14px;
     border-radius: 4px;
     border: 1px solid #ccc;
 }
-
 .register-button {
     padding: 10px 16px;
     background-color: #007bff;

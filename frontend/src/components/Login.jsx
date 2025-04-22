@@ -2,14 +2,16 @@ import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css';
-import { FaEnvelope, FaLock, FaExclamationCircle } from 'react-icons/fa';
+import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { base_url } from '../config';
 
 function Login() {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const debounceTimerRef = useRef(null);
@@ -42,11 +44,15 @@ function Login() {
     // Prevent multiple submissions
     if (isSubmitting) return;
     
-    setError('');
     setIsSubmitting(true);
     
     try {
-      const response = await axios.post('http://localhost:8080/users/login', formData, {
+      console.log('Login URL:', `${base_url}/users/login`);
+      console.log('Form Data:', formData);
+      // Show loading toast
+      const loadingToast = toast.loading("Logging in...");
+      
+      const response = await axios.post(`${base_url}/users/login`, formData, {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -54,20 +60,39 @@ function Login() {
       });
 
       if (response.status === 200) {
+        // Update loading toast to success
+        toast.update(loadingToast, {
+          render: "Login successful! Redirecting...",
+          type: "success",
+          isLoading: false,
+          autoClose: 2000
+        });
+        
         // Store session ID and user data in localStorage
         const { sessionId, user } = response.data;
         localStorage.setItem('sessionId', sessionId);
         localStorage.setItem('userData', JSON.stringify(user));
         
-        // Navigate to home page
-        navigate('/home');
+        // Navigate to home page after a short delay to show the success toast
+        setTimeout(() => {
+          navigate('/home');
+        }, 1000);
       }
     } catch (error) {
       console.error('Error:', error);
+      
+      // First dismiss the loading toast
+      toast.dismiss();
+      
+      // Then show the appropriate error message
       if (error.code === 'ECONNABORTED') {
-        setError('Connection timeout. Please try again.');
+        toast.error('Connection timeout. Please try again.');
+      } else if (error.response?.status === 401) {
+        toast.error('Invalid email or password.');
+      } else if (error.response?.status === 404) {
+        toast.error('Account not found. Please check your email.');
       } else {
-        setError(error.response?.data?.message || 'Login failed. Please check your credentials.');
+        toast.error(error.response?.data?.message || 'Login failed. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -78,13 +103,6 @@ function Login() {
     <div className="login-container">
       <form onSubmit={handleSubmit} className="login-form">
         <h2>Login</h2>
-        
-        {error && (
-          <div className="error-message">
-            <FaExclamationCircle />
-            {error}
-          </div>
-        )}
         
         <div className="form-group">
           <input
@@ -131,6 +149,19 @@ function Login() {
           Create New Account
         </button>
       </form>
+      
+      <ToastContainer
+        position="bottom-center"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 }

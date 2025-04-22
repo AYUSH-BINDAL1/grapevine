@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { useRef, useEffect, useState, lazy, Suspense } from 'react';
+import { useRef, useEffect, useState, lazy, Suspense, useCallback, useMemo, memo } from 'react';
 import axios from 'axios';
 import Registration from './components/Registration';
 import Confirmation from './components/Confirmation';
@@ -16,40 +16,129 @@ import EventDetails from "./components/EventDetails";
 import ViewStudents from './components/ViewStudents.jsx';
 import UsrProfile from './components/UsrProfile';
 import Messaging from './components/Messaging.jsx';
+import Forum from './components/Forum';
+import Thread from './components/Thread.jsx';
+import NotificationDropdown from './components/NotificationDropdown';
 import './App.css';
 import './components/Groups.css';
+import {base_url, image_url} from './config.js';
 
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
   searchEnabled = value;
 };
 */
-
 const Login = lazy(() => import('./components/Login'));
 
-function Taskbar() {
+// Replace the current Taskbar component with this improved version
+
+const Taskbar = memo(function Taskbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userProfileImage, setUserProfileImage] = useState(profileImage);
-
+  const [userDataVersion, setUserDataVersion] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Close mobile menu when changing routes
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    if (userData.profilePictureId) {
-      const userImageUrl = `http://localhost:9000/images/${userData.profilePictureId}`;
-      const img = new Image();
-      img.onload = () => setUserProfileImage(userImageUrl);
-      img.onerror = () => console.log("Failed to load profile image, using default");
-      img.src = userImageUrl;
-    }
-  }, []);
-
-  const isActive = (path) => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+  
+  // Memoize this function to prevent recreation on each render
+  const isActive = useCallback((path) => {
     if (path === '/home') return location.pathname === '/home' || location.pathname.startsWith('/group/');
     return location.pathname.startsWith(path);
-  };
+  }, [location.pathname]);
+  
+  // Optimize image loading with useCallback
+  const tryLoadIdBasedImage = useCallback((profilePictureId) => {
+    // Check for cached image first
+    const cachedImageUrl = sessionStorage.getItem(`profile-image-${profilePictureId}`);
+    if (cachedImageUrl) {
+      setUserProfileImage(cachedImageUrl);
+      return;
+    }
+    
+    // Try the standard URL format first
+    const userImageUrl = `${image_url}/images/${profilePictureId}`;
+    const img = new Image();
+    
+    img.onload = () => {
+      setUserProfileImage(userImageUrl);
+      // Cache the successful image URL
+      sessionStorage.setItem(`profile-image-${profilePictureId}`, userImageUrl);
+    };
+    img.onerror = () => {
+      // If that fails, try the API format
+      const apiImageUrl = `${base_url}/api/files/getImage/${profilePictureId}`;
+      const imgApi = new Image();
+      imgApi.onload = () => {
+        setUserProfileImage(apiImageUrl);
+        // Cache the successful image URL
+        sessionStorage.setItem(`profile-image-${profilePictureId}`, apiImageUrl);
+      };
+      imgApi.onerror = () => {
+        console.error("Failed to load profile image with both URL formats");
+      };
+      imgApi.src = apiImageUrl;
+    };
+    img.src = userImageUrl;
+  }, []);
 
-  const handlelogout = async () => {
+  // Use the useEffect hook more efficiently
+  useEffect(() => {
+    // Debounce storage event handler to prevent excessive updates
+    let timeoutId = null;
+    const handleStorageChange = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setUserDataVersion(prev => prev + 1);
+      }, 300);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Initial load - use try/catch for better error handling
+    try {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      
+      if (userData.profilePictureUrl) {
+        // Check if we've already fetched this image
+        const cachedUserImage = sessionStorage.getItem(`profile-url-${userData.profilePictureUrl}`);
+        if (cachedUserImage === 'valid') {
+          setUserProfileImage(userData.profilePictureUrl);
+        } else {
+          const img = new Image();
+          img.onload = () => {
+            setUserProfileImage(userData.profilePictureUrl);
+            sessionStorage.setItem(`profile-url-${userData.profilePictureUrl}`, 'valid');
+          };
+          img.onerror = () => {
+            console.error("Failed to load profile image URL");
+            if (userData.profilePictureId) {
+              tryLoadIdBasedImage(userData.profilePictureId);
+            }
+          };
+          img.src = userData.profilePictureUrl;
+        }
+      } else if (userData.profilePictureId) {
+        tryLoadIdBasedImage(userData.profilePictureId);
+      }
+    } catch (error) {
+      console.error("Error loading user profile data:", error);
+    }
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearTimeout(timeoutId);
+    };
+  }, [userDataVersion, tryLoadIdBasedImage]);
+
+  // Optimize the logout handler with useCallback
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOut) return; // Prevent multiple clicks
+    
     const conf = window.confirm("Are you sure you want to log out?");
     if (!conf) return;
 
@@ -61,9 +150,20 @@ function Taskbar() {
         navigate("/");
         return;
       }
-      await axios.delete('http://localhost:8080/users/logout', {
-        headers: { 'Session-Id': sessionId }
+      
+      // Set a timeout to ensure we don't wait forever
+      const timeout = setTimeout(() => {
+        console.warn("Logout request timed out, clearing local data");
+        localStorage.clear();
+        navigate("/");
+      }, 5000);
+      
+      await axios.delete(`${base_url}/users/logout-all`, { // Updated endpoint
+        headers: { 'Session-Id': sessionId },
+        timeout: 4000 // Add axios timeout
       });
+      
+      clearTimeout(timeout);
       localStorage.clear();
       navigate("/");
     } catch (error) {
@@ -74,66 +174,100 @@ function Taskbar() {
     } finally {
       setIsLoggingOut(false);
     }
-  };
+  }, [isLoggingOut, navigate]);
+
+  // Memoize the navbar items to prevent unnecessary re-renders
+  const navItems = useMemo(() => [
+    { path: '/home', label: 'Groups', icon: '👥' },
+    { path: '/events', label: 'Events', icon: '📅' },
+    { path: '/forum', label: 'Forum', icon: '💬' },
+    { path: '/messaging', label: 'Messages', icon: '✉️' },
+    { path: '/friends', label: 'Friends', icon: '👋' }
+  ], []);
+
+  const toggleMobileMenu = useCallback(() => {
+    setMenuOpen(prev => !prev);
+  }, []);
 
   return (
     <div className="taskbar">
-      <nav className="taskbar-elem">
-        <h3 
-          onClick={() => navigate("/home")} 
-          className={`elem ${isActive('/home') ? 'active' : ''}`}
+      <nav className={`taskbar-elem ${menuOpen ? 'menu-open' : ''}`}>
+        <div className="taskbar-logo" onClick={() => navigate('/home')}>
+          <span className="logo-text">Grapevine</span>
+        </div>
+        
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={toggleMobileMenu}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
         >
-          Groups
-        </h3>
-        <h3 
-          onClick={() => navigate("/events")} 
-          className={`elem ${isActive('/events') ? 'active' : ''}`}
-        >
-          Events
-        </h3>
-        <h3 
-          onClick={() => navigate("/forum")} 
-          className={`elem ${isActive('/forum') ? 'active' : ''}`}
-        >
-          Forum
-        </h3>
-        <h3 
-          onClick={() => navigate("/messaging")} 
-          className={`elem ${isActive('/messaging') ? 'active' : ''}`}
-        >
-          Messages
-        </h3>
-        <h3 
-          onClick={() => navigate("/friends")} 
-          className={`elem ${isActive('/friends') ? 'active' : ''}`}
-        >
-          Friends
-        </h3>
-        {searchEnabled && (
-          <h3 
-            onClick={() => navigate("/courseSearch")} 
-            className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}
+          <span className="menu-bar"></span>
+          <span className="menu-bar"></span>
+          <span className="menu-bar"></span>
+        </button>
+        
+        <div className={`nav-items ${menuOpen ? 'show' : ''}`}>
+          {navItems.map(item => (
+            <div 
+              key={item.path}
+              onClick={() => navigate(item.path)} 
+              className={`elem ${isActive(item.path) ? 'active' : ''}`}
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && navigate(item.path)}
+            >
+              <span className="nav-icon mobile-only">{item.icon}</span>
+              <span className="nav-text">{item.label}</span>
+            </div>
+          ))}
+          
+          {searchEnabled && (
+            <div 
+              onClick={() => navigate("/courseSearch")} 
+              className={`elem ${isActive('/courseSearch') ? 'active' : ''}`}
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && navigate("/courseSearch")}
+            >
+              <span className="nav-icon mobile-only">🔍</span>
+              <span className="nav-text">Courses</span>
+            </div>
+          )}
+        </div>
+        
+        <div className="taskbar-right">
+          <div className="navbar">
+            <NotificationDropdown />
+          </div>
+          
+          <img 
+            onClick={() => navigate("/profile")} 
+            className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
+            src={userProfileImage} 
+            alt="Profile" 
+            loading="lazy"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && navigate("/profile")}
+          />
+          
+          <div 
+            onClick={handleLogout} 
+            className={`elem logout ${isLoggingOut ? 'disabled' : ''}`}
+            style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && !isLoggingOut && handleLogout()}
+            aria-disabled={isLoggingOut}
           >
-            Courses
-          </h3>
-        )}
-        <img 
-          onClick={() => navigate("/profile")} 
-          className={`profile ${isActive('/profile') ? 'active-profile' : ''}`}
-          src={userProfileImage} 
-          alt="Profile" 
-        />
-        <h3 
-          onClick={isLoggingOut ? null : handlelogout} 
-          className={`elem logout ${isLoggingOut ? 'disabled' : ''}`}
-          style={{ cursor: isLoggingOut ? 'wait' : 'pointer' }}
-        >
-          {isLoggingOut ? 'Logging out...' : 'Logout'}
-        </h3>
+            <span className="nav-icon mobile-only">🚪</span>
+            <span className="nav-text">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+          </div>
+        </div>
       </nav>
     </div>
   );
-}
+});
 
 function Layout() {
   return (
@@ -163,7 +297,7 @@ function Home() {
         const userEmail = parsedUser.userEmail;
         try {
           const response = await axios.get(
-              `http://localhost:8080/users/${userEmail}/all-groups-short`,
+              `${base_url}/users/${userEmail}/all-groups-short`,
               { headers: { 'Session-Id': sessionId }
           });
           setGroups(response.data);
@@ -176,7 +310,7 @@ function Home() {
         }
 
         try {
-          const allRes = await axios.get("http://localhost:8080/groups/all", {
+          const allRes = await axios.get(`${base_url}/groups/all`, {
             headers: { 'Session-Id': sessionId }
           });
           setAllGroups(allRes.data);
@@ -184,6 +318,10 @@ function Home() {
           setFilteredGroups(publicGroups);
         } catch (error) {
           console.error('Error fetching all groups:', error);
+          if (error.response?.status === 401) {
+            alert('Session expired. Please login again.');
+            navigate('/');
+          }
         }
       } else {
         alert('No user information or session found. Please login again.');
@@ -248,15 +386,19 @@ function Home() {
                     >
                       <h3>{group.name}</h3>
                       {group.public === false ? (
-                        <div className="private-group-indicator">
-                          <span className="lock-icon">🔒</span>
-                          <span className="private-text">Private</span>
-                        </div>
+                          <div className="private-group-indicator">
+                            <span className="lock-icon">🔒</span>
+                            <span className="private-text">
+                              Private{group.instructorLed ? " / Instructor Led" : ""}
+                            </span>
+                          </div>
                       ) : (
-                        <div className="public-group-indicator">
-                          <span className="globe-icon">🌐</span>
-                          <span className="public-text">Public</span>
-                        </div>
+                          <div className="public-group-indicator">
+                            <span className="globe-icon">🌐</span>
+                            <span className="public-text">
+                              Public{group.instructorLed ? " / Instructor Led" : ""}
+                            </span>
+                          </div>
                       )}
                     </div>
                 ))
@@ -316,15 +458,19 @@ function Home() {
                     >
                       <h3>{group.name}</h3>
                       {group.public === false ? (
-                        <div className="private-group-indicator">
-                          <span className="lock-icon">🔒</span>
-                          <span className="private-text">Private</span>
-                        </div>
+                          <div className="private-group-indicator">
+                            <span className="lock-icon">🔒</span>
+                            <span className="private-text">
+                              Private{group.instructorLed ? " / Instructor Led" : ""}
+                            </span>
+                          </div>
                       ) : (
-                        <div className="public-group-indicator">
-                          <span className="globe-icon">🌐</span>
-                          <span className="public-text">Public</span>
-                        </div>
+                          <div className="public-group-indicator">
+                            <span className="globe-icon">🌐</span>
+                            <span className="public-text">
+                              Public{group.instructorLed ? " / Instructor Led" : ""}
+                            </span>
+                          </div>
                       )}
                     </div>
                 ))
@@ -357,13 +503,13 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/events" element={<Events />} />
             <Route path="/create-event" element={<CreateEvent />} />
-            <Route path="/forum" element={<Nopath />} />
-            <Route path="/messages" element={<Nopath />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/courseSearch" element={<CourseSearch />} />
             <Route path="/view-students" element={<ViewStudents />} />
             <Route path="/group/:id" element={<Groups />} />
             <Route path="/event/:eventId" element={<EventDetails />} />
+            <Route path="/forum" element={<Forum />} />
+            <Route path="/forum/thread/:threadId" element={<Thread />} />
             <Route path="/messaging" element={<Messaging />} />
           </Route>
         </Routes>

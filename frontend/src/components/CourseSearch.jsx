@@ -3,6 +3,7 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './CourseSearch.css';
+import { base_url } from '../config';
 
 function CourseSearch() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,7 +37,7 @@ function CourseSearch() {
 
       try {
         const response = await axios.get(
-          `http://localhost:8080/users/${userEmail}`,
+          `${base_url}/users/${userEmail}`,
           { headers: { 'Session-Id': sessionId } }
         );
         setUserCourses(response.data.courses || []);
@@ -60,7 +61,7 @@ function CourseSearch() {
     setHasSearched(true); // Set flag when search is performed
   
     try {
-      const response = await axios.get(`http://localhost:8080/courses/search/short?query=${searchQuery}`, {
+      const response = await axios.get(`${base_url}/courses/search/short?query=${searchQuery}`, {
         headers: {
           'Session-Id': sessionId
         }
@@ -97,7 +98,7 @@ function CourseSearch() {
       const courseCode = selectedCourse.courseKey;
       
       await axios.put(
-        `http://localhost:8080/users/${userEmail}`,
+        `${base_url}/users/${userEmail}`,
         {
           courses: [courseCode]
         },
@@ -131,7 +132,7 @@ function CourseSearch() {
       const courseCode = selectedCourse.courseKey;
       
       await axios.delete(
-        `http://localhost:8080/users/${userEmail}/courses/${courseCode}`,
+        `${base_url}/users/${userEmail}/courses/${courseCode}`,
         {
           headers: {
             'Session-Id': sessionId

@@ -1,10 +1,299 @@
 import './Groups.css';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import axios from 'axios';
-import profileImage from '../assets/temp-profile.webp'; // Import the profile image for review avatars
-import { toast, ToastContainer } from 'react-toastify'; // Import toast for notifications
+import profileImage from '../assets/temp-profile.webp';
+import PropTypes from 'prop-types';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { FixedSizeList as List } from 'react-window';
+import { base_url, image_url } from '../config';
+
+// Add this constant at the top of your file, after the imports
+const CAMPUS_BUILDINGS = [
+  { code: "WALC", name: "Wilmeth Active Learning Center" },
+  { code: "LWSN", name: "Lawson Computer Science Building" },
+  { code: "PMUC", name: "Purdue Memorial Union Club" },
+  { code: "HAMP", name: "Hampton Hall of Civil Engineering" },
+  { code: "RAWL", name: "Krannert Building (Rawls Hall)" },
+  { code: "CHAS", name: "Chaney-Hale Hall of Science" },
+  { code: "CL50", name: "Class of 1950 Lecture Hall" },
+  { code: "FRNY", name: "Forney Hall of Chemical Engineering" },
+  { code: "KRAN", name: "Krannert Building" },
+  { code: "MSEE", name: "Materials and Electrical Engineering Building" },
+  { code: "MATH", name: "Mathematical Sciences Building" },
+  { code: "PHYS", name: "Physics Building" },
+  { code: "POTR", name: "Potter Engineering Center" },
+  { code: "HAAS", name: "Haas Hall" },
+  { code: "HIKS", name: "Hicks Undergraduate Library" },
+  { code: "BRWN", name: "Brown Laboratory of Chemistry" },
+  { code: "HEAV", name: "Heavilon Hall" },
+  { code: "BRNG", name: "Beering Hall of Liberal Arts and Education" },
+  { code: "SC", name: "Stewart Center" },
+  { code: "WTHR", name: "Wetherill Laboratory of Chemistry" },
+  { code: "UNIV", name: "University Hall" },
+  { code: "YONG", name: "Young Hall" },
+  { code: "ME", name: "Mechanical Engineering Building" },
+  { code: "ELLT", name: "Elliott Hall of Music" },
+  { code: "PMU", name: "Purdue Memorial Union" },
+  { code: "STEW", name: "Stewart Center" }
+];
+
+// Optimize the ProfileImage component
+const ProfileImage = memo(({ user, altText }) => {
+  const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const tryLoadImageById = useCallback((id, userEmail) => {
+    // Try cached version first
+    const cachedUrl = sessionStorage.getItem(`profile-image-id-${id}`);
+    if (cachedUrl) {
+      setImageUrl(cachedUrl);
+      setLoading(false);
+      return;
+    }
+    
+    // Try standard format
+    const standardUrl = `${image_url}/images/${id}`;
+    const img = new Image();
+    img.onload = () => {
+      setImageUrl(standardUrl);
+      setLoading(false);
+      // Cache the result
+      sessionStorage.setItem(`profile-image-id-${id}`, standardUrl);
+      if (userEmail) {
+        sessionStorage.setItem(`profile-image-${userEmail}`, standardUrl);
+      }
+    };
+    img.onerror = () => {
+      // Try API format
+      const apiUrl = `${base_url}/api/files/getImage/${id}`;
+      const apiImg = new Image();
+      apiImg.onload = () => {
+        setImageUrl(apiUrl);
+        setLoading(false);
+        // Cache the result
+        sessionStorage.setItem(`profile-image-id-${id}`, apiUrl);
+        if (userEmail) {
+          sessionStorage.setItem(`profile-image-${userEmail}`, apiUrl);
+        }
+      };
+      apiImg.onerror = () => {
+        setError(true);
+        setLoading(false);
+      };
+      apiImg.src = apiUrl;
+    };
+    img.src = standardUrl;
+  }, []);
+  
+  useEffect(() => {
+    // Skip unnecessary work if user doesn't have image data
+    if (!user.profilePictureUrl && !user.profilePictureId) {
+      setError(true);
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(true);
+    setError(false);
+    
+    // Check if we already processed this image (caching)
+    const cachedUrl = sessionStorage.getItem(`profile-image-${user.userEmail}`);
+    if (cachedUrl) {
+      setImageUrl(cachedUrl);
+      setLoading(false);
+      return;
+    }
+    
+    // Try profile picture URL if available
+    if (user.profilePictureUrl) {
+      const img = new Image();
+      img.onload = () => {
+        setImageUrl(user.profilePictureUrl);
+        setLoading(false);
+        // Cache the result
+        sessionStorage.setItem(`profile-image-${user.userEmail}`, user.profilePictureUrl);
+      };
+      img.onerror = () => {
+        // If URL fails, try using the ID
+        if (user.profilePictureId) {
+          tryLoadImageById(user.profilePictureId, user.userEmail);
+        } else {
+          setError(true);
+          setLoading(false);
+        }
+      };
+      img.src = user.profilePictureUrl;
+    }
+    // If no URL, try ID
+    else if (user.profilePictureId) {
+      tryLoadImageById(user.profilePictureId, user.userEmail);
+    }
+    // If no URL or ID, show default
+    else {
+      setError(true);
+      setLoading(false);
+    }
+  }, [user.profilePictureUrl, user.profilePictureId, user.userEmail, tryLoadImageById]);
+  
+  
+  // Use proper image attributes for optimization
+  return (
+    <>
+      {loading && <div className="skeleton-member-avatar"></div>}
+      {!loading && error && <img src={profileImage} alt={altText || 'User'} className="member-avatar" loading="lazy" />}
+      {!loading && !error && (
+        <img 
+          src={imageUrl} 
+          alt={altText || 'User'} 
+          className="member-avatar" 
+          loading="lazy" 
+          onError={(e) => {
+            e.target.onerror = null; 
+            e.target.src = profileImage;
+          }} 
+        />
+      )}
+    </>
+  );
+});
+
+// Add PropTypes validation
+ProfileImage.propTypes = {
+  user: PropTypes.shape({
+    profilePictureUrl: PropTypes.string,
+    profilePictureId: PropTypes.string,
+    name: PropTypes.string,
+    userEmail: PropTypes.string
+  }).isRequired,
+  altText: PropTypes.string
+};
+
+// Add display name
+ProfileImage.displayName = 'ProfileImage';
+
+// Extract and memoize child components
+const MemberCard = memo(({ member, onClick }) => (
+  <div 
+    className={`member-card ${member.isHost ? 'host-card' : ''} clickable`}
+    onClick={() => onClick(member.userEmail)}
+  >
+    {member.isHost && <div className="host-badge">Host</div>}
+    <ProfileImage user={member} altText={member.name} />
+    <div className="member-info">
+      <p className="member-name">{member.name}</p>
+      <p className="member-major">{member.major || 'Not specified'}</p>
+    </div>
+  </div>
+));
+
+// Add PropTypes definitions for MemberCard
+MemberCard.propTypes = {
+  member: PropTypes.shape({
+    isHost: PropTypes.bool,
+    userEmail: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    major: PropTypes.string
+  }).isRequired,
+  onClick: PropTypes.func.isRequired
+};
+
+// Add display name for MemberCard
+MemberCard.displayName = 'MemberCard';
+
+const ReviewCard = memo(({ review }) => {
+  // Move rendering logic here from the main component
+  const renderStars = (rating) => {
+    return Array(5).fill(0).map((_, i) => (
+      <span key={i} className={`star ${i < rating ? 'filled' : ''}`}>★</span>
+    ));
+  };
+
+  return (
+    <div className="review-card">
+      <div className="review-header">
+        <ProfileImage user={review} altText={review.userName || 'User'} />
+        <div className="review-meta">
+          <p className="reviewer-name">{review.userName || 'Anonymous User'}</p>
+          <p className="review-date">
+            {review.date ? new Date(review.date).toLocaleDateString() : 'Recent'}
+          </p>
+        </div>
+      </div>
+      <div className="review-rating">
+        {renderStars(Number(review.score))}
+      </div>
+      <p className="review-comment">{review.review || 'No comment provided'}</p>
+    </div>
+  );
+});
+
+// Add PropTypes definitions for ReviewCard
+ReviewCard.propTypes = {
+  review: PropTypes.shape({
+    userName: PropTypes.string,
+    date: PropTypes.string,
+    score: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    review: PropTypes.string
+  }).isRequired
+};
+
+// Add display name for ReviewCard
+ReviewCard.displayName = 'ReviewCard';
+
+const ReviewsList = memo(({ reviews }) => {
+  if (!reviews || reviews.length === 0) {
+    return (
+      <div className="no-reviews">
+        <p className="no-reviews-message">No reviews available for this group yet.</p>
+        <p className="no-reviews-prompt">Be the first to share your experience!</p>
+      </div>
+    );
+  }
+
+  const Row = memo(({ index, style }) => (
+    <div style={style}>
+      <ReviewCard review={reviews[index]} />
+    </div>
+  ));
+
+  Row.propTypes = {
+    index: PropTypes.number.isRequired,
+    style: PropTypes.object.isRequired
+  };
+
+  Row.displayName = 'ReviewRow';
+
+  return (
+    <div className="reviews-list-container">
+      <List
+        height={Math.min(500, reviews.length * 180)}
+        itemCount={reviews.length}
+        itemSize={180}
+        width="100%"
+      >
+        {Row}
+      </List>
+    </div>
+  );
+});
+
+// Add PropTypes definitions for ReviewsList
+ReviewsList.propTypes = {
+  reviews: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    userEmail: PropTypes.string,
+    userName: PropTypes.string,
+    score: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    review: PropTypes.string,
+    date: PropTypes.string
+  })).isRequired
+};
+
+// Add display name for ReviewsList
+ReviewsList.displayName = 'ReviewsList';
 
 function Groups() {
   const navigate = useNavigate();
@@ -17,7 +306,7 @@ function Groups() {
     reviews: [],
     location: '',
     meetingTimes: '',
-    image: 'https://via.placeholder.com/300x200?text=Group+Image'
+    image: 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image'
   });
   const [loading, setLoading] = useState(true);
   const [ratingData, setRatingData] = useState(null);
@@ -38,238 +327,551 @@ function Groups() {
   const [reviews, setReviews] = useState([]);
   const [existingReview, setExistingReview] = useState(null);
 
+  // Add these state variables near your other state declarations
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    maxUsers: 0,
+    location: '',
+    meetingTimes: '',
+    description: '',
+    image: null,
+    imagePreview: null
+  });
 
-  // Mock data for the group
-  const groupsData = {
-    1: {
-      id: 1,
-      title: 'CS 307 Study Group',
-      image: 'https://via.placeholder.com/300x200?text=CS+307+Group',
-      description: 'A collaborative study group for CS 307 Software Engineering. We meet twice a week to discuss course material, work on projects, and prepare for exams. All skill levels welcome!',
-      members: [
-        { id: 1, name: 'John Doe', major: 'CS' },
-        { id: 2, name: 'Jane Smith', major: 'CS' },
-        { id: 3, name: 'Bob Johnson', major: 'Math' },
-      ],
-      meetingTimes: 'Mondays and Wednesdays 6-8 PM',
-      location: 'LWSN B131',
-      reviews: [
-        { id: 1, userId: 1, userName: 'John Doe', rating: 5, comment: 'This group helped me understand complex software engineering concepts. Highly recommended!', date: '2023-03-15' },
-        { id: 2, userId: 2, userName: 'Jane Smith', rating: 4, comment: 'Great discussions, but sometimes we go off-topic.', date: '2023-02-28' },
-        { id: 3, userId: 3, userName: 'Bob Johnson', rating: 5, comment: 'The weekly study sessions are extremely helpful. The members are very knowledgeable and patient with explaining difficult topics.', date: '2023-03-20' },
-        { id: 4, userId: 4, userName: 'Sarah Miller', rating: 4, comment: 'I joined this group after struggling with the first exam and my grades improved significantly. Great environment for learning!', date: '2023-04-02' },
-        { id: 5, userId: 5, userName: 'Michael Chen', rating: 5, comment: 'This group has been essential for my success in CS 307. We break down complex projects into manageable pieces and help each other debug.', date: '2023-04-10' },
-        { id: 6, userId: 6, userName: 'Emily Wilson', rating: 3, comment: 'Good resources and people, but sometimes the sessions run too long and we get sidetracked. Would appreciate more structure.', date: '2023-04-15' },
-        { id: 7, userId: 7, userName: 'David Park', rating: 5, comment: 'I was falling behind in class until I joined this group. Now I feel much more confident with the material. Everyone is supportive and willing to help.', date: '2023-04-22' }
-      ]
-    },
-    2: {
-      id: 2,
-      title: 'Calculus III Study Group',
-      image: 'https://via.placeholder.com/300x200?text=Calculus+III+Group',
-      description: 'Dedicated to mastering multivariable calculus. We work through complex problems together and explain concepts to each other. Join us to conquer Calc III!',
-      members: [
-        { id: 4, name: 'Alice Williams', major: 'Math' },
-        { id: 5, name: 'Charlie Davis', major: 'Physics' }
-      ],
-      meetingTimes: 'Tuesdays and Thursdays 5-7 PM',
-      location: 'MATH 175',
-      reviews: [
-        { id: 3, userId: 4, userName: 'Alice Williams', rating: 5, comment: 'Saved my grade in this class! Very helpful group.', date: '2023-03-10' }
-      ]
-    },
-    3: {
-      id: 3,
-      title: 'Organic Chemistry Group',
-      image: 'https://via.placeholder.com/300x200?text=Organic+Chemistry',
-      description: 'Focus on mastering organic chemistry concepts, reaction mechanisms, and lab techniques. We help each other prepare for exams and understand difficult topics.',
-      members: [
-        { id: 6, name: 'David Wilson', major: 'Chemistry' },
-        { id: 7, name: 'Emma Lee', major: 'Biochemistry' }
-      ],
-      meetingTimes: 'Fridays 4-7 PM',
-      location: 'CHEM 140',
-      reviews: [] // Removed reviews for group 3
+  // Add this function to handle group image fetching
+  const fetchGroupImage = useCallback(async (imageUrl) => {
+    if (!imageUrl || imageUrl === 'undefined') {
+      return 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image';
     }
+    
+    // Check for cached image URL first
+    const cachedUrl = sessionStorage.getItem(`group-image-${id}`);
+    if (cachedUrl) {
+      return cachedUrl;
+    }
+    
+    try {
+      // For database stored URLs, check if it's a full URL or just an ID
+      let fullImageUrl;
+      
+      if (imageUrl.startsWith('http')) {
+        // If it's a full URL, use it directly
+        fullImageUrl = imageUrl;
+      } else {
+        // Otherwise construct the URL using the file ID
+        fullImageUrl = `${image_url}/images/${imageUrl}`;
+      }
+      
+      // Verify the image loads correctly
+      const img = new Image();
+      
+      // Create a promise to handle image loading
+      const imageLoadPromise = new Promise((resolve, reject) => {
+        img.onload = () => {
+          resolve(fullImageUrl);
+        };
+        
+        img.onerror = () => {
+          // Try alternative URL format if the first one fails
+          if (!imageUrl.startsWith('http')) {
+            const alternativeUrl = `${base_url}/api/files/getImage/${imageUrl}`;
+            
+            const altImg = new Image();
+            altImg.onload = () => {
+              resolve(alternativeUrl);
+            };
+            
+            altImg.onerror = () => {
+              reject(new Error("Failed to load group image"));
+            };
+            
+            altImg.src = alternativeUrl;
+          } else {
+            reject(new Error("Failed to load group image"));
+          }
+        };
+      });
+      
+      // Start loading the image
+      img.src = fullImageUrl;
+      
+      // Wait for image load resolution
+      const successfulUrl = await imageLoadPromise;
+      
+      // Cache the successful URL
+      sessionStorage.setItem(`group-image-${id}`, successfulUrl);
+      return successfulUrl;
+      
+    } catch (error) {
+      console.error('Error fetching group image:', error);
+      // Fall back to default image
+      return 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image';
+    }
+  }, [id]);
+
+  // Update the openEditForm function:
+  const openEditForm = () => {
+    // Check if the current location matches any of the building codes
+    const existingBuilding = CAMPUS_BUILDINGS.find(b => 
+      group.location.startsWith(b.code) || group.location === b.code
+    );
+    
+    setEditFormData({
+      name: group.title,
+      maxUsers: group.maxUsers || 50,
+      // If location matches a building code, use it; otherwise set to 'custom'
+      location: existingBuilding ? existingBuilding.code : 'custom',
+      customLocation: !existingBuilding ? group.location : '',
+      meetingTimes: group.meetingTimes || '',
+      description: group.description || '',
+      image: null,
+      imagePreview: group.image
+    });
+    setShowEditForm(true);
   };
 
-  // Update your fetchData function to include the access check API
-  const fetchData = async () => {
-    console.log(`Attempting to fetch group with ID: ${id}, type: ${typeof id}`);
-    setLoading(true);
-    const sessionId = localStorage.getItem('sessionId');
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    const userEmail = userData?.userEmail;
-  
-    if (!sessionId || !userData) {
-      navigate('/');
+  // Handle form field changes
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Replace the existing handleImageSelect function with this enhanced version
+  const handleImageSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload an image file (JPEG, PNG, GIF, or WEBP)");
+      return;
+    }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size should be less than 2MB");
       return;
     }
 
-    // First check if the user has access to the group
+    // Show preview immediately for better UX
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditFormData(prev => ({
+        ...prev,
+        imagePreview: reader.result,
+        image: file
+      }));
+    };
+    reader.readAsDataURL(file);
+    
+    // We'll handle the actual upload when the form is submitted
+  };
+
+  // Replace the existing handleSubmitGroupEdit function
+  const handleSubmitGroupEdit = async (e) => {
+    e.preventDefault();
+    
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+    
+    // Show loading toast
+    toast.info("Updating group details...", { autoClose: false, toastId: 'update-group' });
+    
     try {
-      // Check access using the dedicated endpoint
-      const accessResponse = await axios.get(
-        `http://localhost:8080/groups/${id}/check-access`,
+      // Handle text fields update
+      const groupDataUpdate = {
+        name: editFormData.name,
+        maxUsers: editFormData.maxUsers,
+        // Use custom location if selected, otherwise use the building code
+        location: editFormData.location === 'custom' ? editFormData.customLocation : 
+                  editFormData.location ? CAMPUS_BUILDINGS.find(b => b.code === editFormData.location)?.code + ' - ' + 
+                                          CAMPUS_BUILDINGS.find(b => b.code === editFormData.location)?.name : '',
+        meetingTimes: editFormData.meetingTimes,
+        description: editFormData.description
+      };
+      
+      // If we have a new image, upload it first
+      if (editFormData.image) {
+        const formData = new FormData();
+        formData.append('file', editFormData.image);
+        
+        // Upload the image file
+        const uploadResponse = await axios.post(
+          `${base_url}/api/files/upload`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Session-Id': sessionId
+            }
+          }
+        );
+        
+        if (uploadResponse.status === 200 && uploadResponse.data) {
+          // Extract the file ID and URL from the response
+          const fileId = uploadResponse.data.fileName || uploadResponse.data.fileId;
+          const publicUrl = uploadResponse.data.publicUrl;
+          
+          // Use the public URL if available, otherwise construct it
+          const imageUrl = publicUrl || `${image_url}/images/${fileId}`;
+          
+          // Add the image URL to the group update data
+          groupDataUpdate.image = imageUrl;
+        } else {
+          toast.warning("Failed to upload image. Group details will be updated without the new image.");
+        }
+      }
+      
+      // Update the group data
+      const updateResponse = await axios.put(
+        `${base_url}/groups/${id}/update`,
+        groupDataUpdate,
         {
           headers: {
-            'Session-Id': sessionId,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Session-Id': sessionId
           }
         }
       );
       
-      console.log('Access check response:', accessResponse.data);
+      if (updateResponse.status === 200) {
+        toast.dismiss('update-group');
+        toast.success('Group details updated successfully');
+        setShowEditForm(false);
+        
+        // Cache the image URL if we uploaded a new one
+        if (editFormData.image && groupDataUpdate.image) {
+          sessionStorage.setItem(`group-image-${id}`, groupDataUpdate.image);
+        }
+        
+        // Refresh the group data
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Error updating group:', error);
+      toast.dismiss('update-group');
+      toast.error('Failed to update group details');
+    }
+  };
+
+  // Memoize the average rating calculation
+  const calculateAverageRating = useCallback((reviews) => {
+    if (!reviews || reviews.length === 0) return 0;
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+    return (totalRating / reviews.length).toFixed(1);
+  }, []);
+
+  // Memoize the handler functions
+  const handleMemberClick = useCallback((userEmail) => {
+    if (!userEmail) {
+      toast.info("Cannot view this user's profile");
+      return;
+    }
+    
+    // Get current user's email from localStorage
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const currentUserEmail = userData?.userEmail;
+    
+    if (currentUserEmail && userEmail === currentUserEmail) {
+      navigate('/profile');
+    } else {
+      navigate(`/user/${userEmail}`);
+    }
+  }, [navigate]);
+
+  // Replace the existing loadUserDetails function with this useCallback version
+  const loadUserDetails = useCallback((userEmails) => {
+    if (userEmails.length === 0) return;
+    
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) return;
+    
+    // Process users in batches to avoid overwhelming the API
+    const batchSize = 5;
+    const batches = [];
+    
+    for (let i = 0; i < userEmails.length; i += batchSize) {
+      batches.push(userEmails.slice(i, i + batchSize));
+    }
+    
+    // Process batches sequentially
+    batches.forEach(async (batch, batchIndex) => {
+      // Add slight delay between batches to avoid API rate limiting
+      if (batchIndex > 0) {
+        await new Promise(resolve => setTimeout(resolve, batchIndex * 100));
+      }
       
-      // If access is granted, proceed with getting the full group data
-      if (accessResponse.data.hasAccess) {
-        try {
-          // Your existing code to get group data
-          const groupResponse = await axios.get(
-            `http://localhost:8080/groups/${id}`,
-            {
-              headers: {
-                'Session-Id': sessionId,
-                'Content-Type': 'application/json'
-              }
+      const userPromises = batch.map(email => 
+        axios.get(`${base_url}/users/${encodeURIComponent(email)}`, {
+          headers: { 'Session-Id': sessionId }
+        })
+        .then(response => ({
+          userEmail: email,
+          name: response.data.name || response.data.fullName || email.split('@')[0],
+          profilePictureUrl: response.data.profilePictureUrl,
+          profilePictureId: response.data.profilePictureId,
+          major: response.data.major || (response.data.majors && response.data.majors[0])
+        }))
+        .catch(() => ({
+          userEmail: email,
+          name: email.split('@')[0]
+        }))
+      );
+      
+      try {
+        // Wait for all promises in this batch
+        const userDetails = await Promise.all(userPromises);
+        
+        // Update the group state with these user details
+        setGroup(prevGroup => {
+          const updatedHosts = [...prevGroup.hosts];
+          const updatedMembers = [...prevGroup.members];
+          
+          userDetails.forEach(user => {
+            // Find and update in hosts array
+            const hostIndex = updatedHosts.findIndex(h => h.userEmail === user.userEmail);
+            if (hostIndex >= 0) {
+              updatedHosts[hostIndex] = { ...user, isHost: true, loading: false };
             }
-          );
+            
+            // Find and update in members array
+            const memberIndex = updatedMembers.findIndex(m => m.userEmail === user.userEmail);
+            if (memberIndex >= 0) {
+              updatedMembers[memberIndex] = { ...user, isHost: false, loading: false };
+            }
+          });
           
-          // Rest of your existing group data processing...
-          console.log('API group data:', groupResponse.data);
-          
-          // Transform API data to match your component's expected structure
+          return {
+            ...prevGroup,
+            hosts: updatedHosts,
+            members: updatedMembers
+          };
+        });
+      } catch (error) {
+        console.error('Error processing user batch:', error);
+      }
+    });
+  }, []); // Empty dependency array since setGroup has a stable identity by React
+
+  // Replace the processGroupData regular function with this useCallback version
+  const processGroupData = useCallback((apiGroup, userEmail) => {
+    // Determine if user is host or member
+    const isUserHost = apiGroup.hosts && apiGroup.hosts.includes(userEmail);
+    const isUserMember = apiGroup.participants && apiGroup.participants.includes(userEmail);
+    
+    // Extract member emails
+    const hostEmails = apiGroup.hosts || [];
+    const memberEmails = apiGroup.participants ? 
+      apiGroup.participants.filter(email => !hostEmails.includes(email)) : 
+      [];
+    
+    // Create placeholder user objects
+    const enhancedHosts = hostEmails.map(email => ({
+      userEmail: email,
+      name: email.split('@')[0],
+      isHost: true,
+      loading: true
+    }));
+    
+    const enhancedMembers = memberEmails.map(email => ({
+      userEmail: email,
+      name: email.split('@')[0],
+      isHost: false,
+      loading: true
+    }));
+    
+    // Create formatted group
+    const formattedGroup = {
+      id: apiGroup.groupId || apiGroup.id,
+      title: apiGroup.name || apiGroup.title || 'Unnamed Group',
+      image: apiGroup.image || 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image',
+      description: apiGroup.description || 'No description available',
+      hosts: enhancedHosts,
+      members: enhancedMembers,
+      location: apiGroup.location || 'No location specified',
+      meetingTimes: apiGroup.meetingTimes || 'No schedule specified',
+      reviews: apiGroup.reviews || []
+    };
+    
+    // Start loading user details in background
+    loadUserDetails(hostEmails.concat(memberEmails));
+    
+    return { isUserHost, isUserMember, formattedGroup };
+  }, [loadUserDetails]); // Include loadUserDetails as dependency
+
+  // Replace the fetchData function with more efficient implementation
+  const fetchData = useCallback(async () => {
+    console.log(`Fetching group with ID: ${id}`);
+    setLoading(true);
+    const sessionId = localStorage.getItem('sessionId');
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    
+    if (!sessionId || !userData) {
+      navigate('/');
+      return;
+    }
+  
+    // Fetch data in parallel when possible
+    try {
+      // Run access check and group data in parallel
+      const [accessResponse, groupDataPromise] = await Promise.allSettled([
+        axios.get(`${base_url}/groups/${id}/check-access`, {
+          headers: { 'Session-Id': sessionId }
+        }),
+        axios.get(`${base_url}/groups/${id}`, {
+          headers: { 'Session-Id': sessionId }
+        }).catch(err => {
+          // Only treat as error if not a 403 (which is expected)
+          if (!err.response || err.response.status !== 403) {
+            throw err;
+          }
+          return { status: 403 };
+        })
+      ]);
+      
+      // Process the access check result
+      if (accessResponse.status === 'fulfilled' && accessResponse.value.data.hasAccess) {
+        // User has access - process group data
+        if (groupDataPromise.status === 'fulfilled' && groupDataPromise.value.status !== 403) {
+          const groupResponse = groupDataPromise.value;
           const apiGroup = groupResponse.data;
           
-          // Check if the current user is a host or member
-          const isUserHost = apiGroup.hosts && apiGroup.hosts.includes(userEmail);
-          const isUserMember = apiGroup.participants && apiGroup.participants.includes(userEmail);
+          // Process group data
+          const { isUserHost, isUserMember, formattedGroup } = processGroupData(apiGroup, userData.userEmail);
           
-          // Update the membership status
+          // Fetch and set the group image
+          if (formattedGroup.image) {
+            fetchGroupImage(formattedGroup.image)
+              .then(imageUrl => {
+                setGroup({
+                  ...formattedGroup,
+                  image: imageUrl
+                });
+              })
+              .catch(() => {
+                // If image fetch fails, continue with the original image URL
+                setGroup(formattedGroup);
+              });
+          } else {
+            setGroup(formattedGroup);
+          }
+          
           setUserMembership({
             isHost: isUserHost,
             isMember: isUserMember
           });
           
-          const formattedGroup = {
-            id: apiGroup.groupId || apiGroup.id,
-            title: apiGroup.name || apiGroup.title || 'Unnamed Group',
-            image: apiGroup.image || 'https://via.placeholder.com/300x200?text=Group+Image',
-            description: apiGroup.description || 'No description available',
+          // Fetch ratings and reviews in parallel if user is a member
+          if (isUserHost || isUserMember) {
+            const [myRatingPromise, ratingDataPromise, reviewsPromise] = await Promise.allSettled([
+              axios.get(`${base_url}/groups/${id}/my-rating`, {
+                headers: { 'Session-Id': sessionId }
+              }),
+              axios.get(`${base_url}/groups/${id}/average-rating`, {
+                headers: { 'Session-Id': sessionId }
+              }),
+              axios.get(`${base_url}/groups/${id}/ratings-reviews`, {
+                headers: { 'Session-Id': sessionId }
+              })
+            ]);
             
-            // Handle hosts separately from regular members
-            hosts: apiGroup.hosts 
-              ? apiGroup.hosts.map((host, index) => ({
-                  id: `host-${index}`,
-                  name: host,
-                  major: 'Major: Not specified', // API might not provide this
-                  isHost: true // Flag to identify hosts
-                }))
-              : [],
+            // Process my rating
+            if (myRatingPromise.status === 'fulfilled' && myRatingPromise.value.data) {
+              const myRatingData = myRatingPromise.value.data;
+              setMyRating(myRatingData.score);
+              setUserRating(myRatingData.score);
               
-            // Handle regular members
-            members: apiGroup.participants 
-              ? apiGroup.participants
-                  .filter(participant => !apiGroup.hosts || !apiGroup.hosts.includes(participant)) // Filter out hosts to avoid duplication
-                  .map((participant, index) => ({
-                    id: `member-${index}`,
-                    name: participant,
-                    major: 'Major: Not specified', // API might not provide this
-                    isHost: false
-                  }))
-              : apiGroup.members || [],
-              
-            // Other fields remain the same
-            location: apiGroup.location || 'No location specified',
-            meetingTimes: apiGroup.meetingTimes || 'No schedule specified',
-            reviews: apiGroup.reviews || []
-          };
-          
-          console.log('Formatted group data:', formattedGroup);
-          setGroup(formattedGroup);
-
-          
-          
-          // Now fetch the rating data
-          try {
-            const ratingResponse = await axios.get(
-              `http://localhost:8080/groups/${id}/average-rating`,
-              {
-                headers: {
-                  'Session-Id': sessionId,
-                  'Content-Type': 'application/json'
-                }
-              }
-            );
-            setRatingData(ratingResponse.data);
-          } catch (ratingError) {
-            console.error('Error fetching rating data, using calculated:', ratingError);
-            // Calculate rating data manually if API fails
-            const reviews = formattedGroup.reviews || [];
-            const averageRating = calculateAverageRating(reviews);
-            setRatingData({
-              averageRating: parseFloat(averageRating),
-              totalReviews: reviews.length
-            });
-          }
-          try {
-            const myRatingResponse = await axios.get(
-              `http://localhost:8080/groups/${id}/my-rating`,
-              {
-                headers: {
-                  'Session-Id': sessionId,
-                  'Content-Type': 'application/json'
-                }
-              }
-            );
-            
-            if (myRatingResponse.data) {
-              setMyRating(myRatingResponse.data.score);
-              setUserRating(myRatingResponse.data.score);
-              if (myRatingResponse.data && myRatingResponse.data.score && myRatingResponse.data.review) {
-                setExistingReview(myRatingResponse.data);
-                // Pre-populate the userReview state
+              if (myRatingData.score && myRatingData.review) {
+                setExistingReview(myRatingData);
                 setUserReview({
-                  rating: myRatingResponse.data.score,
-                  comment: myRatingResponse.data.review || ''
+                  rating: myRatingData.score,
+                  comment: myRatingData.review || ''
                 });
               }
             }
-          } catch (ratingError) {
-            console.error('Error fetching user rating:', ratingError);
+            
+            // Process rating data
+            if (ratingDataPromise.status === 'fulfilled') {
+              setRatingData(ratingDataPromise.value.data);
+            } else {
+              // Calculate fallback rating data
+              const reviews = formattedGroup.reviews || [];
+              const averageRating = calculateAverageRating(reviews);
+              setRatingData({
+                averageRating: parseFloat(averageRating),
+                totalReviews: reviews.length
+              });
+            }
+            
+            // Process reviews
+            if (reviewsPromise.status === 'fulfilled') {
+              const reviewsData = reviewsPromise.value.data;
+              processReviewsData(reviewsData);
+            }
+          } else {
+            // User is not a member, reset rating-related states
+            setMyRating(null);
+            setUserRating(0);
+            setExistingReview(null);
+            
+            // Still get average rating
+            try {
+              const ratingResponse = await axios.get(
+                `${base_url}/groups/${id}/average-rating`,
+                { headers: { 'Session-Id': sessionId }
+              });
+              setRatingData(ratingResponse.data);
+            } catch (err) {
+              console.error('Error fetching rating data:', err);
+              // Use calculated fallback
+              const reviews = formattedGroup.reviews || [];
+              setRatingData({
+                averageRating: calculateAverageRating(reviews),
+                totalReviews: reviews.length
+              });
+            }
           }
-          await fetchReviews();
-          
-        } catch (groupError) {
-          console.error('Error fetching group data after access check:', groupError);
-          // Fall back to mock data if needed
-          fallbackToMockData(id);
+        } else {
+          // Error getting group data
+          console.error('Error fetching group data');
         }
       } else {
-        // User does not have access - show access denied view
-        console.log('Access denied by check-access API');
+        // User does not have access
         setAccessDenied(true);
-        
-        // Get basic info for the group
         try {
           const basicInfoResponse = await axios.get(
-            `http://localhost:8080/groups/${id}/basic-info`,
-            {
-              headers: {
-                'Session-Id': sessionId,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
+            `${base_url}/groups/${id}/basic-info`,
+            { headers: { 'Session-Id': sessionId } }
+          ).catch(error => {
+            // Handle 500 error specifically
+            console.log('Error fetching basic info:', error.response?.status);
+            // Return a default response instead of throwing
+            return { 
+              data: { 
+                name: "Private Group",
+                description: "This is a private group. You need to request access to view details."
+              } 
+            };
+          });
           
           setGroup({
             id: id,
             title: basicInfoResponse.data.name || "Private Group",
             isPrivate: true,
-            description: "This is a private group. You need to request access to view details."
+            description: basicInfoResponse.data.description || 
+              "This is a private group. You need to request access to view details."
           });
-        } catch (basicInfoError) {
-          console.error('Could not fetch basic group info:', basicInfoError);
+        } catch (error) {
+          console.error('Error handling private group access:', error);
+          // Set default group information
           setGroup({
             id: id,
             title: "Private Group",
@@ -278,145 +880,44 @@ function Groups() {
           });
         }
       }
-    } catch (accessCheckError) {
-      console.error('Error checking access:', accessCheckError);
-      
-      // If the access check fails, fall back to the previous method
-      if (accessCheckError.response && accessCheckError.response.status === 403) {
-        console.log('Access denied via error response');
-        setAccessDenied(true);
-        
-        // Rest of your existing 403 handling...
-        
-      } else {
-        // Try to get the group data anyway, in case the access check API is just not implemented
-        try {
-          await axios.get(
-            `http://localhost:8080/groups/${id}`,
-            {
-              headers: {
-                'Session-Id': sessionId,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-          
-        } catch (fallbackError) {
-          // Handle this error with your existing error handling...
-          handleGroupFetchError(fallbackError);
-        }
-      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      handleGroupFetchError(error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchReviews = async () => {
-    const sessionId = localStorage.getItem('sessionId');
-    console.log('Fetching ratings and reviews for group:', id);
-    
-    try {
-      const reviewsResponse = await axios.get(
-        `http://localhost:8080/groups/${id}/ratings-reviews`,
-        {
-          headers: {
-            'Session-Id': sessionId,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      console.log('Raw ratings-reviews response:', reviewsResponse.data);
-      
-      // Transform the parallel arrays into review objects
-      const formattedReviews = reviewsResponse.data.reviews.map((review, index) => ({
-        id: index,
-        userEmail: 'user@example.com', // Will need to be provided by backend
-        userName: reviewsResponse.data.userNames[index], // Will need to be provided by backend
-        score: reviewsResponse.data.scores[index],
-        review: review,
-        date: new Date().toISOString() // Will need to be provided by backend
-      }));
+  }, [calculateAverageRating, id, navigate, processGroupData, fetchGroupImage]);
   
-      console.log('Formatted reviews:', formattedReviews);
-      setReviews(formattedReviews);
-    } catch (error) {
-      console.error('Error fetching ratings-reviews:', error);
-      if (error.response) {
-        console.log('Error response:', error.response.data);
-        console.log('Status code:', error.response.status);
-      }
-      setReviews([]);
-    }
+  // Function to process reviews data
+  const processReviewsData = (reviewsData) => {
+    // Transform the parallel arrays into review objects
+    const formattedReviews = reviewsData.reviews.map((review, index) => ({
+      id: index,
+      userEmail: reviewsData.userEmails?.[index] || 'user@example.com',
+      userName: reviewsData.userNames[index],
+      score: reviewsData.scores[index],
+      review: review,
+      date: reviewsData.dates?.[index] || new Date().toISOString()
+    }));
+  
+    setReviews(formattedReviews);
   };
 
-  // Helper function to handle errors from group data fetch
   const handleGroupFetchError = (error) => {
-    console.error('Error fetching group data:', error);
-    
-    // Enhanced error inspection
-    if (error.response) {
-          setMyRating(null);
-          setUserRating(0);
-      console.log('Server responded with status:', error.response.status);
-      console.log('Response data:', error.response.data);
-    } else if (error.request) {
-      console.log('No response received from server:', error.request);
-    } else {
-      console.log('Error setting up request:', error.message);
-    }
-    
-    // More robust 403 detection
-    if (
-      (error.response && error.response.status === 403) || 
-      (error.response && error.response.data && error.response.data.error === "Access denied") ||
-      (error.message && error.message.includes("forbidden"))
-    ) {
-      console.log('Access denied condition detected - showing access denied view');
-      setAccessDenied(true);
-      
-      // Your existing access denied handling...
-      
-    } else {
-      // Make sure accessDenied is reset for other errors
-      setAccessDenied(false);
-      
-      // Fall back to mock data
-      fallbackToMockData(id);
-    }
-  };
-
-  // Helper function to use mock data
-  const fallbackToMockData = (groupId) => {
-    console.log('Falling back to mock data for group:', groupId);
-    const numericId = parseInt(groupId, 10);
-    
-    if (groupsData[numericId]) {
-      console.log('Mock data found for group:', numericId);
-      setGroup(groupsData[numericId]);
-      
-      // Calculate mock rating data
-      const reviews = groupsData[numericId].reviews || [];
-      const averageRating = calculateAverageRating(reviews);
-      setRatingData({
-        averageRating: parseFloat(averageRating),
-        totalReviews: reviews.length
-      });
-    } else {
-      console.error('No mock data found for group ID:', numericId);
-      setGroup(null);
-    }
+    console.error("Failed to fetch groups:", error);
+    // Update your state to show error message to users
+    // Optionally set loading state to false if applicable
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
-    fetchReviews();
-  }, [id, navigate]);
+  }, [fetchData]);
 
   useEffect(() => {
     console.log('accessDenied state changed:', accessDenied);
   }, [accessDenied]);
   
-
   const handleDeleteRating = async () => {
     const sessionId = localStorage.getItem('sessionId');
     if (!sessionId) {
@@ -426,7 +927,7 @@ function Groups() {
   
     try {
       await axios.delete(
-        `http://localhost:8080/groups/${id}/delete-rating`,
+        `${base_url}/groups/${id}/delete-rating`,
         {
           headers: {
             'Session-Id': sessionId
@@ -436,9 +937,9 @@ function Groups() {
   
       // Refresh the average rating
       const ratingResponse = await axios.get(
-        `http://localhost:8080/groups/${id}/average-rating`,
-        { headers: { 'Session-Id': sessionId } }
-      );
+        `${base_url}/groups/${id}/average-rating`,
+        { headers: { 'Session-Id': sessionId }
+      });
       setRatingData(ratingResponse.data);
       setMyRating(null);
       setUserRating(0);
@@ -477,7 +978,7 @@ function Groups() {
       if (existingReview) {
         // Update existing review
         await axios.put(
-          `http://localhost:8080/groups/${id}/update-rating`,
+          `${base_url}/groups/${id}/update-rating`,
           {
             score: userReview.rating,
             review: userReview.comment
@@ -492,7 +993,7 @@ function Groups() {
       } else {
         // Create new review
         await axios.post(
-          `http://localhost:8080/groups/${id}/add-rating`,
+          `${base_url}/groups/${id}/add-rating`,
           {
             score: userReview.rating,
             review: userReview.comment
@@ -507,21 +1008,7 @@ function Groups() {
       }
   
       // Refresh reviews and ratings
-      await fetchReviews();
-      const ratingResponse = await axios.get(
-        `http://localhost:8080/groups/${id}/average-rating`,
-        { headers: { 'Session-Id': sessionId } }
-      );
-      
-      setRatingData(ratingResponse.data);
-      setMyRating(userReview.rating);
-      setUserRating(userReview.rating);
-      setExistingReview({
-        score: userReview.rating,
-        review: userReview.comment
-      });
-      
-      setShowReviewForm(false);
+      fetchData();
       toast.success(existingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
     } catch (error) {
       console.error('Error submitting review:', error);
@@ -556,7 +1043,7 @@ function Groups() {
       try {
         // Submit the new rating
         await axios.post(
-          `http://localhost:8080/groups/${id}/add-rating`,
+          `${base_url}/groups/${id}/add-rating`,
           { score: userRating },
           {
             headers: {
@@ -568,9 +1055,9 @@ function Groups() {
 
         // Get updated average rating
         const ratingResponse = await axios.get(
-          `http://localhost:8080/groups/${id}/average-rating`,
-          { headers: { 'Session-Id': sessionId } }
-        );
+          `${base_url}/groups/${id}/average-rating`,
+          { headers: { 'Session-Id': sessionId }
+        });
         
         // Update states
         setRatingData(ratingResponse.data);
@@ -580,13 +1067,6 @@ function Groups() {
       } finally {
         setSubmittingRating(false);
       }
-  };
-
-  // Calculate the average rating for a group
-  const calculateAverageRating = (reviews) => {
-    if (!reviews || reviews.length === 0) return 0;
-    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return (totalRating / reviews.length).toFixed(1);
   };
 
   // Update the requestAccess function
@@ -606,7 +1086,7 @@ function Groups() {
       try {
         // Try to call the real API
         const response = await axios.post(
-          `http://localhost:8080/groups/${id}/request-access`,
+          `${base_url}/groups/${id}/request-access`,
           {
             message: `${userData.name} (${userData.userEmail}) would like to join this group.`
           },
@@ -657,7 +1137,7 @@ function Groups() {
         toast.info("Joining group...", { autoClose: false, toastId: 'join-group' });
         
         const response = await axios.post(
-          `http://localhost:8080/groups/${id}/join`,
+          `${base_url}/groups/${id}/join`,
           {},
           {
             headers: {
@@ -695,7 +1175,63 @@ function Groups() {
   if (loading) {
     return (
       <div className="group-details-container loading">
-        <div className="loading-spinner">Loading group details...</div>
+        <div className="skeleton-back-button"></div>
+        
+        <div className="group-header skeleton-header">
+          <div className="skeleton-image"></div>
+          <div className="group-title-section">
+            <div className="skeleton-title"></div>
+            <div className="group-meta">
+              <div className="skeleton-meta-item"></div>
+              <div className="skeleton-meta-item"></div>
+              <div className="skeleton-meta-item"></div>
+              <div className="skeleton-meta-item"></div>
+            </div>
+            <div className="skeleton-button"></div>
+          </div>
+        </div>
+        
+        <div className="group-content">
+          <div className="skeleton-section">
+            <div className="skeleton-heading"></div>
+            <div className="skeleton-paragraph"></div>
+            <div className="skeleton-paragraph"></div>
+          </div>
+          
+          <div className="skeleton-section">
+            <div className="skeleton-heading"></div>
+            <div className="skeleton-members-grid">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="skeleton-member-card">
+                  <div className="skeleton-avatar"></div>
+                  <div className="skeleton-member-info">
+                    <div className="skeleton-member-name"></div>
+                    <div className="skeleton-member-major"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="skeleton-section">
+            <div className="skeleton-heading"></div>
+            <div className="skeleton-reviews-list">
+              {[1, 2].map(i => (
+                <div key={i} className="skeleton-review-card">
+                  <div className="skeleton-review-header">
+                    <div className="skeleton-reviewer-avatar"></div>
+                    <div className="skeleton-review-meta">
+                      <div className="skeleton-reviewer-name"></div>
+                      <div className="skeleton-review-date"></div>
+                    </div>
+                  </div>
+                  <div className="skeleton-review-rating"></div>
+                  <div className="skeleton-review-comment"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -751,10 +1287,21 @@ function Groups() {
         <img src={group.image} alt={group.title} className="group-image" />
         <div className="group-title-section">
           <h1>{group.title}</h1>
+          {userMembership.isHost && (
+            <button 
+              className="edit-group-button"
+              onClick={openEditForm}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '6px' }}>
+                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39 0-1.41l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
+              Edit Group
+            </button>
+          )}
           <div className="group-meta">
             <div className="group-meta-item">
               <span className="meta-icon">👥</span>
-              <span>{group.members ? group.members.length : 0} members</span>
+              <span>{(group.hosts?.length || 0) + (group.members?.length || 0)} members</span>
             </div>
             <div className="group-meta-item">
               <span className="meta-icon">📍</span>
@@ -844,14 +1391,11 @@ function Groups() {
               <h3>Hosts</h3>
               <div className="members-grid">
                 {group.hosts.map((host, index) => (
-                  <div key={host.id || `host-${index}`} className="member-card host-card">
-                    <div className="host-badge">Host</div>
-                    <img src={profileImage} alt={host.name} className="member-avatar" />
-                    <div className="member-info">
-                      <p className="member-name">{host.name}</p>
-                      <p className="member-major">{host.major || 'Not specified'}</p>
-                    </div>
-                  </div>
+                  <MemberCard 
+                    key={host.id || `host-${index}`} 
+                    member={host} 
+                    onClick={handleMemberClick} 
+                  />
                 ))}
               </div>
             </div>
@@ -863,13 +1407,11 @@ function Groups() {
               <h3>Members</h3>
               <div className="members-grid">
                 {group.members.map((member, index) => (
-                  <div key={member.id || `member-${index}`} className="member-card">
-                    <img src={profileImage} alt={member.name} className="member-avatar" />
-                    <div className="member-info">
-                      <p className="member-name">{member.name}</p>
-                      <p className="member-major">{member.major || 'Not specified'}</p>
-                    </div>
-                  </div>
+                  <MemberCard 
+                    key={member.id || `member-${index}`} 
+                    member={member} 
+                    onClick={handleMemberClick} 
+                  />
                 ))}
               </div>
             </div>
@@ -883,7 +1425,7 @@ function Groups() {
           )}
         </div>
         
-        <div className="group-reviews-section">
+      <div className="group-reviews-section">
         <div className="reviews-header">
           <h2>Reviews ({reviews ? reviews.length : 0})</h2>
           {userMembership.isMember && (
@@ -934,39 +1476,137 @@ function Groups() {
             </div>
           )}
           
-          {reviews && reviews.length > 0 ? (
-            <div className="reviews-list-container">
-              <div className="reviews-list">
-                {reviews.map(review => {
-                  console.log('Rendering individual review:', review);
-                  return (
-                    <div key={review.id || review.userEmail} className="review-card">
-                      <div className="review-header">
-                        <img src={profileImage} alt={review.userName || 'User'} className="reviewer-avatar" />
-                        <div className="review-meta">
-                          <p className="reviewer-name">{review.userName || 'Anonymous User'}</p>
-                          <p className="review-date">
-                            {review.date ? new Date(review.date).toLocaleDateString() : 'Recent'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="review-rating">
-                        {renderStars(Number(review.score))}
-                      </div>
-                      <p className="review-comment">{review.review || 'No comment provided'}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="no-reviews">
-              <p className="no-reviews-message">No reviews available for this group yet.</p>
-              <p className="no-reviews-prompt">Be the first to share your experience!</p>
-            </div>
-          )}
+          <ReviewsList reviews={reviews} />
         </div>
       </div>
+
+      {/* Add this at the end of the component, before the final closing div */}
+      {showEditForm && (
+        <div className="edit-group-form-container">
+          <div className="edit-group-form-overlay" onClick={() => setShowEditForm(false)}></div>
+          <div className="edit-group-form">
+            <h3>Edit Group Details</h3>
+            <form onSubmit={handleSubmitGroupEdit}>
+              <div className="form-group">
+                <label htmlFor="group-name">Group Name</label>
+                <input
+                  id="group-name"
+                  name="name"
+                  type="text"
+                  value={editFormData.name}
+                  onChange={handleEditFormChange}
+                  placeholder="Enter group name"
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="max-users">Maximum Users</label>
+                <input
+                  id="max-users"
+                  name="maxUsers"
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={editFormData.maxUsers}
+                  onChange={handleEditFormChange}
+                  required
+                />
+                <small>Set the maximum number of users allowed in this group</small>
+              </div>
+
+              {/* Replace the existing location input with this dropdown */}
+              <div className="form-group">
+                <label htmlFor="group-location">Location</label>
+                <select
+                  id="group-location"
+                  name="location"
+                  value={editFormData.location}
+                  onChange={handleEditFormChange}
+                  className="campus-building-select"
+                >
+                  <option value="">Select a building</option>
+                  {CAMPUS_BUILDINGS.map(building => (
+                    <option key={building.code} value={building.code}>
+                      {building.code} - {building.name}
+                    </option>
+                  ))}
+                  <option value="custom">Other location (specify below)</option>
+                </select>
+                
+                {editFormData.location === 'custom' && (
+                  <input
+                    type="text"
+                    name="customLocation"
+                    value={editFormData.customLocation || ''}
+                    onChange={(e) => setEditFormData(prev => ({
+                      ...prev,
+                      customLocation: e.target.value,
+                      location: 'custom'
+                    }))}
+                    placeholder="Enter custom location"
+                    className="mt-2"
+                  />
+                )}
+                <small>Where does this group typically meet?</small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="group-schedule">Meeting Schedule</label>
+                <input
+                  id="group-schedule"
+                  name="meetingTimes"
+                  type="text"
+                  value={editFormData.meetingTimes}
+                  onChange={handleEditFormChange}
+                  placeholder="E.g., Mondays at 5 PM, Weekly on Thursdays"
+                />
+                <small>When does this group typically meet?</small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="group-description">Description</label>
+                <textarea
+                  id="group-description"
+                  name="description"
+                  value={editFormData.description}
+                  onChange={handleEditFormChange}
+                  placeholder="Describe your group's purpose, activities, and goals"
+                  rows={5}
+                />
+                <small>Tell others what your group is all about</small>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="group-image">Group Image</label>
+                <div className="image-preview-container">
+                  {editFormData.imagePreview && (
+                    <img 
+                      src={editFormData.imagePreview} 
+                      alt="Group preview" 
+                      className="image-preview" 
+                    />
+                  )}
+                </div>
+                <input
+                  id="group-image"
+                  name="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                />
+                <small>Upload a new image or leave blank to keep the current one</small>
+              </div>
+              
+              <div className="form-actions">
+                <button type="button" className="cancel-button" onClick={() => setShowEditForm(false)}>Cancel</button>
+                <button type="submit" className="save-button">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <ToastContainer 
         position="bottom-left"
         autoClose={5000}

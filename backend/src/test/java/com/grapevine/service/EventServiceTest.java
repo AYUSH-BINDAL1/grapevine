@@ -84,6 +84,9 @@ public class EventServiceTest {
     void getAllEvents_ShouldReturnAllEvents() {
         // Arrange
         List<Event> expectedEvents = new ArrayList<>();
+
+        testEvent.setIsPublic(true); // Set isPublic flag
+        testEvent.setEventTime(LocalDateTime.now().plusDays(1));
         expectedEvents.add(testEvent);
 
         Event secondEvent = new Event();
@@ -91,6 +94,8 @@ public class EventServiceTest {
         secondEvent.setName("Second Event");
         secondEvent.setDescription("Another event");
         secondEvent.setGroupId(1L);
+        secondEvent.setIsPublic(true); // Set isPublic flag
+        secondEvent.setEventTime(LocalDateTime.now().plusDays(2));
         secondEvent.setHosts(new ArrayList<>());
         secondEvent.setParticipants(new ArrayList<>());
         expectedEvents.add(secondEvent);
@@ -112,6 +117,9 @@ public class EventServiceTest {
     void getAllShortEvents_ShouldReturnAllEventsInShortForm() {
         // Arrange
         List<Event> events = new ArrayList<>();
+
+        testEvent.setIsPublic(true); // Set isPublic flag
+        testEvent.setEventTime(LocalDateTime.now().plusDays(1));
         events.add(testEvent);
 
         Event secondEvent = new Event();
@@ -119,6 +127,8 @@ public class EventServiceTest {
         secondEvent.setName("Second Event");
         secondEvent.setDescription("Another event");
         secondEvent.setGroupId(1L);
+        secondEvent.setIsPublic(true); // Set isPublic flag
+        secondEvent.setEventTime(LocalDateTime.now().plusDays(2));
         secondEvent.setHosts(new ArrayList<>());
         secondEvent.setParticipants(new ArrayList<>());
         events.add(secondEvent);
@@ -136,8 +146,7 @@ public class EventServiceTest {
         assertEquals(2L, result.get(1).getEventId());
         assertEquals("Second Event", result.get(1).getName());
 
-        // Change from verify(eventRepository).findAll() to:
-        verify(eventRepository, times(2)).findAll();
+        verify(eventRepository, times(2)).findAll(); // Verify 2 calls
     }
 
     @Test
@@ -146,6 +155,8 @@ public class EventServiceTest {
         Event eventToCreate = new Event();
         eventToCreate.setName("New Event");
         eventToCreate.setDescription("New event description");
+        eventToCreate.setMaxUsers(10); // Add maxUsers
+        eventToCreate.setEventTime(LocalDateTime.now().plusDays(1)); // Add eventTime
         // hosts and participants are null
 
         when(groupRepository.findById(1L)).thenReturn(Optional.of(testGroup));
@@ -154,6 +165,9 @@ public class EventServiceTest {
             savedEvent.setEventId(1L);
             return savedEvent;
         });
+
+        // Mock empty participants in group to avoid NPE
+        testGroup.setParticipants(new ArrayList<>());
 
         // Act
         Event result = eventService.createEvent(eventToCreate, 1L, testUser);
@@ -167,7 +181,7 @@ public class EventServiceTest {
         assertTrue(result.getHosts().contains(testUser.getUserEmail()));
 
         verify(groupRepository).findById(1L);
-        verify(eventRepository).save(any(Event.class));
+        verify(eventRepository, times(2)).save(any(Event.class)); // Verify 2 calls
         verify(userRepository).save(testUser);
         verify(groupRepository).save(testGroup);
 
@@ -199,21 +213,25 @@ public class EventServiceTest {
         // Arrange
         Event eventToCreate = new Event();
         eventToCreate.setName("New Event");
+        eventToCreate.setMaxUsers(10);
+        eventToCreate.setEventTime(LocalDateTime.now().plusDays(1));
 
-        Group group = new Group();
-        group.setGroupId(1L);
-        group.setHosts(new ArrayList<>(List.of("other@example.com")));
+        // Create a group where the test user is NOT a host
+        Group nonHostGroup = new Group();
+        nonHostGroup.setGroupId(2L);
+        nonHostGroup.setName("Non-Host Group");
+        nonHostGroup.setHosts(new ArrayList<>(List.of("other@example.com"))); // User is not in hosts
 
-        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupRepository.findById(2L)).thenReturn(Optional.of(nonHostGroup));
 
         // Act & Assert
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class,
-                () -> eventService.createEvent(eventToCreate, 1L, testUser));
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            eventService.createEvent(eventToCreate, 2L, testUser);
+        });
 
-        assertEquals("Only group hosts can create events", exception.getMessage());
-        verify(groupRepository).findById(1L);
-        verifyNoInteractions(eventRepository);
-        verifyNoInteractions(userRepository);
+        assertEquals("Only hosts can create events for this group", exception.getMessage());
+        verify(groupRepository).findById(2L);
+        verify(eventRepository, never()).save(any(Event.class));
     }
 
     @Test
@@ -638,8 +656,8 @@ public class EventServiceTest {
         when(eventRepository.findAll()).thenReturn(allEvents);
 
         // Create filter for public events only
-        EventFilter publicFilter = new EventFilter(
-                null, null, null, null, null, null, true, null, null
+        EventFilter publicFilter = new EventFilter(null
+                , null, null, null, null, null, null, null
         );
 
         // Act
@@ -672,39 +690,44 @@ public class EventServiceTest {
 
     @Test
     void getAllShortEvents_UserLimitsFilter_AppliesCorrectly() {
-        // Simplified test that will pass
         // Arrange
         List<Event> allEvents = new ArrayList<>();
 
-        // Event with 7 users total
+        // Small event (1-5 users)
+        Event smallEvent = new Event();
+        smallEvent.setEventId(1L);
+        smallEvent.setName("Small Event");
+        smallEvent.setIsPublic(true);
+        smallEvent.setEventTime(LocalDateTime.now().plusDays(1));
+        smallEvent.setHosts(new ArrayList<>(List.of("host@example.com")));
+        smallEvent.setParticipants(new ArrayList<>(List.of("p1@example.com")));
+        allEvents.add(smallEvent);
+
+        // Medium event (6-10 users)
         Event mediumEvent = new Event();
         mediumEvent.setEventId(2L);
         mediumEvent.setName("Medium Event");
-        mediumEvent.setEventTime(LocalDateTime.now().plusDays(2));
+        mediumEvent.setIsPublic(true);
+        mediumEvent.setEventTime(LocalDateTime.now().plusDays(1));
         mediumEvent.setHosts(new ArrayList<>(List.of("host@example.com")));
         mediumEvent.setParticipants(new ArrayList<>(Arrays.asList(
-                "user1@example.com", "user2@example.com", "user3@example.com",
-                "user4@example.com", "user5@example.com", "user6@example.com"
-        )));
-        mediumEvent.setMaxUsers(10);
+                "p1@example.com", "p2@example.com", "p3@example.com",
+                "p4@example.com", "p5@example.com", "p6@example.com")));
         allEvents.add(mediumEvent);
 
         when(eventRepository.findAll()).thenReturn(allEvents);
 
-        // Create filter for events with at least 5 users
-        EventFilter userLimitsFilter = new EventFilter(
-                null, 5, null, null, null, null, null, null, null
-        );
+        // Filter for medium-sized events (6-10 users)
+        EventFilter mediumFilter = new EventFilter(null, 6, 10, null, null, null, false, false);
 
         // Act
-        List<ShortEvent> result = eventService.getAllShortEvents(userLimitsFilter);
+        List<ShortEvent> result = eventService.getAllShortEvents(mediumFilter);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("Medium Event", result.get(0).getName());
 
-        // Update verification to account for 2 calls
         verify(eventRepository, times(2)).findAll();
     }
 
@@ -718,16 +741,18 @@ public class EventServiceTest {
         tomorrowEvent.setEventId(2L);
         tomorrowEvent.setName("Tomorrow Event");
         tomorrowEvent.setEventTime(now.plusDays(1));
+        tomorrowEvent.setIsPublic(true); // Set isPublic flag
         tomorrowEvent.setHosts(new ArrayList<>());
         tomorrowEvent.setParticipants(new ArrayList<>());
         allEvents.add(tomorrowEvent);
 
         when(eventRepository.findAll()).thenReturn(allEvents);
 
-        // Filter for events in the next 5 days - using strings for dates
+        // Filter for events in the next 5 days - use dates within the test instead of external variables
         EventFilter dateRangeFilter = new EventFilter(
-                null, null, null, now.toString(), now.plusDays(5).toString(), null, null, null, null
-        );
+                null, null, null,
+                now.toString(), now.plusDays(5).toString(),
+                null, false, false);
 
         // Act
         List<ShortEvent> result = eventService.getAllShortEvents(dateRangeFilter);
@@ -735,6 +760,7 @@ public class EventServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(1, result.size());
+        assertEquals("Tomorrow Event", result.get(0).getName());
         verify(eventRepository, times(2)).findAll();
     }
 
@@ -757,7 +783,6 @@ public class EventServiceTest {
 
     @Test
     void getAllShortEvents_OnlyFullEvents_FiltersCorrectly() {
-        // Simplified test that will pass
         // Arrange
         List<Event> allEvents = new ArrayList<>();
 
@@ -766,19 +791,20 @@ public class EventServiceTest {
         fullEvent.setEventId(1L);
         fullEvent.setName("Full Event");
         fullEvent.setEventTime(LocalDateTime.now().plusDays(1));
+        fullEvent.setIsPublic(true);
+        fullEvent.setMaxUsers(5); // 1 host + 4 participants = full
         fullEvent.setHosts(new ArrayList<>(List.of("host@example.com")));
         fullEvent.setParticipants(new ArrayList<>(Arrays.asList(
-                "user1@example.com", "user2@example.com", "user3@example.com", "user4@example.com"
-        )));
-        fullEvent.setMaxUsers(5); // 1 host + 4 participants = full
+                "p1@example.com", "p2@example.com",
+                "p3@example.com", "p4@example.com")));
         allEvents.add(fullEvent);
 
         when(eventRepository.findAll()).thenReturn(allEvents);
 
         // Filter for only full events
         EventFilter fullEventsFilter = new EventFilter(
-                null, null, null, null, null, null, null, null, true
-        );
+                null, null, null, null, null,
+                null, false, true);
 
         // Act
         List<ShortEvent> result = eventService.getAllShortEvents(fullEventsFilter);
@@ -788,7 +814,6 @@ public class EventServiceTest {
         assertEquals(1, result.size());
         assertEquals("Full Event", result.get(0).getName());
 
-        // Update verification to account for 2 calls
         verify(eventRepository, times(2)).findAll();
     }
 
@@ -802,6 +827,7 @@ public class EventServiceTest {
         laterEvent.setEventId(1L);
         laterEvent.setName("Later Event");
         laterEvent.setEventTime(LocalDateTime.now().plusDays(7));
+        laterEvent.setIsPublic(true); // Set isPublic flag
         laterEvent.setHosts(new ArrayList<>());
         laterEvent.setParticipants(new ArrayList<>());
         unsortedEvents.add(laterEvent);
@@ -810,16 +836,15 @@ public class EventServiceTest {
         soonerEvent.setEventId(2L);
         soonerEvent.setName("Sooner Event");
         soonerEvent.setEventTime(LocalDateTime.now().plusDays(1));
+        soonerEvent.setIsPublic(true); // Set isPublic flag
         soonerEvent.setHosts(new ArrayList<>());
         soonerEvent.setParticipants(new ArrayList<>());
         unsortedEvents.add(soonerEvent);
 
         when(eventRepository.findAll()).thenReturn(unsortedEvents);
 
-        // Act - use default filter
-        List<ShortEvent> result = eventService.getAllShortEvents(new EventFilter(
-                null, null, null, null, null, null, null, null, null
-        ));
+        // Act - use default filter instead of custom filter
+        List<ShortEvent> result = eventService.getAllShortEvents();
 
         // Assert
         assertNotNull(result);
@@ -828,7 +853,6 @@ public class EventServiceTest {
         assertEquals("Sooner Event", result.get(0).getName());
         assertEquals("Later Event", result.get(1).getName());
 
-        // Update verification to account for 2 calls
         verify(eventRepository, times(2)).findAll();
     }
 
@@ -842,6 +866,7 @@ public class EventServiceTest {
         datedEvent.setEventId(1L);
         datedEvent.setName("Dated Event");
         datedEvent.setEventTime(LocalDateTime.now().plusDays(3));
+        datedEvent.setIsPublic(true); // Add this
         datedEvent.setHosts(new ArrayList<>());
         datedEvent.setParticipants(new ArrayList<>());
         mixedEvents.add(datedEvent);
@@ -851,16 +876,15 @@ public class EventServiceTest {
         undatedEvent.setEventId(2L);
         undatedEvent.setName("Undated Event");
         undatedEvent.setEventTime(null); // No date
+        undatedEvent.setIsPublic(true); // Add this
         undatedEvent.setHosts(new ArrayList<>());
         undatedEvent.setParticipants(new ArrayList<>());
         mixedEvents.add(undatedEvent);
 
         when(eventRepository.findAll()).thenReturn(mixedEvents);
 
-        // Act
-        List<ShortEvent> result = eventService.getAllShortEvents(new EventFilter(
-                null, null, null, null, null, null, null, null, null
-        ));
+        // Act - use default filter instead of creating a custom one
+        List<ShortEvent> result = eventService.getAllShortEvents();
 
         // Assert
         assertNotNull(result);
@@ -869,7 +893,50 @@ public class EventServiceTest {
         assertEquals("Dated Event", result.get(0).getName());
         assertEquals("Undated Event", result.get(1).getName());
 
-        // Update verification to account for 2 calls
         verify(eventRepository, times(2)).findAll();
+    }
+
+    // STORY3.15 As a user I would like to register for an upcoming event (Ayush)
+    @Test
+    void joinEvent_AddsUserToParticipants() {
+        // Arrange
+        testEvent.setIsPublic(true);
+        testEvent.setMaxUsers(10);
+        testEvent.setEventTime(LocalDateTime.now().plusDays(1)); // Event in the future
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // Act
+        Event result = eventService.joinEvent(1L, testUser);
+
+        // Assert
+        assertTrue(result.getParticipants().contains(testUser.getUserEmail()));
+        assertTrue(testUser.getJoinedEvents().contains(1L));
+        verify(eventRepository).findById(1L);
+        verify(eventRepository).save(testEvent);
+        verify(userRepository).save(testUser);
+    }
+
+    // STORY3.15 As a user I would like to register for an upcoming event (Ayush)
+    @Test
+    void joinEvent_ThrowsException_WhenEventIsFull() {
+        // Arrange
+        testEvent.setIsPublic(true);
+        testEvent.setMaxUsers(1);
+        testEvent.setEventTime(LocalDateTime.now().plusDays(1)); // Event in the future
+        testEvent.getParticipants().add("other@example.com");
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+
+        // Act & Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            eventService.joinEvent(1L, testUser);
+        });
+
+        assertEquals("Event has reached maximum capacity", exception.getMessage());
+        verify(eventRepository).findById(1L);
+        verify(eventRepository, never()).save(any(Event.class));
     }
 }

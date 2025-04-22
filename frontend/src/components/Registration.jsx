@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Registration.css';
 import { FaEnvelope, FaLock, FaUser, FaBirthdayCake, FaExclamationCircle } from 'react-icons/fa'; // For icons
+import { base_url } from '../config';
 
 function Registration() {
   const [formData, setFormData] = useState({
@@ -60,8 +61,9 @@ function Registration() {
     e.preventDefault();
     setError('');
     
+    setPasswordStrength('');
     try {
-      const response = await axios.post('http://localhost:8080/users/register', formData, {
+      const response = await axios.post(`${base_url}/users/register`, formData, {
         headers: {
           'Content-Type': 'application/json'
         }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# simple script for running the application with all dependencies
-# note: this script should be run from a UNIX-based shell (e.g., Git Bash on Windows)
+# Simple script for running the application with all dependencies
+# Note: this script should be run from a UNIX-based shell (e.g., Git Bash or WSL on Windows)
 
 # INSTRUCTIONS:
    #1. Make the script executable:
@@ -379,7 +379,7 @@ create_groups_for_user1() {
     if [ ! -z "$PAST_EVENT_ID" ]; then
       echo -e "\n${GREEN}Setting event date to past...${NC}"
       # Update event time to be in the past
-      docker exec backend-postgres-1 psql -U postgres -d postgres -c "
+      docker exec backend_postgres_1 psql -U postgres -d postgres -c "
         UPDATE events
         SET event_time = '2025-01-01T10:00:00'
         WHERE event_id = $PAST_EVENT_ID;"
@@ -507,6 +507,65 @@ add_users_to_course() {
   echo -e "${GREEN}Finished adding users to CS25000 course${NC}"
 }
 
+setup_friends_and_conversation() {
+  echo -e "\n${GREEN}Setting up friendship and conversation between user1 and user2...${NC}"
+
+  # Log in as user1
+  echo -e "${BLUE}Logging in as user1...${NC}"
+  USER1_SESSION=$(curl -s -X POST "$BACKEND_URL/users/login" \
+    -H "Content-Type: application/json" \
+    -d '{"email": "user1@purdue.edu", "password": "pw1"}')
+
+  USER1_SESSION_ID=$(echo "$USER1_SESSION" | grep -o '"sessionId":"[^"]*' | sed 's/"sessionId":"//g')
+  echo "User1 Session ID: $USER1_SESSION_ID"
+
+  # Send friend request from user1 to user2
+  echo -e "${BLUE}Sending friend request from user1 to user2...${NC}"
+  FRIEND_REQUEST_RESPONSE=$(curl -s --location "$BACKEND_URL/users/user1@purdue.edu/friend-requests/send" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $USER1_SESSION_ID" \
+    --data '{"receiverEmail": "user2@purdue.edu"}')
+
+  echo "Friend request response: $FRIEND_REQUEST_RESPONSE"
+
+  # Log in as user2
+  echo -e "${BLUE}Logging in as user2...${NC}"
+  USER2_SESSION=$(curl -s -X POST "$BACKEND_URL/users/login" \
+    -H "Content-Type: application/json" \
+    -d '{"email": "user2@purdue.edu", "password": "pw2"}')
+
+  USER2_SESSION_ID=$(echo "$USER2_SESSION" | grep -o '"sessionId":"[^"]*' | sed 's/"sessionId":"//g')
+  echo "User2 Session ID: $USER2_SESSION_ID"
+
+  # User2 accepts friend request
+  echo -e "${BLUE}User2 accepting friend request from user1...${NC}"
+  ACCEPT_RESPONSE=$(curl -s --location "$BACKEND_URL/users/user2@purdue.edu/friend-requests/accept" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $USER2_SESSION_ID" \
+    --data '{"requesterEmail": "user1@purdue.edu"}')
+
+  echo "Accept response: $ACCEPT_RESPONSE"
+
+  # User1 creates a conversation with user2
+  echo -e "${BLUE}User1 creating conversation with user2...${NC}"
+  CONVERSATION_RESPONSE=$(curl -s --location --request POST "$BACKEND_URL/conversations/create/user2@purdue.edu" \
+    --header "Content-Type: application/json" \
+    --header "Session-Id: $USER1_SESSION_ID" \
+    --data '')
+
+  CONVERSATION_ID=$(echo "$CONVERSATION_RESPONSE" | grep -o '"conversationId":[0-9]*' | cut -d':' -f2)
+  echo "Conversation created with ID: $CONVERSATION_ID"
+
+  # Log out user2 completely (removes all sessions)
+  echo -e "${BLUE}Logging out user2 from all sessions...${NC}"
+  LOGOUT_RESPONSE=$(curl -s --location --request DELETE "$BACKEND_URL/users/logout-all" \
+    --header "Session-Id: $USER2_SESSION_ID")
+
+  echo "Logout response: $LOGOUT_RESPONSE"
+
+  echo -e "${GREEN}Successfully set up friendship and conversation between user1 and user2!${NC}"
+}
+
 # Register four users
 register_and_verify_user "user1@purdue.edu" "pw1" "Test UserOne"
 register_and_verify_user "user2@purdue.edu" "pw2" "Test UserTwo"
@@ -550,7 +609,8 @@ echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' 
 echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' -d '{\"email\": \"user11@purdue.edu\", \"password\": \"pw11\"}'"
 
 
-
+# Setup friends and conversation
+setup_friends_and_conversation
 
 setup_bucket
 

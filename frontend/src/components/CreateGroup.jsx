@@ -2,14 +2,17 @@ import './CreateGroup.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { base_url } from '../config';
 
 function CreateGroup() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         maxUsers: '',
-        public: true
+        public: true,
+        instructorLed: false
     });
+
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -44,7 +47,7 @@ function CreateGroup() {
 
         try {
             const response = await axios.post(
-                'http://localhost:8080/groups/create',
+                `${base_url}/groups/create`,
                 payload,
                 {
                     headers: {
@@ -55,8 +58,19 @@ function CreateGroup() {
             );
 
             if (response.status === 200) {
+                const groupId = response.data.groupId;
+
+                // 🔁 Toggle instructor-led if selected
+                if (formData.instructorLed) {
+                    await axios.put(`${base_url}/groups/${groupId}/toggle-instructor-led`, null, {
+                        headers: {
+                            'Session-Id': sessionId
+                        }
+                    });
+                }
+
                 console.log('Group Created:', response.data);
-                navigate(`/group/${response.data.groupId}`);
+                navigate(`/group/${groupId}`);
             }
         } catch (error) {
             console.error('Error creating group:', error);
@@ -72,6 +86,7 @@ function CreateGroup() {
         <div className="create-group-container">
             <form onSubmit={handleSubmit} className="create-group-form">
                 <h2>Create Group</h2>
+
                 <div className="form-group">
                     <input
                         type="text"
@@ -82,6 +97,7 @@ function CreateGroup() {
                         required
                     />
                 </div>
+
                 <div className="form-group">
                     <textarea
                         name="description"
@@ -91,6 +107,7 @@ function CreateGroup() {
                         required
                     />
                 </div>
+
                 <div className="form-group">
                     <input
                         type="number"
@@ -101,6 +118,7 @@ function CreateGroup() {
                         required
                     />
                 </div>
+
                 <div className="form-group checkbox-inline">
                     <input
                         type="checkbox"
@@ -111,6 +129,18 @@ function CreateGroup() {
                     />
                     <label htmlFor="public-checkbox">Public Group</label>
                 </div>
+
+                <div className="form-group checkbox-inline">
+                    <input
+                        type="checkbox"
+                        name="instructorLed"
+                        checked={formData.instructorLed}
+                        onChange={handleChange}
+                        id="instructor-checkbox"
+                    />
+                    <label htmlFor="instructor-checkbox">Label as Instructor Led</label>
+                </div>
+
                 <div className="form-actions">
                     <button type="submit" className="create-group-button">
                         Create Group

@@ -6,6 +6,207 @@ import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from "react-router-dom";
 import { FixedSizeList as List } from 'react-window';
 import PropTypes from 'prop-types';
+import { base_url, image_url } from "../config";
+
+// Add this at the top of your file with other constants
+
+// Comprehensive list of available majors
+const availableMajors = [
+  "Accounting",
+  "Actuarial Science",
+  "Aeronautical and Astronautical Engineering",
+  "Aeronautical Engineering Technology",
+  "African American Studies",
+  "Agribusiness",
+  "Agricultural Communication",
+  "Agricultural Economics",
+  "Agricultural Education",
+  "Agricultural Engineering",
+  "Agricultural Systems Management",
+  "Agronomy",
+  "American Studies",
+  "Animal Sciences",
+  "Animation and Visual Effects",
+  "Anthropology",
+  "Applied Meteorology and Climatology",
+  "Aquatic Sciences",
+  "Art History",
+  "Artificial Intelligence",
+  "Asian Studies",
+  "Atmospheric Science/Meteorology",
+  "Audio Engineering Technology",
+  "Automation and Systems Integration Engineering Technology",
+  "Aviation Management",
+  "Biochemistry",
+  "Biological Engineering",
+  "Biology",
+  "Biomedical Engineering",
+  "Biomedical Health Sciences",
+  "Brain and Behavioral Sciences",
+  "Building Information Modeling",
+  "Business Analytics and Information Management",
+  "Cell, Molecular, and Developmental Biology",
+  "Chemical Biology and Biochemistry",
+  "Chemical Engineering",
+  "Chemistry",
+  "Chinese Studies",
+  "Civil Engineering",
+  "Classical Studies",
+  "Communication",
+  "Comparative Literature",
+  "Computer and Information Technology",
+  "Computer Engineering",
+  "Computer Engineering Technology",
+  "Computer Infrastructure & Network Engineering Technology",
+  "Computer Science",
+  "Computing Systems Analysis and Design",
+  "Construction Engineering",
+  "Construction Management Technology",
+  "Creative Writing",
+  "Crop Science",
+  "Cybersecurity",
+  "Data Analytics, Technologies and Applications",
+  "Data Science",
+  "Data Visualization",
+  "Design and Construction Integration",
+  "Design Studies",
+  "Developmental and Family Science",
+  "Digital Agronomy",
+  "Digital Criminology",
+  "Digital Enterprise Systems",
+  "Early Childhood Education and Exceptional Needs",
+  "Ecology, Evolution, and Environmental Sciences",
+  "Economics",
+  "Electrical Engineering",
+  "Electrical Engineering Technology",
+  "Elementary Education",
+  "Energy Engineering Technology",
+  "Engineering (First Year)",
+  "Engineering Technology Education", 
+  "English",
+  "English Education",
+  "Environmental and Ecological Engineering",
+  "Environmental & Natural Resources Engineering",
+  "Environmental Geosciences",
+  "Exploratory Studies",
+  "Family and Consumer Sciences Education",
+  "Farm Management",
+  "Fermentation Science",
+  "Film and Video",
+  "Finance",
+  "Financial Counseling and Planning",
+  "Flight (Professional Flight Technology)",
+  "Food Science",
+  "Forestry",
+  "French",
+  "Game Development and Design",
+  "General Education",
+  "Genetics",
+  "Geology and Geophysics",
+  "German",
+  "Global Studies",
+  "Health and Disease",
+  "History",
+  "Horticulture",
+  "Hospitality and Tourism Management",
+  "Human Resource Development",
+  "Human Services",
+  "Industrial Design",
+  "Industrial Engineering",
+  "Industrial Engineering Technology",
+  "Insect Biology",
+  "Integrated Business and Engineering",
+  "Integrated Studio Arts",
+  "Interdisciplinary Performance",
+  "Interdisciplinary Engineering Studies",
+  "Interior Architecture",
+  "Interior Design",
+  "Italian Studies",
+  "Japanese",
+  "Jewish Studies",
+  "Kinesiology",
+  "Landscape Architecture",
+  "Law and Society",
+  "Linguistics",
+  "Management",
+  "Marketing",
+  "Materials Engineering",
+  "Mathematics",
+  "Mathematics, Applied",
+  "Mathematics - Business",
+  "Mathematics Education",
+  "Mathematics - Statistics",
+  "Mechanical Engineering",
+  "Mechanical Engineering Technology",
+  "Mechatronics Engineering Technology",
+  "Medical Laboratory Sciences",
+  "Microbiology",
+  "Motorsports Engineering",
+  "Multidisciplinary Engineering",
+  "Music",
+  "Natural Resources and Environmental Science",
+  "Neurobiology and Physiology",
+  "Nuclear Engineering",
+  "Nursing",
+  "Nutrition and Dietetics",
+  "Nutrition, Fitness, and Health",
+  "Nutrition Science",
+  "Occupational and Environmental Health Sciences",
+  "Organizational Leadership",
+  "Pharmaceutical Sciences",
+  "Philosophy",
+  "Physics",
+  "Physics, Applied",
+  "Planetary Sciences",
+  "Plant Genetics, Breeding, and Biotechnology",
+  "Plant Science",
+  "Plant Studies - Exploratory",
+  "Political Science",
+  "Pre-dentistry",
+  "Pre-law",
+  "Pre-medicine",
+  "Pre-occupational Therapy",
+  "Pre-physical Therapy",
+  "Pre-physician Assistant",
+  "Pre-veterinary Medicine",
+  "Professional Writing",
+  "Psychological Sciences",
+  "Public Health",
+  "Quantitative Business Economics",
+  "Radiological Health Sciences",
+  "Religious Studies",
+  "Retail Management",
+  "Robotics Engineering Technology",
+  "Russian",
+  "Sales and Marketing",
+  "Science Education",
+  "Selling and Sales Management",
+  "Smart Manufacturing Industrial Informatics",
+  "Social Studies Education",
+  "Sociology",
+  "Soil and Water Sciences",
+  "Sound for the Performing Arts",
+  "Spanish",
+  "Special Education",
+  "Speech, Language, and Hearing Sciences",
+  "Statistics, Applied",
+  "Studio Arts and Technology",
+  "Supply Chain and Operations Management",
+  "Supply Chain & Sales Engineering Technology",
+  "Sustainable Food and Farming Systems",
+  "Theatre",
+  "Themed Entertainment Design",
+  "Turf Management and Science",
+  "Unmanned Aerial Systems",
+  "UX Design",
+  "Veterinary Nursing",
+  "Visual Arts Design Education",
+  "Visual Arts Education",
+  "Visual Communication Design",
+  "Web Programming and Design",
+  "Wildlife",
+  "Women's, Gender and Sexuality Studies"
+];
 
 // Add this custom hook at the top with other imports
 function useDebounce(value, delay) {
@@ -161,6 +362,42 @@ function Profile() {
       });
   }, [availabilityString]);
 
+  const fetchUserProfile = useCallback(async () => {
+    const storedUserData = localStorage.getItem('userData');
+    if (!storedUserData) {
+      toast.error("User data not found. Please login again.");
+      setTimeout(() => window.location.href = '/', 2000);
+      return null;
+    }
+    
+    const parsedData = JSON.parse(storedUserData);
+    setUserData(parsedData); // Set initial data from localStorage first
+    
+    try {
+      // Then fetch fresh data from server
+      const response = await axios.get(
+        `${base_url}/users/${parsedData.userEmail}`,
+        { headers: { 'Session-Id': sessionId } }
+      );
+      
+      // Merge server data with local data, preferring server values
+      const mergedData = {
+        ...parsedData,
+        ...response.data,
+        // Handle any special field merging here
+      };
+      
+      // Update local storage with fresh data
+      localStorage.setItem('userData', JSON.stringify(mergedData));
+      setUserData(mergedData);
+      
+      return mergedData;
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return parsedData; // Return localStorage data as fallback
+    }
+  }, [sessionId]);
+
   useEffect(() => {
     if (!sessionId) {
       toast.error("Session expired. Please login again.");
@@ -168,71 +405,27 @@ function Profile() {
       return;
     }
 
-    // Load user data from localStorage
     setIsLoading(true);
-    const storedUserData = localStorage.getItem('userData');
-    
-    if (storedUserData) {
-      const parsedData = JSON.parse(storedUserData);
-      console.log("User data from localStorage:", parsedData);
-      setUserData(parsedData);
-      setEditedDescription(parsedData.biography || "");
-      
-      // Store the majors array and create the display string
-      setEditedProfileData({
-        name: parsedData.name || "",
-        userEmail: parsedData.userEmail || "",
-        majors: parsedData.majors || [],
-        majorsString: (parsedData.majors || []).join(', ')
-      });
-      
-      // If the user already has availability data, load it
-      if (parsedData.weeklyAvailability) {
-        setAvailabilityString(parsedData.weeklyAvailability);
-      }
-
-      console.log("Making server request for user data:", parsedData.userEmail);
-      // Important change: Fetch user data from the server to get the latest profile picture ID
-      axios.get(
-        `http://localhost:8080/users/${parsedData.userEmail}`,
-        { headers: { 'Session-Id': sessionId } }
-      ).then(response => {
-        console.log("Server response for user data:", response.data);
-        // Update the profile picture from the server response
-        if (response.data) {
-          // Check for profilePictureUrl first (current field name)
-          if (response.data.profilePictureUrl) {
-            console.log("Fetched profile picture URL from server:", response.data.profilePictureUrl);
-            
-            // Update the localStorage copy with the server value
-            const updatedUserData = {
-              ...parsedData,
-              profilePictureUrl: response.data.profilePictureUrl
-            };
-            localStorage.setItem('userData', JSON.stringify(updatedUserData));
-            
-            // Load the profile picture
-            fetchProfilePicture(response.data.profilePictureUrl);
-          }
-          // Fallback to profilePictureId if url is not available
-          else if (response.data.profilePictureId) {
-            console.log("Fetched profile picture ID from server:", response.data.profilePictureId);
-            
-            // Update the localStorage copy with the server value
-            const updatedUserData = {
-              ...parsedData,
-              profilePictureId: response.data.profilePictureId
-            };
-            localStorage.setItem('userData', JSON.stringify(updatedUserData));
-            
-            // Load the profile picture
-            fetchProfilePicture(response.data.profilePictureId);
-          }
+    fetchUserProfile().then((parsedData) => {
+      if (parsedData) {
+        setEditedDescription(parsedData.biography || "");
+        
+        // Store the majors array and create the display string
+        setEditedProfileData({
+          name: parsedData.name || "",
+          userEmail: parsedData.userEmail || "",
+          majors: parsedData.majors || [],
+          majorsString: (parsedData.majors || []).join(', ')
+        });
+        
+        // If the user already has availability data, load it
+        if (parsedData.weeklyAvailability) {
+          setAvailabilityString(parsedData.weeklyAvailability);
         }
         
         // Update user role from server response
-        if (response.data && response.data.role) {
-          const role = response.data.role || 'Student';
+        if (parsedData.role) {
+          const role = parsedData.role || 'Student';
           setUserRole(role);
           
           // Update searchEnabled based on role
@@ -242,41 +435,25 @@ function Profile() {
           // Update global searchEnabled variable
           window.searchEnabled = isTeachingRole;
         }
-      }).catch(error => {
-        console.error('Error fetching user data:', error);
-        console.log('Error details:', error.response || 'No response data');
-        
-        // Still try to load picture from localStorage as fallback
-        if (parsedData.profilePictureId) {
-          fetchProfilePicture(parsedData.profilePictureId);
-        }
-        
-        // Continue with local role if available
-        const role = parsedData.role || 'Student';
-        setUserRole(role);
-        
-        // Update searchEnabled based on role
-        const isTeachingRole = ['INSTRUCTOR', 'GTA', 'UTA'].includes(role);
-        setSearchEnabled(isTeachingRole);
-        
-        // Update global searchEnabled variable
-        window.searchEnabled = isTeachingRole;
-      });
-    } else {
-      console.error("No user data found in localStorage");
-      toast.error("User data not found. Please login again.");
-      setTimeout(() => window.location.href = '/', 2000);
-    }
-    
-    setTimeout(() => setIsLoading(false), 500);
-  }, [sessionId]);
+      }
+    }).finally(() => setIsLoading(false));
+  }, [fetchUserProfile, sessionId]);
 
-  // Update the fetchProfilePicture function
-  const fetchProfilePicture = async (fileId) => {
+  // Complete and optimize the fetchProfilePicture function
+  const fetchProfilePicture = useCallback(async (fileId) => {
     console.log("fetchProfilePicture called with ID:", fileId);
     
     if (!fileId || fileId === 'undefined') {
       console.log("Invalid fileId detected:", fileId);
+      setProfilePicture(profileImage); // Set default image
+      return;
+    }
+    
+    // Check for cached image URL first
+    const cachedUrl = sessionStorage.getItem(`profile-image-${fileId}`);
+    if (cachedUrl) {
+      console.log("Using cached profile image:", cachedUrl);
+      setProfilePicture(cachedUrl);
       return;
     }
     
@@ -289,33 +466,79 @@ function Profile() {
         imageUrl = fileId;
       } else {
         // Otherwise construct the URL using the file ID
-        imageUrl = `http://localhost:9000/images/${fileId}`;
+        imageUrl = `${image_url}/images/${fileId}`;
       }
       
-      console.log("Setting profile picture URL:", imageUrl);
+      console.log("Attempting to load image from URL:", imageUrl);
+      
+      // Verify the image loads correctly
+      const img = new Image();
+      
+      // Create a promise to handle image loading
+      const imageLoadPromise = new Promise((resolve, reject) => {
+        img.onload = () => {
+          console.log("Image loaded successfully:", imageUrl);
+          resolve(imageUrl);
+        };
+        
+        img.onerror = () => {
+          console.error("Failed to load image from primary URL:", imageUrl);
+          // Try alternative URL format if the first one fails
+          if (!fileId.startsWith('http')) {
+            const alternativeUrl = `${base_url}/api/files/getImage/${fileId}`;
+            console.log("Trying alternative URL:", alternativeUrl);
+            
+            const altImg = new Image();
+            altImg.onload = () => {
+              console.log("Alternative URL loaded successfully");
+              resolve(alternativeUrl);
+            };
+            
+            altImg.onerror = () => {
+              console.error("Failed to load image from alternative URL");
+              reject(new Error("Failed to load profile image"));
+            };
+            
+            altImg.src = alternativeUrl;
+          } else {
+            reject(new Error("Failed to load profile image"));
+          }
+        };
+      });
+      
+      // Start loading the image
+      img.src = imageUrl;
+      
+      // Wait for image load resolution
+      const successfulUrl = await imageLoadPromise;
+      
+      // Cache the successful URL
+      sessionStorage.setItem(`profile-image-${fileId}`, successfulUrl);
       
       // Set the profile picture URL
-      setProfilePicture(imageUrl);
+      setProfilePicture(successfulUrl);
       
-      // Verify the image loads correctly in the background
-      const img = new Image();
-      img.onload = () => {
-        console.log("Image loaded successfully:", imageUrl);
-      };
-      img.onerror = (e) => {
-        console.error("Failed to load image:", imageUrl, e);
-        // Try alternative URL format if the first one fails
-        if (!fileId.startsWith('http') && !imageUrl.includes('/api/files/getImage/')) {
-          const alternativeUrl = `http://localhost:8080/api/files/getImage/${fileId}`;
-          console.log("Trying alternative URL:", alternativeUrl);
-          setProfilePicture(alternativeUrl);
-        }
-      };
-      img.src = imageUrl;
+      return successfulUrl;
     } catch (error) {
-      console.error('Error setting profile picture URL:', error);
+      console.error('Error fetching profile picture:', error);
+      // Fall back to default image
+      setProfilePicture(profileImage);
     }
-  };
+  }, []);
+
+  // Add this useEffect to call fetchProfilePicture when user data changes
+  useEffect(() => {
+    if (userData) {
+      if (userData.profilePictureUrl) {
+        fetchProfilePicture(userData.profilePictureUrl);
+      } else if (userData.profilePictureId) {
+        fetchProfilePicture(userData.profilePictureId);
+      } else {
+        // No profile picture data available, use default
+        setProfilePicture(profileImage);
+      }
+    }
+  }, [userData, fetchProfilePicture]);
 
   useEffect(() => {
     const fetchUserCourses = async () => {
@@ -327,7 +550,7 @@ function Profile() {
         const sessionId = localStorage.getItem('sessionId');
         
         const response = await axios.get(
-          `http://localhost:8080/users/${userData.userEmail}/courses`,
+          `${base_url}/users/${userData.userEmail}/courses`,
           {
             headers: {
               'Session-Id': sessionId
@@ -380,7 +603,7 @@ function Profile() {
     
     try {
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { role: newRole },
         {
           headers: {
@@ -478,7 +701,7 @@ function Profile() {
       }
   
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { weeklyAvailability: updatedAvailabilityString },
         {
           headers: {
@@ -513,7 +736,7 @@ function Profile() {
       setUpdateError(null);
       
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { weeklyAvailability: updatedString },
         {
           headers: {
@@ -628,7 +851,7 @@ function Profile() {
       }
 
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { biography: editedDescription },
         {
           headers: {
@@ -681,7 +904,7 @@ function Profile() {
       
       const response = await axios({
         method: 'DELETE',
-        url: `http://localhost:8080/users/${userData.userEmail}`,
+        url: `${base_url}/users/${userData.userEmail}`,
         headers: {
           'Content-Type': 'application/json',
           'Session-Id': sessionId
@@ -789,7 +1012,7 @@ function Profile() {
       }
   
       const response = await axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         editedProfileData,
         {
           headers: {
@@ -843,7 +1066,7 @@ function Profile() {
     const sessionId = localStorage.getItem('sessionId');
     if (sessionId) {
       axios.put(
-        `http://localhost:8080/users/${userData.userEmail}`,
+        `${base_url}/users/${userData.userEmail}`,
         { preferredLocations: updatedLocations },
         {
           headers: {
@@ -898,7 +1121,7 @@ function Profile() {
       
       // Step 1: Upload the file
       const response = await axios.post(
-        'http://localhost:8080/api/files/upload',
+        `${base_url}/api/files/upload`,
         formData,
         {
           headers: {
@@ -922,7 +1145,7 @@ function Profile() {
         }
         
         // Use the public URL if available, otherwise construct it
-        const imageUrl = publicUrl || `http://localhost:9000/images/${fileId}`;
+        const imageUrl = publicUrl || `${image_url}/images/${fileId}`;
         console.log("Setting profile picture URL:", imageUrl);
         
         // Update local state first for immediate feedback
@@ -935,6 +1158,10 @@ function Profile() {
         };
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
         setUserData(updatedUserData);
+        setProfilePicture(imageUrl);
+
+        // Dispatch event to notify other components
+        window.dispatchEvent(new Event('storage'));
         
         // Try one field at a time to find which one works
         const updateMethods = [
@@ -942,7 +1169,7 @@ function Profile() {
           async () => {
             console.log("Trying update with profilePictureUrl field");
             return await axios.put(
-              `http://localhost:8080/users/${userData.userEmail}`,
+              `${base_url}/users/${userData.userEmail}`,
               { profilePictureUrl: imageUrl },
               { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
             );
@@ -952,7 +1179,7 @@ function Profile() {
           async () => {
             console.log("Trying update with profile_picture_url field");
             return await axios.put(
-              `http://localhost:8080/users/${userData.userEmail}`,
+              `${base_url}/users/${userData.userEmail}`,
               { profile_picture_url: imageUrl },
               { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
             );
@@ -962,7 +1189,7 @@ function Profile() {
           async () => {
             console.log("Trying update with profilePictureId field");
             return await axios.put(
-              `http://localhost:8080/users/${userData.userEmail}`,
+              `${base_url}/users/${userData.userEmail}`,
               { profilePictureId: fileId },
               { headers: { 'Content-Type': 'application/json', 'Session-Id': sessionId } }
             );
@@ -1034,7 +1261,7 @@ function Profile() {
                 </div>
               )}
               <img 
-                src={profilePicture && profilePicture !== 'http://localhost:9000/images/undefined' 
+                src={profilePicture && profilePicture !== `${image_url}/images/undefined` 
                   ? profilePicture 
                   : profileImage} 
                 alt="Profile" 
@@ -1076,7 +1303,7 @@ function Profile() {
               </div>
             ) : (
               <div className="tag-container">
-                <span className="tag">CS</span>
+                <span className="tag">No Major Added</span>
               </div>
             )}
           </div>
@@ -1252,7 +1479,7 @@ function Profile() {
                   }
               
                   axios.put(
-                    `http://localhost:8080/users/${userData.userEmail}`,
+                    `${base_url}/users/${userData.userEmail}`,
                     { weeklyAvailability: updatedAvailabilityString },
                     {
                       headers: {
@@ -1446,7 +1673,7 @@ function Profile() {
                 const sessionId = localStorage.getItem('sessionId');
                 if (sessionId) {
                   axios.put(
-                    `http://localhost:8080/users/${userData.userEmail}`,
+                    `${base_url}/users/${userData.userEmail}`,
                     { preferredLocations: currentLocationIds },
                     {
                       headers: {
@@ -1578,15 +1805,58 @@ function Profile() {
               {emailError && <span className="error-message">{emailError}</span>}
             </div>
             <div className="form-group">
-              <label htmlFor="majors">Majors (comma separated)</label>
-              <input
-                type="text"
-                id="majors"
-                name="majors"
-                value={editedProfileData.majorsString || editedProfileData.majors.join(', ')}
-                onChange={handleProfileInputChange}
-                placeholder="e.g. CS, Math, Statistics"
-              />
+              <label htmlFor="majors">Majors</label>
+              <div className="majors-selector">
+                <select
+                  className="major-select"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const major = e.target.value;
+                      // Only add if not already in the list
+                      if (!editedProfileData.majors.includes(major)) {
+                        const updatedMajors = [...editedProfileData.majors, major];
+                        setEditedProfileData({
+                          ...editedProfileData,
+                          majors: updatedMajors,
+                          majorsString: updatedMajors.join(', ')
+                        });
+                      }
+                      // Reset select to default after selection
+                      e.target.value = "";
+                    }
+                  }}
+                >
+                  <option value="">-- Select Major --</option>
+                  {availableMajors.map((major, index) => (
+                    <option key={index} value={major}>{major}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="selected-majors">
+                {editedProfileData.majors.map((major, index) => (
+                  <div key={index} className="selected-major">
+                    <span>{major}</span>
+                    <button
+                      type="button"
+                      className="remove-major"
+                      onClick={() => {
+                        const updatedMajors = editedProfileData.majors.filter(
+                          (_, i) => i !== index
+                        );
+                        setEditedProfileData({
+                          ...editedProfileData,
+                          majors: updatedMajors,
+                          majorsString: updatedMajors.join(', ')
+                        });
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="form-buttons">
               <button 

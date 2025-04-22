@@ -97,9 +97,20 @@ public class UserService {
     }
 
     public void logout(String sessionId) {
-        if (sessionId != null && activeSessions.containsKey(sessionId)) {
             activeSessions.remove(sessionId);
+    }
+
+    public void logoutAllUserSessions(String sessionId) {
+        // Get the user email from the provided session
+        if (sessionId == null || !activeSessions.containsKey(sessionId)) {
+            throw new InvalidSessionException("Invalid or missing session");
         }
+
+        String userEmail = activeSessions.get(sessionId).userEmail;
+
+        // Remove all sessions for this user
+        activeSessions.entrySet().removeIf(entry -> entry.getValue().userEmail.equals(userEmail));
+
     }
 
     public User validateSession(String sessionId) {
@@ -369,7 +380,7 @@ public class UserService {
         if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
             for (Long eventId : currentUser.getHostedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
@@ -377,7 +388,7 @@ public class UserService {
         if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
             for (Long eventId : currentUser.getJoinedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> allShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
@@ -405,7 +416,7 @@ public class UserService {
         if (currentUser.getHostedEvents() != null && !currentUser.getHostedEvents().isEmpty()) {
             for (Long eventId : currentUser.getHostedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> hostedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> hostedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
@@ -433,7 +444,7 @@ public class UserService {
         if (currentUser.getJoinedEvents() != null && !currentUser.getJoinedEvents().isEmpty()) {
             for (Long eventId : currentUser.getJoinedEvents()) {
                 eventRepository.findById(eventId)
-                        .ifPresent(event -> joinedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId())));
+                        .ifPresent(event -> joinedShortEvents.add(new ShortEvent(event.getEventId(), event.getName(), event.getLocationId(), event.getIsPublic())));
             }
         }
 
@@ -664,5 +675,10 @@ public class UserService {
 
         userRepository.save(friend);
         return userRepository.save(user);
+    }
+
+    public boolean isUserOnline(String userEmail) {
+        return activeSessions.values().stream()
+                .anyMatch(session -> session.userEmail.equals(userEmail));
     }
 }

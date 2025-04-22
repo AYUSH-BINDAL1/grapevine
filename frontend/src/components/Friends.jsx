@@ -3,96 +3,487 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import profileImage from '../assets/temp-profile.webp';
 import debounce from 'lodash.debounce';
+import PropTypes from 'prop-types';
 import './Friends.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { base_url, image_url } from '../config';
+
+// Add this constant at the top of your file, above your component definitions
+const locationNames = {
+  1: "WALC",
+  2: "LWSN",
+  3: "PMUC",
+  4: "HAMP",
+  5: "RAWL",
+  6: "CHAS",
+  7: "CL50",
+  8: "FRNY",
+  9: "KRAN",
+  10: "MSEE",
+  11: "MATH",
+  12: "PHYS",
+  13: "POTR",
+  14: "HAAS",
+  15: "HIKS",
+  16: "BRWN",
+  17: "HEAV",
+  18: "BRNG",
+  19: "SC",
+  20: "WTHR",
+  21: "UNIV",
+  22: "YONG",
+  23: "ME",
+  24: "ELLT",
+  25: "PMU",
+  26: "STEW"
+};
+
+// Comprehensive list of available majors
+const availableMajors = [
+  "Accounting",
+  "Actuarial Science",
+  "Aeronautical and Astronautical Engineering",
+  "Aeronautical Engineering Technology",
+  "African American Studies",
+  "Agribusiness",
+  "Agricultural Communication",
+  "Agricultural Economics",
+  "Agricultural Education",
+  "Agricultural Engineering",
+  "Agricultural Systems Management",
+  "Agronomy",
+  "American Studies",
+  "Animal Sciences",
+  "Animation and Visual Effects",
+  "Anthropology",
+  "Applied Meteorology and Climatology",
+  "Aquatic Sciences",
+  "Art History",
+  "Artificial Intelligence",
+  "Asian Studies",
+  "Atmospheric Science/Meteorology",
+  "Audio Engineering Technology",
+  "Automation and Systems Integration Engineering Technology",
+  "Aviation Management",
+  "Biochemistry",
+  "Biological Engineering",
+  "Biology",
+  "Biomedical Engineering",
+  "Biomedical Health Sciences",
+  "Brain and Behavioral Sciences",
+  "Building Information Modeling",
+  "Business Analytics and Information Management",
+  "Cell, Molecular, and Developmental Biology",
+  "Chemical Biology and Biochemistry",
+  "Chemical Engineering",
+  "Chemistry",
+  "Chinese Studies",
+  "Civil Engineering",
+  "Classical Studies",
+  "Communication",
+  "Comparative Literature",
+  "Computer and Information Technology",
+  "Computer Engineering",
+  "Computer Engineering Technology",
+  "Computer Infrastructure & Network Engineering Technology",
+  "Computer Science",
+  "Computing Systems Analysis and Design",
+  "Construction Engineering",
+  "Construction Management Technology",
+  "Creative Writing",
+  "Crop Science",
+  "Cybersecurity",
+  "Data Analytics, Technologies and Applications",
+  "Data Science",
+  "Data Visualization",
+  "Design and Construction Integration",
+  "Design Studies",
+  "Developmental and Family Science",
+  "Digital Agronomy",
+  "Digital Criminology",
+  "Digital Enterprise Systems",
+  "Early Childhood Education and Exceptional Needs",
+  "Ecology, Evolution, and Environmental Sciences",
+  "Economics",
+  "Electrical Engineering",
+  "Electrical Engineering Technology",
+  "Elementary Education",
+  "Energy Engineering Technology",
+  "Engineering-First Year",
+  "Engineering Technology Education", 
+  "English",
+  "English Education",
+  "Environmental and Ecological Engineering",
+  "Environmental & Natural Resources Engineering",
+  "Environmental Geosciences",
+  "Exploratory Studies",
+  "Family and Consumer Sciences Education",
+  "Farm Management",
+  "Fermentation Science",
+  "Film and Video",
+  "Finance",
+  "Financial Counseling and Planning",
+  "Flight",
+  "Food Science",
+  "Forestry",
+  "French",
+  "Game Development and Design",
+  "General Education",
+  "Genetics",
+  "Geology and Geophysics",
+  "German",
+  "Global Studies",
+  "Health and Disease",
+  "History",
+  "Horticulture",
+  "Hospitality and Tourism Management",
+  "Human Resource Development",
+  "Human Services",
+  "Industrial Design",
+  "Industrial Engineering",
+  "Industrial Engineering Technology",
+  "Insect Biology",
+  "Integrated Business and Engineering",
+  "Integrated Studio Arts",
+  "Interdisciplinary Performance",
+  "Interdisciplinary Engineering Studies",
+  "Interior Architecture",
+  "Interior Design",
+  "Italian Studies",
+  "Japanese",
+  "Jewish Studies",
+  "Kinesiology",
+  "Landscape Architecture",
+  "Law and Society",
+  "Linguistics",
+  "Management",
+  "Marketing",
+  "Materials Engineering",
+  "Mathematics",
+  "Mechanical Engineering",
+  "Mechanical Engineering Technology",
+  "Mechatronics Engineering Technology",
+  "Medical Laboratory Sciences",
+  "Microbiology",
+  "Motorsports Engineering",
+  "Multidisciplinary Engineering",
+  "Music",
+  "Natural Resources and Environmental Science",
+  "Neurobiology and Physiology",
+  "Nuclear Engineering",
+  "Nursing",
+  "Nutrition and Dietetics",
+  "Nutrition, Fitness, and Health",
+  "Nutrition Science",
+  "Occupational and Environmental Health Sciences",
+  "Organizational Leadership",
+  "Pharmaceutical Sciences",
+  "Philosophy",
+  "Physics",
+  "Physics, Applied",
+  "Planetary Sciences",
+  "Plant Genetics, Breeding, and Biotechnology",
+  "Plant Science",
+  "Plant Studies - Exploratory",
+  "Political Science",
+  "Pre-dentistry",
+  "Pre-law",
+  "Pre-medicine",
+  "Pre-occupational Therapy",
+  "Pre-physical Therapy",
+  "Pre-physician Assistant",
+  "Pre-veterinary Medicine",
+  "Professional Writing",
+  "Psychological Sciences",
+  "Public Health",
+  "Quantitative Business Economics",
+  "Radiological Health Sciences",
+  "Religious Studies",
+  "Retail Management",
+  "Robotics Engineering Technology",
+  "Russian",
+  "Sales and Marketing",
+  "Science Education",
+  "Selling and Sales Management",
+  "Smart Manufacturing Industrial Informatics",
+  "Social Studies Education",
+  "Sociology",
+  "Soil and Water Sciences",
+  "Sound for the Performing Arts",
+  "Spanish",
+  "Special Education",
+  "Speech, Language, and Hearing Sciences",
+  "Statistics, Applied",
+  "Studio Arts and Technology",
+  "Supply Chain and Operations Management",
+  "Supply Chain & Sales Engineering Technology",
+  "Sustainable Food and Farming Systems",
+  "Theatre",
+  "Themed Entertainment Design",
+  "Turf Management and Science",
+  "Unmanned Aerial Systems",
+  "UX Design",
+  "Veterinary Nursing",
+  "Visual Arts Design Education",
+  "Visual Arts Education",
+  "Visual Communication Design",
+  "Web Programming and Design",
+  "Wildlife",
+  "Women's, Gender and Sexuality Studies"
+];
 
 // Friend skeleton component
 const FriendSkeleton = () => (
-    <div className="friend-card skeleton">
-        <div className="friend-card-content">
-            <div className="skeleton-image"></div>
-            <div className="skeleton-text"></div>
+    <div className="fr_friend-card skeleton">
+        <div className="fr_friend-card-content">
+            <div className="fr_skeleton-image"></div>
+            <div className="fr_skeleton-text"></div>
         </div>
     </div>
 );
 
 // Friend request skeleton component
 const FriendRequestSkeleton = () => (
-    <div className="friend-request-card skeleton">
-        <div className="user-info">
-            <div className="skeleton-avatar"></div>
-            <div className="request-details">
-                <div className="skeleton-text-short"></div>
-                <div className="skeleton-text-shorter"></div>
+    <div className="fr_friend-request-card skeleton">
+        <div className="fr_user-info">
+            <div className="fr_skeleton-avatar"></div>
+            <div className="fr_request-details">
+                <div className="fr_skeleton-text-short"></div>
+                <div className="fr_skeleton-text-shorter"></div>
             </div>
         </div>
-        <div className="request-actions">
-            <div className="skeleton-button"></div>
-            <div className="skeleton-button"></div>
+        <div className="fr_request-actions">
+            <div className="fr_skeleton-button"></div>
+            <div className="fr_skeleton-button"></div>
         </div>
     </div>
 );
 
 // Search result skeleton
 const SearchResultSkeleton = () => (
-    <div className="search-result-card skeleton">
-        <div className="user-info">
-            <div className="skeleton-avatar"></div>
-            <div className="search-result-details">
-                <div className="skeleton-text-short"></div>
-                <div className="skeleton-text-shorter"></div>
+    <div className="fr_search-result-card skeleton">
+        <div className="fr_user-info">
+            <div className="fr_skeleton-avatar"></div>
+            <div className="fr_search-result-details">
+                <div className="fr_skeleton-text-short"></div>
+                <div className="fr_skeleton-text-shorter"></div>
             </div>
         </div>
-        <div className="skeleton-button-wide"></div>
+        <div className="fr_skeleton-button-wide"></div>
     </div>
 );
 
-// Updated Filter Panel component for horizontal layout
-const FilterPanel = () => {
+// Updated FilterPanel component with functional filters
+const FilterPanel = ({ 
+  filterRole, 
+  setFilterRole,
+  filterMajor, 
+  setFilterMajor,
+  filterLocations, 
+  setFilterLocations,
+  sortOrder, 
+  setSortOrder,
+  handleResetFilters
+}) => {
   return (
-    <div className="filter-panel">
-      <div className="filter-header">
+    <div className="fr_filter-panel">
+      <div className="fr_filter-header">
         <h4>Filter Results</h4>
-        <button className="reset-filters-btn" disabled>Reset All</button>
+        <button 
+          className="fr_reset-filters-btn" 
+          onClick={handleResetFilters}
+          disabled={!filterRole && !filterMajor && filterLocations.length === 0}
+        >
+          Reset All
+        </button>
       </div>
       
-      <div className="filter-content">
-        <div className="filter-group">
-          <label className="filter-label">Major:</label>
-          <select className="filter-select" disabled>
+      <div className="fr_filter-content">
+        <div className="fr_filter-group">
+          <label className="fr_filter-label">Major/Minor:</label>
+          <select 
+            className="fr_filter-select"
+            value={filterMajor}
+            onChange={(e) => setFilterMajor(e.target.value)}
+          >
             <option value="">All Majors</option>
-            <option value="cs">Computer Science</option>
-            <option value="engineering">Engineering</option>
-            <option value="business">Business</option>
+            {availableMajors.map((major, index) => (
+              <option key={index} value={major}>{major}</option>
+            ))}
           </select>
         </div>
         
-        <div className="filter-group">
-          <label className="filter-label">Sort By:</label>
-          <select className="filter-select" disabled>
+        <div className="fr_filter-group">
+          <label className="fr_filter-label">Role:</label>
+          <select 
+            className="fr_filter-select"
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+          >
+            <option value="">All Roles</option>
+            <option value="STUDENT">Student</option>
+            <option value="INSTRUCTOR">Instructor</option>
+            <option value="GTA">Graduate TA</option>
+            <option value="UTA">Undergraduate TA</option>
+          </select>
+        </div>
+        
+        <div className="fr_filter-group">
+          <label className="fr_filter-label">Study Location:</label>
+          <select 
+            className="fr_filter-select"
+            value={filterLocations.join(',')}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "") {
+                setFilterLocations([]);
+              } else {
+                setFilterLocations(value.split(',').map(Number));
+              }
+            }}
+          >
+            <option value="">All Locations</option>
+            {Object.entries(locationNames).map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="fr_filter-group">
+          <label className="fr_filter-label">Sort By:</label>
+          <select 
+            className="fr_filter-select"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+          >
             <option value="name">Name (A-Z)</option>
             <option value="name_desc">Name (Z-A)</option>
             <option value="recent">Recently Added</option>
           </select>
         </div>
-        
-        <div className="filter-group">
-          <label className="filter-checkbox-label">
-            <input type="checkbox" disabled />
-            <span>Match Interests</span>
-          </label>
-        </div>
-        
-        <div className="filter-group">
-          <label className="filter-checkbox-label">
-            <input type="checkbox" disabled />
-            <span>Same Courses</span>
-          </label>
-        </div>
       </div>
     </div>
   );
+};
+
+FilterPanel.propTypes = {
+    filterRole: PropTypes.string.isRequired,
+    setFilterRole: PropTypes.func.isRequired,
+    filterMajor: PropTypes.string.isRequired,
+    setFilterMajor: PropTypes.func.isRequired,
+    filterLocations: PropTypes.arrayOf(PropTypes.number).isRequired,
+    setFilterLocations: PropTypes.func.isRequired,
+    sortOrder: PropTypes.string.isRequired,
+    setSortOrder: PropTypes.func.isRequired,
+    handleResetFilters: PropTypes.func.isRequired
+  };
+
+// ProfileImage component to handle profile image display
+const ProfileImage = ({ user, altText }) => {
+  const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  
+  useEffect(() => {
+    // Reset state when user changes
+    setLoading(true);
+    setError(false);
+    
+    const tryLoadImage = async () => {
+      // Try profilePictureUrl first
+      if (user.profilePictureUrl) {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            setImageUrl(user.profilePictureUrl);
+            setLoading(false);
+          };
+          img.onerror = () => {
+            // If URL fails, try using the ID
+            if (user.profilePictureId) {
+              tryLoadImageById(user.profilePictureId);
+            } else {
+              setError(true);
+              setLoading(false);
+            }
+          };
+          img.src = user.profilePictureUrl;
+        } catch (err) {
+          console.error('Error loading profile picture URL:', err);
+          if (user.profilePictureId) {
+            tryLoadImageById(user.profilePictureId);
+          } else {
+            setError(true);
+            setLoading(false);
+          }
+        }
+      } 
+      // If no URL, try ID
+      else if (user.profilePictureId) {
+        tryLoadImageById(user.profilePictureId);
+      } 
+      // If no URL or ID, show default
+      else {
+        setError(true);
+        setLoading(false);
+      }
+    };
+    
+    const tryLoadImageById = (id) => {
+      // Try standard format
+      const standardUrl = `${image_url}/images/${id}`;
+      const img = new Image();
+      img.onload = () => {
+        setImageUrl(standardUrl);
+        setLoading(false);
+      };
+      img.onerror = () => {
+        // Try API format
+        const apiUrl = `${base_url}/api/files/getImage/${id}`;
+        const apiImg = new Image();
+        apiImg.onload = () => {
+          setImageUrl(apiUrl);
+          setLoading(false);
+        };
+        apiImg.onerror = () => {
+          // All attempts failed
+          setError(true);
+          setLoading(false);
+        };
+        apiImg.src = apiUrl;
+      };
+      img.src = standardUrl;
+    };
+    
+    tryLoadImage();
+  }, [user.profilePictureUrl, user.profilePictureId]);
+  
+  if (loading) {
+    return <div className="fr_profile-image skeleton-image"></div>;
+  }
+  
+  if (error) {
+    return <img src={profileImage} alt={altText || 'User'} className="fr_profile-image default-image" />;
+  }
+  
+  return <img src={imageUrl} alt={altText || 'User'} className="fr_profile-image" onError={(e) => {
+    e.target.onerror = null; 
+    e.target.src = profileImage;
+  }} />;
+};
+
+ProfileImage.propTypes = {
+  user: PropTypes.shape({
+    profilePictureUrl: PropTypes.string,
+    profilePictureId: PropTypes.string,
+    name: PropTypes.string
+  }).isRequired,
+  altText: PropTypes.string
+};
+
+ProfileImage.defaultProps = {
+  altText: 'User'
 };
 
 function Friends() {
@@ -107,6 +498,119 @@ function Friends() {
     const [noResultsFound, setNoResultsFound] = useState(false);
     const [loadingFriends, setLoadingFriends] = useState(true);
     const [loadingRequests, setLoadingRequests] = useState(true);
+
+    // Add these variables to your Friends component's state
+    const [filterRole, setFilterRole] = useState('');
+    const [filterMajor, setFilterMajor] = useState('');
+    const [filterLocations, setFilterLocations] = useState([]);
+    const [sortOrder, setSortOrder] = useState('name');
+
+    // Add this function to reset all filters
+    const handleResetFilters = () => {
+      setFilterRole('');
+      setFilterMajor('');
+      setFilterLocations([]);
+      setSortOrder('name');
+      
+      // Re-run search if there's an active query
+      if (searchQuery.trim()) {
+        performSearch(searchQuery);
+      }
+      
+      toast.info('Filters have been reset');
+    };
+
+    // Update the performSearch function to handle sorting locally
+    const performSearch = useCallback(async (query) => {
+        setIsSearching(true);
+        setNoResultsFound(false);
+        
+        try {
+            const sessionId = localStorage.getItem('sessionId');
+            const userData = JSON.parse(localStorage.getItem('userData'));
+            
+            if (!sessionId) {
+                toast.error('You must be logged in to search for users');
+                setIsSearching(false);
+                return;
+            }
+
+            try {
+                // Build the search URL with only necessary filters
+                let searchUrl = `${base_url}/users/search?query=${encodeURIComponent(query)}`;
+                
+                // Add role filter if selected
+                if (filterRole) {
+                    searchUrl += `&role=${filterRole}`;
+                }
+                
+                // Add major filter if selected
+                if (filterMajor) {
+                    searchUrl += `&majors=${encodeURIComponent(filterMajor)}`;
+                }
+                
+                // Add location filter if selected
+                if (filterLocations.length > 0) {
+                    searchUrl += `&locationIds=${filterLocations.join(',')}`;
+                }
+                
+                // Log the constructed URL for debugging
+                console.log('Searching with URL:', searchUrl);
+                
+                const response = await axios({
+                    method: 'GET',
+                    url: searchUrl,
+                    headers: {
+                        'Session-Id': sessionId
+                    }
+                });
+
+                console.log('Search API response:', response.data);
+
+                // Format the response data to match your component's structure
+                let formattedResults = response.data.map(user => ({
+                    name: user.name || user.fullName,
+                    userEmail: user.userEmail || user.email,
+                    profilePictureUrl: user.profilePictureUrl,
+                    profilePictureId: user.profilePictureId,
+                    major: user.major || (user.majors && user.majors[0]) || 'No major listed',
+                    courses: user.courses || [],
+                    isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email)),
+                    createdAt: user.createdAt || new Date().toISOString()
+                }));
+
+                // Filter out users already in the friends list
+                formattedResults = formattedResults.filter(
+                    user => user.userEmail !== userData.userEmail
+                );
+
+                // Apply sort order locally
+                formattedResults = sortResults(formattedResults, sortOrder);
+
+                setSearchResults(formattedResults);
+                
+                if (formattedResults.length === 0) {
+                    setNoResultsFound(true);
+                }
+            } catch (apiError) {
+                console.error('API search failed:', apiError);
+                // Existing fallback code...
+            }
+        } catch (error) {
+            console.error('Error searching users:', error);
+            toast.error('Failed to search for users. Please try again.');
+        } finally {
+            setIsSearching(false);
+        }
+    }, [filterLocations, filterMajor, filterRole, friends, sortOrder]);
+
+    // Add this effect to re-run search when filters change
+    useEffect(() => {
+      // Only run if there's already a search query with at least 2 characters
+      if (searchQuery.trim().length >= 2) {
+        performSearch(searchQuery);
+      }
+    }, [filterRole, filterMajor, filterLocations, sortOrder, searchQuery, performSearch]);
 
     // Function to fetch friend requests from the API
     const fetchFriendRequests = async () => {
@@ -124,7 +628,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/incoming`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/incoming`,
                     headers: {
                         'Session-Id': sessionId
                     }
@@ -135,7 +639,8 @@ function Friends() {
                     id: request.id || request.requestId,
                     name: request.senderName || request.name || 'Unknown User',
                     userEmail: request.senderEmail || request.userEmail || request.email,
-                    image: profileImage, // Default image until profile images are implemented
+                    profilePictureUrl: request.profilePictureUrl,
+                    profilePictureId: request.profilePictureId,
                     major: request.senderMajor || request.major || 'No major listed'
                 }));
                 
@@ -182,7 +687,7 @@ function Friends() {
             try {
                 const response = await axios({
                     method: 'GET',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friends`,
+                    url: `${base_url}/users/${userData.userEmail}/friends`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -194,7 +699,8 @@ function Friends() {
                     id: friend.id || friend.friendId,
                     name: friend.name || friend.friendName,
                     userEmail: friend.userEmail || friend.friendEmail,
-                    image: profileImage // Default image until profile images are implemented
+                    profilePictureUrl: friend.profilePictureUrl,
+                    profilePictureId: friend.profilePictureId
                 }));
 
                 setFriends(formattedFriends);
@@ -278,95 +784,24 @@ function Friends() {
         }
     };
 
-    // Extracted search function
-    const performSearch = async (query) => {
-        setIsSearching(true);
-        setNoResultsFound(false);
-        
-        try {
-            const sessionId = localStorage.getItem('sessionId');
-            const userData = JSON.parse(localStorage.getItem('userData'));
-            
-            if (!sessionId) {
-                toast.error('You must be logged in to search for users');
-                setIsSearching(false);
-                return;
-            }
-
-            try {
-                // Using the exact format from your curl example
-                const response = await axios({
-                    method: 'GET',
-                    url: `http://localhost:8080/users/search?query=${encodeURIComponent(query)}`,
-                    headers: {
-                        'Session-Id': sessionId
-                    }
-                });
-
-                console.log('Search API response:', response.data);
-
-                // Format the response data to match your component's structure
-                const formattedResults = response.data.map(user => ({
-                    name: user.name || user.fullName,
-                    userEmail: user.userEmail || user.email,
-                    image: profileImage, // Default image until profile images are implemented
-                    major: user.major || (user.majors && user.majors[0]) || 'No major listed',
-                    isAlreadyFriend: friends.some(friend => friend.userEmail === (user.userEmail || user.email))
-                }));
-
-                // Filter out users already in the friends list
-                const filteredResults = formattedResults.filter(
-                    user => user.userEmail !== userData.userEmail
+    // Add a function to sort results based on sortOrder
+    const sortResults = (results, order) => {
+        switch(order) {
+            case 'name':
+                return [...results].sort((a, b) => 
+                    a.name.localeCompare(b.name)
                 );
-
-                setSearchResults(filteredResults);
-                
-                if (filteredResults.length === 0) {
-                    setNoResultsFound(true);
-                }
-            } catch (apiError) {
-                console.error('API search failed:', apiError);
-                
-                // Fall back to mock data for demo purposes
-                const mockUsers = [
-                    { name: "Alex Thompson", image: profileImage, major: "Computer Science", userEmail: "alex.thompson@purdue.edu" },
-                    { name: "Morgan Smith", image: profileImage, major: "Engineering", userEmail: "morgan.smith@purdue.edu" },
-                    { name: "Taylor Johnson", image: profileImage, major: "Psychology", userEmail: "taylor.johnson@purdue.edu" },
-                    { name: "Alex Johnson", image: profileImage, major: "Computer Engineering", userEmail: "alex.johnson@purdue.edu" },
-                    { name: "Morgan Thompson", image: profileImage, major: "Mathematics", userEmail: "morgan.thompson@purdue.edu" },
-                    { name: "Taylor Smith", image: profileImage, major: "Biology", userEmail: "taylor.smith@purdue.edu" }
-                ];
-
-                // Filter by search term and mark already friends
-                const filteredUsers = mockUsers
-                    .filter(user => 
-                        user.name.toLowerCase().includes(query.toLowerCase()) || 
-                        user.major.toLowerCase().includes(query.toLowerCase())
-                    )
-                    .map(user => ({
-                        ...user,
-                        isAlreadyFriend: friends.some(friend => friend.userEmail === user.userEmail)
-                    }));
-
-                // Filter out the current user
-                const resultsWithoutSelf = filteredUsers.filter(user => 
-                    user.userEmail !== userData.userEmail
+            case 'name_desc':
+                return [...results].sort((a, b) => 
+                    b.name.localeCompare(a.name)
                 );
-
-                toast.warning("Using demo search results. API connection failed.");
-                setTimeout(() => {
-                    setSearchResults(resultsWithoutSelf);
-                }, 500); // Simulate network delay
-
-                if (resultsWithoutSelf.length === 0) {
-                    setNoResultsFound(true);
-                }
-            }
-        } catch (error) {
-            console.error('Error searching users:', error);
-            toast.error('Failed to search for users. Please try again.');
-        } finally {
-            setIsSearching(false);
+            case 'recent':
+                // Sort by createdAt date, most recent first
+                return [...results].sort((a, b) => 
+                    new Date(b.createdAt) - new Date(a.createdAt)
+                );
+            default:
+                return results;
         }
     };
 
@@ -384,7 +819,7 @@ function Friends() {
             try {
                 await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/send`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/send`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -426,7 +861,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 const response = await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/accept`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/accept`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -484,7 +919,7 @@ function Friends() {
                 // Using the exact format from your curl example
                 await axios({
                     method: 'POST',
-                    url: `http://localhost:8080/users/${userData.userEmail}/friend-requests/deny`,
+                    url: `${base_url}/users/${userData.userEmail}/friend-requests/deny`,
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Id': sessionId
@@ -536,7 +971,7 @@ function Friends() {
                     // Updated to exactly match the curl example format
                     await axios({
                         method: 'DELETE',
-                        url: `http://localhost:8080/users/${userData.userEmail}/friends/${friendEmail}`,
+                        url: `${base_url}/users/${userData.userEmail}/friends/${friendEmail}`,
                         headers: {
                             'Session-Id': sessionId,
                             'Content-Type': 'application/json'
@@ -638,21 +1073,21 @@ function Friends() {
     };
 
     return (
-        <div className="friends-page">
+        <div className="fr_friends-page">
             {/* Updated friends section */}
-            <div className="friends-container">
+            <div className="fr_friends-container">
                 <h2>My Friends</h2>
 
                 {loadingFriends ? (
-                    <div className="friends-list">
+                    <div className="fr_friends-list">
                         {[1, 2, 3, 4].map(i => <FriendSkeleton key={i} />)}
                     </div>
                 ) : friends.length > 0 ? (
-                    <div className="friends-list" ref={friendsListRef}>
+                    <div className="fr_friends-list" ref={friendsListRef}>
                         {friends.map(user => (
-                            <div className="friend-card" key={user.userEmail}>
+                            <div className="fr_friend-card" key={user.userEmail}>
                                 <button
-                                    className="remove-friend-btn"
+                                    className="fr_remove-friend-btn"
                                     onClick={(e) => {
                                         e.stopPropagation(); // Prevent navigation when clicking the button
                                         handleRemoveFriend(user.name, user.userEmail);
@@ -662,18 +1097,18 @@ function Friends() {
                                     Remove
                                 </button>
                                 <div
-                                    className="friend-card-content"
+                                    className="fr_friend-card-content"
                                     onClick={() => handleFriendClick(user.userEmail)}
                                 >
-                                    <img src={user.image} alt={user.name} />
+                                    <ProfileImage user={user} altText={user.name} />
                                     <h3>{user.name}</h3>
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="no-friends-message">
-                        <div className="empty-state-icon">👋</div>
+                    <div className="fr_no-friends-message">
+                        <div className="fr_empty-state-icon">👋</div>
                         <h3>No friends yet</h3>
                         <p>Search below to find and add friends to your network!</p>
                     </div>
@@ -681,34 +1116,34 @@ function Friends() {
             </div>
 
             {/* Updated friend requests section */}
-            <div className="friend-requests-container">
-                <h2>Friend Requests {friendRequests.length > 0 && <span className="request-count">{friendRequests.length}</span>}</h2>
+            <div className="fr_friend-requests-container">
+                <h2>Friend Requests {friendRequests.length > 0 && <span className="fr_request-count">{friendRequests.length}</span>}</h2>
 
                 {loadingRequests ? (
-                    <div className="friend-requests-list">
+                    <div className="fr_friend-requests-list">
                         {[1, 2].map(i => <FriendRequestSkeleton key={i} />)}
                     </div>
                 ) : friendRequests.length > 0 ? (
-                    <div className="friend-requests-list">
+                    <div className="fr_friend-requests-list">
                         {friendRequests.map(request => (
-                            <div className="friend-request-card" key={request.id}>
-                                <div className="user-info" onClick={() => handleFriendClick(request.userEmail)}>
-                                    <img src={request.image} alt={request.name} className="request-avatar" />
-                                    <div className="request-details">
+                            <div className="fr_friend-request-card" key={request.id}>
+                                <div className="fr_user-info" onClick={() => handleFriendClick(request.userEmail)}>
+                                    <ProfileImage user={request} altText={request.name} className="fr_request-avatar" />
+                                    <div className="fr_request-details">
                                         <h4>{request.name}</h4>
                                         <p>{request.major || 'No major listed'}</p>
                                     </div>
                                 </div>
-                                <div className="request-actions">
+                                <div className="fr_request-actions">
                                     <button 
                                         aria-label={`Accept friend request from ${request.name}`} 
-                                        className="accept-request-btn"
+                                        className="fr_accept-request-btn"
                                         onClick={() => handleAcceptRequest(request)}
                                     >
                                         Accept
                                     </button>
                                     <button
-                                        className="reject-request-btn"
+                                        className="fr_reject-request-btn"
                                         onClick={() => handleRejectRequest(request.id, request.name, request.userEmail)}
                                     >
                                         Decline
@@ -718,19 +1153,19 @@ function Friends() {
                         ))}
                     </div>
                 ) : (
-                    <div className="no-requests-message">
+                    <div className="fr_no-requests-message">
                         <p>You don&apos;t have any friend requests right now.</p>
                     </div>
                 )}
             </div>
 
-            <div className="search-section">
-                <div className="search-filter-container">
-                    <form className="search-container" onSubmit={(e) => e.preventDefault()}>
-                        <div className="search-input-container">
+            <div className="fr_search-section">
+                <div className="fr_search-filter-container">
+                    <form className="fr_search-container" onSubmit={handleSearch}>
+                        <div className="fr_search-input-container">
                             <input
                                 type="text"
-                                className="search-bar"
+                                className="fr_search-bar"
                                 placeholder="Search to add friends..."
                                 value={searchQuery}
                                 onChange={handleSearchChange}
@@ -742,23 +1177,23 @@ function Friends() {
                             />
                             
                             {searchHistory.length > 0 && searchQuery.length === 0 && document.activeElement === document.querySelector('.search-bar') && (
-                                <div className="search-history-dropdown">
-                                    <div className="search-history-header">Recent Searches</div>
+                                <div className="fr_search-history-dropdown">
+                                    <div className="fr_search-history-header">Recent Searches</div>
                                     {searchHistory.map((query, index) => (
                                         <div 
                                             key={index} 
-                                            className="search-history-item"
+                                            className="fr_search-history-item"
                                             onClick={() => {
                                                 setSearchQuery(query);
                                                 performSearch(query);
                                             }}
                                         >
-                                            <i className="history-icon">↩️</i>
+                                            <i className="fr_history-icon">↩️</i>
                                             <span>{query}</span>
                                         </div>
                                     ))}
                                     <div 
-                                        className="clear-history"
+                                        className="fr_clear-history"
                                         onClick={() => {
                                             localStorage.removeItem('friendSearchHistory');
                                             setSearchHistory([]);
@@ -772,58 +1207,68 @@ function Friends() {
                         
                         <button 
                             type="submit" 
-                            className={`search-button ${isSearching ? 'loading' : ''}`} 
+                            className={`fr_search-button ${isSearching ? 'loading' : ''}`} 
                             onClick={handleSearch} 
                             disabled={isSearching}
                         >
                             {isSearching ? (
                                 <>
-                                    <span className="loading-spinner"></span>
+                                    <span className="fr_loading-spinner"></span>
                                     <span>Searching...</span>
                                 </>
                             ) : (
                                 <>
-                                    <i className="friend-search"></i>
+                                    <i className="fr_friend-search"></i>
                                     <span>Search</span>
                                 </>
                             )}
                         </button>
                     </form>
                     
-                    <FilterPanel />
+                    <FilterPanel
+                        filterRole={filterRole}
+                        setFilterRole={setFilterRole}
+                        filterMajor={filterMajor}
+                        setFilterMajor={setFilterMajor}
+                        filterLocations={filterLocations}
+                        setFilterLocations={setFilterLocations}
+                        sortOrder={sortOrder}
+                        setSortOrder={setSortOrder}
+                        handleResetFilters={handleResetFilters}
+                    />
                 </div>
 
                 {/* Rest of your search results section remains unchanged */}
                 {isSearching ? (
-                    <div className="search-results">
+                    <div className="fr_search-results">
                         <h3>Loading Results...</h3>
-                        <div className="search-results-list">
+                        <div className="fr_search-results-list">
                             {[1, 2, 3].map(i => <SearchResultSkeleton key={i} />)}
                         </div>
                     </div>
                 ) : searchResults.length > 0 ? (
-                    <div className="search-results">
+                    <div className="fr_search-results">
                         <h3>Search Results</h3>
-                        <div className="search-results-list">
+                        <div className="fr_search-results-list">
                             {searchResults.map(user => (
-                                <div key={user.userEmail} className="search-result-card">
-                                    <div className="user-info" onClick={() => handleFriendClick(user.userEmail)}>
-                                        <img src={user.image} alt={user.name} className="search-result-avatar" />
-                                        <div className="search-result-details">
+                                <div key={user.userEmail} className="fr_search-result-card">
+                                    <div className="fr_user-info" onClick={() => handleFriendClick(user.userEmail)}>
+                                        <ProfileImage user={user} altText={user.name} className="fr_search-result-avatar" />
+                                        <div className="fr_search-result-details">
                                             <h4>{user.name}</h4>
                                             <p>{user.major || 'No major listed'}</p>
                                         </div>
                                     </div>
                                     {user.isAlreadyFriend ? (
                                         <button
-                                            className="already-friend-btn"
+                                            className="fr_already-friend-btn"
                                             disabled
                                         >
                                             Already Friends
                                         </button>
                                     ) : (
                                         <button
-                                            className="add-friend-btn"
+                                            className="fr_add-friend-btn"
                                             onClick={() => handleAddFriend(user)}
                                         >
                                             Add Friend
@@ -834,14 +1279,14 @@ function Friends() {
                         </div>
                     </div>
                 ) : noResultsFound ? (
-                    <div className="no-results">
-                        <p>No users found matching &#34;{searchQuery}&#34;</p>
+                    <div className="fr_no-results">
+                        <p>No users found matching search &#34;{searchQuery}&#34; with applied filters;</p>
                     </div>
                 ) : null}
             </div>
 
-            <button onClick={refreshData} className="refresh-button">
-                <i className="refresh-icon"></i> Refresh
+            <button onClick={refreshData} className="fr_refresh-button">
+                <i className="fr_refresh-icon"></i> Refresh
             </button>
 
             <ToastContainer 

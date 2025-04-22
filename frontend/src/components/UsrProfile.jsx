@@ -6,7 +6,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import profileImage from "../assets/temp-profile.webp";
 import "./UsrProfile.css";
-import { debounce } from 'lodash'; // Or implement your own debounce function
+import { debounce } from 'lodash';
+import { base_url, image_url } from '../config';
 
 // Create the AvailabilityLegend component
 const AvailabilityLegend = memo(({ showComparison, userName }) => {
@@ -61,6 +62,7 @@ function UsrProfile() {
   const [userCourses, setUserCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [showAvailabilityComparison, setShowAvailabilityComparison] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState(profileImage);
 
   // Create a debounced function 
   const toggleAvailabilityComparison = useCallback(() => {
@@ -72,6 +74,42 @@ function UsrProfile() {
     debounce(toggleAvailabilityComparison, 300), 
     [toggleAvailabilityComparison]
   );
+
+  // Add this useEffect to handle the profile picture after userData is loaded
+  useEffect(() => {
+    if (!userData) return;
+    
+    // Check for profile picture URL in user data
+    if (userData.profilePictureUrl) {
+      // Try to load the image
+      const img = new Image();
+      img.onload = () => {
+        setProfileImageUrl(userData.profilePictureUrl);
+      };
+      img.onerror = () => {
+        console.warn("Failed to load profile picture URL:", userData.profilePictureUrl);
+        
+        // Try alternate URL formats if available
+        if (userData.profilePictureId) {
+          const alternateUrl = `${image_url}/images/${userData.profilePictureId}`;
+          const altImg = new Image();
+          altImg.onload = () => {
+            setProfileImageUrl(alternateUrl);
+          };
+          altImg.onerror = () => {
+            const apiUrl = `${base_url}/api/files/getImage/${userData.profilePictureId}`;
+            const apiImg = new Image();
+            apiImg.onload = () => {
+              setProfileImageUrl(apiUrl);
+            };
+            apiImg.src = apiUrl;
+          };
+          altImg.src = alternateUrl;
+        }
+      };
+      img.src = userData.profilePictureUrl;
+    }
+  }, [userData]);
 
   // Update the fetchUserProfile function to properly get the friends list
   useEffect(() => {
@@ -115,7 +153,7 @@ function UsrProfile() {
             console.log(`Fetching friends list for ${currentUser.userEmail}...`);
             const friendsResponse = await axios({
               method: 'GET',
-              url: `http://localhost:8080/users/${currentUser.userEmail}/friends`,
+              url: `${base_url}/users/${currentUser.userEmail}/friends`,
               headers: {
                 'Session-Id': sessionId
               }
@@ -155,7 +193,7 @@ function UsrProfile() {
         try {
           const response = await axios({
             method: 'GET',
-            url: `http://localhost:8080/users/${userEmail}`,
+            url: `${base_url}/users/${userEmail}`,
             headers: {
               'Session-Id': sessionId
             }
@@ -171,6 +209,9 @@ function UsrProfile() {
               biography: response.data.biography || response.data.bio || response.data.description,
               weeklyAvailability: response.data.weeklyAvailability,
               preferredLocations: response.data.preferredLocations || [],
+              profilePictureUrl: response.data.profilePictureUrl,
+              profilePictureId: response.data.profilePictureId,
+              role: response.data.role
             };
             
             setUserData(formattedUserData);
@@ -214,7 +255,7 @@ function UsrProfile() {
         
         const response = await axios({
           method: 'GET',
-          url: `http://localhost:8080/users/${userEmail}/courses`,
+          url: `${base_url}/users/${userEmail}/courses`,
           headers: { 'Session-Id': sessionId }
         });
         
@@ -344,7 +385,7 @@ function UsrProfile() {
       try {
         await axios({
           method: 'POST',
-          url: `http://localhost:8080/users/${currentUserData.userEmail}/friend-requests/send`,
+          url: `${base_url}/users/${currentUserData.userEmail}/friend-requests/send`,
           headers: {
             'Content-Type': 'application/json',
             'Session-Id': sessionId
@@ -429,7 +470,7 @@ function UsrProfile() {
         try {
           await axios({
             method: 'DELETE',
-            url: `http://localhost:8080/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
+            url: `${base_url}/users/${currentUserData.userEmail}/friends/${userData.userEmail}`,
             headers: {
               'Content-Type': 'application/json',
               'Session-Id': sessionId
@@ -535,7 +576,7 @@ function UsrProfile() {
       try {
         await axios({
           method: 'DELETE',
-          url: `http://localhost:8080/users/${currentUserData.userEmail}/friend-requests/cancel`,
+          url: `${base_url}/users/${currentUserData.userEmail}/friend-requests/cancel`,
           headers: {
             'Content-Type': 'application/json',
             'Session-Id': sessionId
@@ -716,7 +757,16 @@ function UsrProfile() {
       
       <div className="user-profile-header">
         <div className="user-profile-image-container">
-          <img src={profileImage} alt={userData.name} className="user-profile-image" />
+          <img 
+            src={profileImageUrl} 
+            alt={userData.name} 
+            className="user-profile-image" 
+            onError={(e) => {
+              console.warn('Failed to load profile image, falling back to default');
+              e.target.onerror = null; // Prevent infinite error loop
+              e.target.src = profileImage; // Fall back to default
+            }}
+          />
         </div>
         
         <div className="user-profile-top-info">
@@ -727,7 +777,18 @@ function UsrProfile() {
                 <span key={index} className="user-tag">{major}</span>
               )) || <span className="user-tag">No major listed</span>}
             </div>
-            
+
+            {/* Add role badge here */}
+            {userData.role && (
+              <div className="user-role-badge">
+                <span className={`role-indicator ${userData.role.toLowerCase()}`}>
+                  {userData.role === 'GTA' ? 'Graduate TA' : 
+                  userData.role === 'UTA' ? 'Undergraduate TA' : 
+                  userData.role}
+                </span>
+              </div>
+            )}
+
             {/* Friend relationship status indicator */}
             {isFriend && (
               <div className="friend-status-indicator">

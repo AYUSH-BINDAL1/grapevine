@@ -151,4 +151,8 @@ public class CourseService {
         // Get the last key added to the map
         return coursesMap.keySet().stream().reduce((first, second) -> second).orElse(null);
     }
+
+    public List<String> getAllUniqueSubjects() {
+        return courseRepository.findAllUniqueSubjects();
+    }
 }

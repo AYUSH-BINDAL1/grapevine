@@ -35,6 +35,7 @@ It also includes responsive design for different screen sizes. */
   padding: 30px 20px;
 }
 
+/* Profile image container styles - update these properties */
 .profile-image-container {
   position: relative;
   width: 120px;
@@ -42,19 +43,21 @@ It also includes responsive design for different screen sizes. */
   margin: 0 auto;
   border-radius: 50%;
   overflow: hidden;
+  border: 3px solid #8ebd89; /* Add visible border */
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8); /* Add white outline */
+  background-color: #f5f5f5; /* Background color if image has transparency */
+  box-sizing: content-box; /* Ensures border doesn't affect dimensions */
 }
 
 .profile-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* This ensures the image covers the area without distortion */
+  object-position: center; /* Centers the image within the container */
   transition: filter 0.3s ease;
 }
 
-.profile-image-container:hover .profile-image {
-  filter: brightness(70%);
-}
-
+/* Ensure the overlay respects the border-radius */
 .profile-image-overlay {
   position: absolute;
   top: 0;
@@ -68,7 +71,11 @@ It also includes responsive design for different screen sizes. */
   opacity: 0;
   transition: opacity 0.2s ease;
   background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
+  border-radius: 50%; /* Match container border-radius */
+}
+
+.profile-image-container:hover .profile-image {
+  filter: brightness(70%);
 }
 
 .profile-image-container:hover .profile-image-overlay {
@@ -1275,4 +1282,50 @@ It also includes responsive design for different screen sizes. */
 @keyframes loading {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* Add these styles for the majors selector */
+
+.majors-selector {
+  margin-bottom: 10px;
+}
+
+.major-select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.selected-majors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.selected-major {
+  background-color: #e7f3ff;
+  border: 1px solid #bde0ff;
+  border-radius: 16px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.remove-major {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 6px;
+  padding: 0 4px;
+}
+
+.remove-major:hover {
+  color: #ff3b30;
 }

@@ -16,11 +16,12 @@ public class CorsConfig {
 
         // Allow the specific origin
         config.addAllowedOrigin("http://localhost:5173");
+        config.addAllowedOrigin("http://localhost:8000"); //TODO: Delete this after frontend messaging is implemented
 
         // Allow all headers
         config.addAllowedHeader("*");
 
-        // Allow all methods (GET, POST, PUT, DELETE, etc)
+        // Allow all methods (GET, POST, PUT, DELETE, etc.)
         config.addAllowedMethod("*");
 
         // Allow cookies and auth headers
