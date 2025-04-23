@@ -1852,7 +1852,11 @@ function Forum() {
 
       <button 
         className="post-thread-fab"
-        onClick={() => setShowNewThreadForm(true)}
+        onClick={() => {
+          setShowNewThreadForm(true);
+          // Scroll to top with smooth animation
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         aria-label="Create a new thread"
       >
         <span className="fab-icon">+</span>
