@@ -10,7 +10,6 @@ import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import PropTypes from 'prop-types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import MarkdownToolbar from './MarkdownToolbar';
 import { getCachedUserByEmail } from '../utils/userUtils';
 import { getProfilePictureUrl } from '../utils/imageUtils';
