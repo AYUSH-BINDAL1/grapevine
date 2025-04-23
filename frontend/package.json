@@ -22,8 +22,10 @@
     "react-syntax-highlighter": "^15.6.1",
     "react-toastify": "^11.0.5",
     "react-transition-group": "^4.4.5",
-    "react-virtualized-auto-sizer": "^1.0.26",
     "react-window": "^1.8.11",
+    "sockjs-client": "^1.6.1",
+    "stompjs": "^2.3.3",
+    "react-virtualized-auto-sizer": "^1.0.26",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1"
   },

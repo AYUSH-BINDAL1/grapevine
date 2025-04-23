@@ -47,26 +47,18 @@
   flex-direction: column;
 }
 
-.search-input {
-  width: 100%;
+.contacts-list .search-input {
+  margin: 15px;
+  width: calc(100% - 30px); /* Account for padding */
   padding: 10px 15px;
   border: 1px solid #ddd;
   border-radius: 20px;
-  margin-bottom: 15px;
   font-size: 14px;
 }
 
-.search-input:focus {
+.contacts-list .search-input:focus {
   outline: none;
   border-color: #8ebd89;
-}
-
-.search-results {
-  overflow-y: auto;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .contact-card {
