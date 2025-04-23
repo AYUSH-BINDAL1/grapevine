@@ -85,9 +85,35 @@
       .skip-link:focus {
         top: 0;
       }
+
+      /* NoScript style */
+      .noscript-warning {
+        background-color: #ff5252;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      }
+      
+      .noscript-warning h1 {
+        margin-top: 0;
+      }
     </style>
   </head>
   <body>
+    <!-- JavaScript disabled warning - moved to the top -->
+    <noscript>
+      <div class="noscript-warning">
+        <h1>JavaScript Required</h1>
+        <p>GrapeVine needs JavaScript to work. Please enable JavaScript in your browser settings to continue.</p>
+      </div>
+    </noscript>
+    
     <!-- Accessibility skip link -->
     <a href="#root" class="skip-link">Skip to main content</a>
     
@@ -98,14 +124,6 @@
         <p aria-live="assertive">Loading GrapeVine application...</p>
       </div>
     </div>
-    
-    <!-- Added noscript fallback -->
-    <noscript>
-      <div style="padding: 20px; text-align: center;">
-        <h1>JavaScript Required</h1>
-        <p>GrapeVine needs JavaScript to work. Please enable JavaScript in your browser settings to continue.</p>
-      </div>
-    </noscript>
     
     <script type="module" src="/src/main.jsx"></script>
   </body>
