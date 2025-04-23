@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +71,8 @@ public class ThreadController {
         // Set the author name and role from the validated user
         thread.setAuthorName(currentUser.getName());
         thread.setAuthorRole(currentUser.getRole());
+        thread.setCreatedAt(ZonedDateTime.now(ZoneId.of("US/Eastern")));
+        thread.setUpdatedAt(ZonedDateTime.now(ZoneId.of("US/Eastern")));
 
         Thread createdThread = threadService.createThread(thread);
         return new ResponseEntity<>(createdThread, HttpStatus.CREATED);
@@ -172,4 +176,6 @@ public class ThreadController {
         List<Thread> threads = threadService.searchThreads(major, course, authorRole);
         return ResponseEntity.ok(threads);
     }
+
+
 }
