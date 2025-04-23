@@ -81,4 +81,7 @@ public class Thread {
     @Column(name = "author_role")
     @Enumerated(EnumType.STRING)
     private User.Role authorRole;
+
+    @Column(name = "notifications_enabled")
+    private Boolean notificationsEnabled;
 }
