@@ -239,6 +239,106 @@
   color: var(--text-dark);
 }
 
+/* Add these styles to your Forum.css file */
+
+/* Thread indicators styling */
+.thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-medium);
+  font-size: 13px;
+}
+
+.thread-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 12px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.thread-indicator:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.indicator-icon {
+  flex-shrink: 0;
+}
+
+.thread-major {
+  background-color: #d3b5b5;
+  color: #df1e1e;
+  border: 1px solid #d6acac;
+}
+
+.thread-course {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #e1bee7;
+}
+
+.thread-role {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+/* Role-specific colors */
+.role-student {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.role-instructor {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.role-ta, .role-uta, .role-gta {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.role-admin {
+  background-color: #fce4ec;
+  color: #c2185b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .thread-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .thread-indicator {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+}
+
+/* Make indicators work well when thread is hovered */
+.thread-item:hover .thread-indicator {
+  opacity: 0.9;
+}
+
+/* Adjust existing styles */
+.thread-author, .thread-date {
+  margin-right: 5px;
+}
+
 .thread-meta {
   display: flex;
   gap: 15px;
@@ -666,30 +766,15 @@
 .search-form {
   display: flex;
   margin-bottom: 12px;
+
 }
 
 .sidebar-search-input {
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #ddd;
-  border-radius: 4px 0 0 4px;
+  border-radius: 4px;
   font-size: 14px;
-}
-
-.search-button {
-  background-color: var(--primary-color, #4a6da7);
-  color: white;
-  border: none;
-  border-radius: 0 4px 4px 0;
-  padding: 0 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-button:hover {
-  background-color: var(--primary-hover, #3a5d97);
 }
 
 .filter-options {
@@ -715,24 +800,6 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-}
-
-.filter-checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.checkbox-label input {
-  margin: 0;
 }
 
 /* Styles for read threads */
@@ -1106,6 +1173,205 @@
 .virtualized-threads-list {
   scrollbar-width: thin;
   scrollbar-color: #c4c4c4 #f5f5f5;
+}
+
+/* Add these styles to your Forum.css file */
+.reset-filters-button {
+  background-color: var(--background-light);
+  color: var(--text-medium);
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  padding: 8px 12px;
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-filters-button:hover:not(:disabled) {
+  background-color: #e0e0e0;
+  color: var(--text-dark);
+}
+
+.reset-filters-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Make sure filter selects are styled consistently */
+.filter-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  background-color: black;
+}
+
+/* Improve responsive layout */
+@media (max-width: 768px) {
+  .filter-options {
+    gap: 10px;
+  }
+  
+  .filter-group {
+    margin-bottom: 5px;
+  }
+  
+  .reset-filters-button {
+    margin-top: 5px;
+  }
+}
+
+/* Add these styles to your Forum.css file */
+
+/* Searchable Dropdown Styles */
+.searchable-dropdown-container {
+  width: 100%;
+}
+
+.searchable-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  background-color: lightgray;
+  cursor: pointer;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.dropdown-header:hover {
+  border-color: #b0b0b0;
+}
+
+.dropdown-header.open {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(142, 189, 137, 0.25);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  transform: rotate(0);
+  transition: transform 0.2s;
+}
+
+.dropdown-header.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--primary-color);
+  border-top: none;
+  border-bottom-left-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.search-wrapper {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.dropdown-search {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+}
+
+.dropdown-options {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdown-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.dropdown-option:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown-option.selected {
+  background-color: rgba(142, 189, 137, 0.1);
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.no-options {
+  padding: 12px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+/* Scrollbar styling for the dropdown */
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dropdown-content {
+    max-height: 250px;
+  }
+  
+  .dropdown-options {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dropdown-header {
+    padding: 8px;
+    font-size: 13px;
+  }
+  
+  .dropdown-option {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
 }
 
 

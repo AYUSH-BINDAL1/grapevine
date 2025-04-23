@@ -184,7 +184,7 @@
 }
 
 .fr_search-bar {
-  width: 100%;
+  width: auto;
   padding: 12px 15px;
   padding-left: 40px;
   border: 1px solid #e8e8e8;
@@ -196,6 +196,7 @@
   background-repeat: no-repeat;
   background-position: 12px center;
   background-size: 18px;
+  padding-right: 100px;
 }
 
 .fr_search-bar:focus {
@@ -221,6 +222,7 @@
   box-shadow: 0 2px 5px rgba(142, 189, 137, 0.3);
   height: 46px;
   min-width: 100px;
+  margin-left: 50px;
   white-space: nowrap;
   flex-shrink: 0;
 }
