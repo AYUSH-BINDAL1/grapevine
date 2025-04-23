@@ -481,6 +481,12 @@ public class GroupService {
         return group;
     }
 
+    public Group updateGroupProfilePicture(Long groupId, String profilePictureUrl) {
+        Group group = getGroupById(groupId);
+        group.setProfilePictureUrl(profilePictureUrl);
+        return groupRepository.save(group);
+    }
+
 
     //TODO: Needs to be fixed
     /*

@@ -63,7 +63,9 @@ public class ThreadService {
         Thread savedThread = threadRepository.save(thread);
 
         // Send notification to thread author if the commenter is not the author
-        if (!thread.getAuthorEmail().equals(comment.getAuthorEmail())) {
+        // and notifications are enabled for this thread
+        if (!thread.getAuthorEmail().equals(comment.getAuthorEmail()) &&
+                Boolean.TRUE.equals(thread.getNotificationsEnabled())) {
             notificationService.createAndSendThreadCommentNotification(
                     thread.getAuthorEmail(),
                     comment.getAuthorEmail(),
