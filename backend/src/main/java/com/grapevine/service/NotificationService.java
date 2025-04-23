@@ -89,7 +89,7 @@ public class NotificationService {
         Notification notification = createNotification(
                 recipientEmail,
                 commenterEmail,
-                Notification.NotificationType.MESSAGE,
+                Notification.NotificationType.COMMENT,  // Changed from MESSAGE to COMMENT
                 "New comment on your thread: " + threadTitle,
                 threadId
         );
