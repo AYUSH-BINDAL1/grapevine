@@ -18,23 +18,13 @@ services:
       - SPRING_MAIL_HOST=mailpit
       - SPRING_MAIL_PORT=1025
 
-      # EMAIL: LOCALHOST
-      #- SPRING_CLOUD_AWS_ENDPOINT=http://minio:9000
-      #- SPRING_CLOUD_AWS_ENDPOINT_PUBLIC=http://localhost:9000
-      #- SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY=minioadmin
-      #- SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY=minioadmin
-      #- SPRING_CLOUD_AWS_REGION_STATIC=us-east-1
-      #- SPRING_CLOUD_AWS_S3_PATH_STYLE_ACCESS=true
-
-      # EMAIL: AWS SES
-      - SPRING_MAIL_HOST=email-smtp.us-east-2.amazonaws.com
-      - SPRING_MAIL_PORT=587
-      - SPRING_MAIL_USERNAME=AKIASVQPUNPYIUIZ4VMH
-      - SPRING_MAIL_PASSWORD=BLBLGuGb+JZp2O1DxuLNZ+Fzu+IVMXjZLJm+oy9OdL52
-      - SPRING_MAIL_PROTOCOL=smtp
-      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
-      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
-
+      # static image hosting on buckets (currently local using minio)
+      - SPRING_CLOUD_AWS_ENDPOINT=http://minio:9000
+      - SPRING_CLOUD_AWS_ENDPOINT_PUBLIC=http://localhost:9000
+      - SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY=minioadmin
+      - SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY=minioadmin
+      - SPRING_CLOUD_AWS_REGION_STATIC=us-east-1
+      - SPRING_CLOUD_AWS_S3_PATH_STYLE_ACCESS=true
     restart: unless-stopped
 
   postgres:
