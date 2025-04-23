@@ -444,16 +444,16 @@
   .group-header {
     flex-direction: column;
   }
-  
+
   .group-image {
     width: 100%;
     height: auto;
   }
-  
+
   .members-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-  
+
   .reviews-header {
     flex-direction: column;
     align-items: flex-start;
@@ -986,11 +986,11 @@ h1 {
   background-color: #f0f0f0;
   margin-bottom: 10px;
   background-image: linear-gradient(
-    to right,
-    #f0f0f0 0%,
-    #e0e0e0 20%,
-    #f0f0f0 40%,
-    #f0f0f0 100%
+          to right,
+          #f0f0f0 0%,
+          #e0e0e0 20%,
+          #f0f0f0 40%,
+          #f0f0f0 100%
   );
   background-size: 800px 104px;
   animation: shimmer 1.5s infinite linear;
@@ -1094,11 +1094,11 @@ h1 {
 .skeleton-review-rating,
 .skeleton-review-comment {
   background-image: linear-gradient(
-    to right,
-    #f0f0f0 0%,
-    #e0e0e0 20%,
-    #f0f0f0 40%,
-    #f0f0f0 100%
+          to right,
+          #f0f0f0 0%,
+          #e0e0e0 20%,
+          #f0f0f0 40%,
+          #f0f0f0 100%
   );
   background-size: 800px 104px;
   animation: shimmer 1.5s infinite linear;
@@ -1234,4 +1234,36 @@ h1 {
 
 .mt-2 {
   margin-top: 8px;
+}
+
+.instructor-status-panel {
+  background-color: #f4f9f4;
+  border-left: 4px solid #8ebd89;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 15px;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.instructor-status-panel strong {
+  margin-right: 10px;
+}
+
+.instructor-toggle-button {
+  padding: 8px 14px;
+  background-color: #4caf50;
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.instructor-toggle-button:hover {
+  background-color: #3c8c40;
 }

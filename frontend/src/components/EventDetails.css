@@ -1,6 +1,5 @@
 .event-details-container {
     max-width: 1000px;
-    margin: 0 auto;
     padding: 80px 20px 40px;
     font-family: Arial, sans-serif;
 }
@@ -107,7 +106,6 @@
 
 .event-details-actions {
     margin-top: 24px;
-    display: flex;
     gap: 12px;
 }
 
@@ -213,4 +211,40 @@ textarea {
 
 .register-button:hover {
     background-color: #0056b3;
+}
+
+.reminder-save-button {
+    padding: 8px 12px;
+    background-color: #007bff;
+    color: white;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.reminder-save-button:hover {
+    background-color: #0056b3;
+}
+
+.reminder-list {
+    margin-top: 10px;
+}
+
+.reminder-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background-color: #eef5ff;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.reminder-delete-button {
+    background: none;
+    color: #d9534f;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
 }

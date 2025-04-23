@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FixedSizeList as List } from 'react-window';
 import PropTypes from 'prop-types';
 import AutoSizer from 'react-virtualized-auto-sizer';

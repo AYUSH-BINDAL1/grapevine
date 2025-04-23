@@ -1,35 +1,60 @@
-// src/components/NotificationDropdown.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './NotificationDropdown.css';
 import { FaBell } from 'react-icons/fa';
-
-const mockNotifications = [
-    { id: 1, name: 'Yin', time: '10 minutes ago' },
-    { id: 2, name: 'Haper', time: '2 hours ago' },
-    { id: 3, name: 'San', time: '1 day ago' },
-    { id: 4, name: 'Seeba', time: '30 minutes ago' },
-];
+import axios from 'axios';
+import { base_url } from '../config';
 
 const NotificationDropdown = () => {
     const [open, setOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+
+    const sessionId = localStorage.getItem("sessionId");
+
+    const fetchNotifications = async () => {
+        try {
+            const response = await axios.get(`${base_url}/notifications`, {
+                headers: {
+                    "Session-Id": sessionId
+                }
+            });
+            setNotifications(response.data);
+        } catch (error) {
+            console.error("Failed to fetch notifications", error);
+        }
+    };
+
+    useEffect(() => {
+        if (open) {
+            fetchNotifications();
+        }
+    }, [open]);
 
     return (
         <div className="notification-wrapper">
             <button className="bell-button" onClick={() => setOpen(!open)}>
                 <FaBell />
             </button>
+
             {open && (
                 <div className="notification-dropdown">
-                    {mockNotifications.map((n) => (
-                        <div key={n.id} className="notification-card">
-                            <div className="notif-img-placeholder"></div>
-                            <div className="notif-content">
-                                <strong>Your have a new message from {n.name}</strong>
-                                <p>Hello there, check this new items in from the your may interested from the motion school.</p>
-                                <span className="notif-time">{n.time}</span>
-                            </div>
+                    {notifications.length === 0 ? (
+                        <div className="notification-card">
+                            <span className="notif-content">No new notifications.</span>
                         </div>
-                    ))}
+                    ) : (
+                        notifications.map((n) => (
+                            <div key={n.notificationId} className="notification-card">
+                                <div className="notif-img-placeholder"></div>
+                                <div className="notif-content">
+                                    <strong>{n.title || 'New Notification'}</strong>
+                                    <p>{n.body || n.content || 'You have a new update.'}</p>
+                                    <span className="notif-time">
+                                        {new Date(n.createdAt).toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             )}
         </div>
