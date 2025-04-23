@@ -32,7 +32,7 @@ public class S3Service {
     @Value("${spring.cloud.aws.endpoint}")
     private String endpoint;
 
-    @Value("${spring.cloud.aws.endpoint.public:http://localhost:9000}")
+    @Value("${spring.cloud.aws.endpoint.public:http://ec2-3-140-184-86.us-east-2.compute.amazonaws.com:9000}")
     private String publicEndpoint;
 
     @Value("${spring.cloud.aws.region.static}")
