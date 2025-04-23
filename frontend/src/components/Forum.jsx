@@ -5,7 +5,6 @@ import { toast, ToastContainer } from 'react-toastify';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FixedSizeList as List } from 'react-window';
 import PropTypes from 'prop-types';
 import AutoSizer from 'react-virtualized-auto-sizer';
