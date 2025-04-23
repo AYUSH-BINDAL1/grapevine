@@ -118,15 +118,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: app-jar
-          path: target
-
-      - name: Deploy to production
+      - name: Set up SSH key
         run: |
-          echo "Deploying application to production server"
-          # Replace with actual deployment commands once we have a "production" environment (whichever AWS service we use to host)
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ec2-3-140-184-86.us-east-2.compute.amazonaws.com >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        run: |
+          echo "Starting deployment process"
           
-          echo "Deployment successful!"
+          # SSH into EC2 and run deployment steps
+          ssh -i ~/.ssh/id_rsa ubuntu@c2-3-140-184-86.us-east-2.compute.amazonaws.com << EOF
+            # Fetch the latest deploy branch and pull the latest changes
+            cd /home/ubuntu/grapevine
+            git checkout deploy
+            git fetch origin deploy
+            git pull origin deploy
+
+            # Stop and remove old containers
+            docker-compose down --volumes --remove-orphans
+
+            cd backend
+            # Run setup.sh to start containers
+            ./setup.sh
+
+            echo "Deployment successful!"
+          EOF
