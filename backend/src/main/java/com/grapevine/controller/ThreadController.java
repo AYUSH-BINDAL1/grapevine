@@ -18,7 +18,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/threads")
-//@CrossOrigin(origins = "http://localhost:5173")
 public class ThreadController {
 
     private final ThreadService threadService;

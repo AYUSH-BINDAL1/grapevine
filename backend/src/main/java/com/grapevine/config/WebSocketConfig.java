@@ -14,7 +14,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setHandshakeHandler(new UserHandshakeHandler())
-                .setAllowedOriginPatterns("http://localhost:8000", "http://localhost:5173") //TODO: Delete http://localhost:8000 after frontend messaging is implemented
+                .setAllowedOriginPatterns("https://grapevine-study.netlify.app/", "http://localhost:5173") //TODO: Delete http://localhost:8000 after frontend messaging is implemented
                 .withSockJS();
     }
 

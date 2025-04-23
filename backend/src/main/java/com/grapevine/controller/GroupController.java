@@ -16,7 +16,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/groups")
 @RequiredArgsConstructor
-//@CrossOrigin(origins = "http://localhost:5173")
 public class GroupController {
     private final GroupService groupService;
     private final UserService userService;

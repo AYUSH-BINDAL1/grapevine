@@ -1,4 +1,8 @@
 // Application configuration
+// LOCAL
+//export const base_url = 'http://localhost:8080';
+//export const image_url = 'http://localhost:9000';
+
 export const base_url = 'http://localhost:8080';
 export const image_url = 'http://localhost:9000';
 

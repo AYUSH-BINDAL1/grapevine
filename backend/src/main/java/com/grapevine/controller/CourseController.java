@@ -18,7 +18,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/courses")
 @RequiredArgsConstructor
-//@CrossOrigin(origins = "http://localhost:5173")
 public class CourseController {
     private final CourseService courseService;
     private final UserService userService;
@@ -103,14 +102,5 @@ public class CourseController {
 
         return ResponseEntity.ok(enrolledStudents);
     }
-
-    @GetMapping("/subjects")
-    public ResponseEntity<List<String>> getAllUniqueSubjects(
-            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
-
-        userService.validateSession(sessionId);
-
-        List<String> subjects = courseService.getAllUniqueSubjects();
-        return ResponseEntity.ok(subjects);
-    }
+    
 }

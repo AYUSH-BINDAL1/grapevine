@@ -82,7 +82,7 @@ run_tests() {
 # Function to open PostgreSQL console
 open_db_console() {
   echo -e "${BLUE}Opening PostgreSQL console...${NC}"
-  docker exec -it backend-postgres-1 psql -U postgres
+  docker exec -it backend_postgres_1 psql -U postgres
   exit 0
 }
 
