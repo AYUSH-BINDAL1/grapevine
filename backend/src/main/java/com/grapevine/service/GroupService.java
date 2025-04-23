@@ -1,5 +1,6 @@
 package com.grapevine.service;
 
+import com.grapevine.constants.ApiConstants;
 import com.grapevine.exception.GroupNotFoundException;
 import com.grapevine.exception.InvalidSessionException;
 import com.grapevine.model.Group;
@@ -76,9 +77,9 @@ public class GroupService {
             User host = userService.getUserByEmail(hostEmail);
 
             // Create accept/reject URLs with the request ID
-            String acceptUrl = "http://ec2-3-129-12-80.us-east-2.compute.amazonaws.com:8080/groups/respond-access/" + requestId +
+            String acceptUrl = ApiConstants.EC2_BASE_URL + ":8080/groups/respond-access/" + requestId +
                     "/accept/" + groupId + "/" + requestingUser.getUserEmail();
-            String rejectUrl = "http://ec2-3-129-12-80.us-east-2.compute.amazonaws.com:8080/groups/respond-access/" + requestId +
+            String rejectUrl = ApiConstants.EC2_BASE_URL + ":8080/groups/respond-access/" + requestId +
                     "/reject/" + groupId + "/" + requestingUser.getUserEmail();
 
             // Create HTML message with styled buttons using table layout (more email-client friendly)
