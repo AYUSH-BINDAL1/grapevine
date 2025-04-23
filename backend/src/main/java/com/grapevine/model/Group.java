@@ -73,4 +73,7 @@ public class Group {
     @Column(name = "is_instructor_led", nullable = false)
     private boolean isInstructorLed = false;
 
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
 }

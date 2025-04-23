@@ -1,21 +1,54 @@
-import { useState, useEffect, useCallback, memo, useMemo, useReducer } from 'react';
+import { useState, useEffect, useCallback, memo, useMemo, useReducer, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
-import ReactMarkdown from 'react-markdown';
-import rehypeSanitize from 'rehype-sanitize';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FixedSizeList as List } from 'react-window';
 import PropTypes from 'prop-types';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import remarkGfm from 'remark-gfm';
 import 'react-toastify/dist/ReactToastify.css';
 import './Forum.css';
 import { base_url } from '../config';
 import MarkdownToolbar from './MarkdownToolbar';
 import { getProfilePictureUrl } from '../utils/imageUtils';
 import { getCachedUserByEmail } from '../utils/userUtils';
+import { requestPool } from '../utils/reqPool';
+
+const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+// Cache management functions
+const getCachedData = (key) => {
+  try {
+    const cachedData = localStorage.getItem(key);
+    if (!cachedData) return null;
+    
+    const { data, timestamp } = JSON.parse(cachedData);
+    
+    // Check if cache has expired
+    if (Date.now() - timestamp > CACHE_EXPIRY) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.warn(`Error retrieving cached ${key}:`, error);
+    return null;
+  }
+};
+
+const setCachedData = (key, data) => {
+  try {
+    const cacheItem = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(key, JSON.stringify(cacheItem));
+  } catch (error) {
+    console.warn(`Error caching ${key}:`, error);
+  }
+};
 
 // Add this debounce hook near your imports
 const useDebounce = (value, delay) => {
@@ -34,15 +67,315 @@ const useDebounce = (value, delay) => {
   return debouncedValue;
 };
 
+// Add this custom hook for reusable memoized data fetching
+const useMemoizedApiData = (fetchFunction, cacheKey, processFunction) => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const fetchData = useCallback(async (forceRefresh = false) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Check cache first, unless forced refresh
+      if (!forceRefresh) {
+        const cachedData = getCachedData(cacheKey);
+        if (cachedData) {
+          const processedData = processFunction(cachedData);
+          setData(processedData);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Fetch fresh data
+      const freshData = await fetchFunction();
+      
+      // Process and set the data
+      const processedData = processFunction(freshData);
+      setData(processedData);
+      
+      // Cache the raw data
+      setCachedData(cacheKey, freshData);
+    } catch (err) {
+      console.error(`Error fetching ${cacheKey}:`, err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchFunction, cacheKey, processFunction]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+  
+  return { data, loading, error, refreshData: () => fetchData(true) };
+};
+
+// Update fetchAllCourses to use request pooling
+const fetchAllCourses = async () => {
+  // Try to get data from cache first
+  const cachedCourses = getCachedData('cachedCourses');
+  if (cachedCourses) {
+    console.log('Using cached courses data');
+    return cachedCourses;
+  }
+
+  // Use request pooling for API call
+  const sessionId = localStorage.getItem('sessionId');
+  if (!sessionId) return [];
+  
+  return requestPool.execute('courses', async () => {
+    try {
+      console.log('Fetching courses from API');
+      const response = await axios.get(`${base_url}/courses/all`, {
+        headers: { 'Session-Id': sessionId }
+      });
+      
+      const coursesData = response.data || [];
+      
+      // Cache the results
+      setCachedData('cachedCourses', coursesData);
+      
+      return coursesData;
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+      return [];
+    }
+  });
+};
+
+// Update fetchAllMajors with request pooling
+const fetchAllMajors = async () => {
+  // Try to get data from cache first
+  const cachedMajors = getCachedData('cachedMajors');
+  if (cachedMajors) {
+    console.log('Using cached majors data');
+    return cachedMajors;
+  }
+  
+  // Use request pooling for API call
+  const sessionId = localStorage.getItem('sessionId');
+  if (!sessionId) return [];
+  
+  return requestPool.execute('majors', async () => {
+    try {
+      console.log('Fetching majors from API');
+      const response = await axios.get(`${base_url}/courses/subjects`, {
+        headers: { 'Session-Id': sessionId }
+      });
+      
+      const majorsData = response.data || [];
+      
+      // Cache the results
+      setCachedData('cachedMajors', majorsData);
+      
+      return majorsData;
+    } catch (error) {
+      console.error("Error fetching subjects/majors:", error);
+      return [];
+    }
+  });
+};
+
+// Create a LazyImage component
+const LazyImage = memo(({ src, alt, fallback, width, height }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const imgRef = useRef(null);
+  
+  useEffect(() => {
+    const currentImgRef = imgRef.current;
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { rootMargin: '100px' }
+    );
+    
+    if (currentImgRef) {
+      observer.observe(currentImgRef);
+    }
+    
+    return () => {
+      if (currentImgRef) {
+        observer.unobserve(currentImgRef);
+      }
+    };
+  }, []);
+  
+  return (
+    <div 
+      ref={imgRef}
+      className={`lazy-image-container ${loaded ? 'loaded' : ''}`}
+      style={{ width, height }}
+    >
+      {!loaded && !error && <div className="image-placeholder"></div>}
+      
+      {isVisible && (
+        <img
+          src={src}
+          alt={alt}
+          className="lazy-image"
+          style={{ opacity: loaded ? 1 : 0 }}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          width={width}
+          height={height}
+        />
+      )}
+      
+      {error && fallback}
+    </div>
+  );
+});
+
+LazyImage.propTypes = {
+  src: PropTypes.string.isRequired,
+  alt: PropTypes.string.isRequired,
+  fallback: PropTypes.node,
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+};
+
+LazyImage.displayName = 'LazyImage';
+
+// Create a new SearchableDropdown component for filter selections
+const SearchableDropdown = memo(({ 
+  options, 
+  value, 
+  onChange, 
+  placeholder,
+  label
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
+  
+  // Filter options based on search term
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm) return options;
+    return options.filter(option => 
+      option.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [options, searchTerm]);
+  
+  // Handle clicks outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Reset search when dropdown closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+    }
+  }, [isOpen]);
+  
+  const handleSelectOption = (option) => {
+    onChange(option);
+    setIsOpen(false);
+  };
+  
+  const displayValue = value || placeholder || "Select...";
+  
+  return (
+    <div className="filter-group searchable-dropdown-container" ref={dropdownRef}>
+      <label className="filter-label">{label}</label>
+      <div className="searchable-dropdown">
+        <div 
+          className={`dropdown-header ${isOpen ? 'open' : ''}`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <span className="selected-value">{displayValue}</span>
+          <span className="dropdown-arrow">▼</span>
+        </div>
+        
+        {isOpen && (
+          <div className="dropdown-content">
+            <div className="search-wrapper">
+              <input
+                type="text"
+                className="dropdown-search"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+              />
+            </div>
+            
+            <div className="dropdown-options">
+              <div 
+                className={`dropdown-option ${!value ? 'selected' : ''}`}
+                onClick={() => handleSelectOption('')}
+              >
+                All
+              </div>
+              
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((option, index) => (
+                  <div
+                    key={index}
+                    className={`dropdown-option ${option === value ? 'selected' : ''}`}
+                    onClick={() => handleSelectOption(option)}
+                  >
+                    {option}
+                  </div>
+                ))
+              ) : (
+                <div className="no-options">No matches found</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+SearchableDropdown.propTypes = {
+  options: PropTypes.array.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  label: PropTypes.string.isRequired
+};
+
+SearchableDropdown.displayName = 'SearchableDropdown';
+
 // Add a function to fetch user data for thread authors
 const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
   const { isThreadRead, bookmarks, toggleBookmark, formatDate, goToThread } = data;
   const [author, setAuthor] = useState(null);
+  const [markdownModules, setMarkdownModules] = useState(null);
+  const [markdownLoading, setMarkdownLoading] = useState(false);
   
+  // Load author data
   useEffect(() => {
     if (thread?.authorEmail) {
       const fetchAuthor = async () => {
-        const userData = await getCachedUserByEmail(thread.authorEmail);
+        // Use request pooling for user data
+        const userData = await requestPool.execute(
+          `user-${thread.authorEmail}`, 
+          () => getCachedUserByEmail(thread.authorEmail)
+        );
+        
         if (userData) {
           setAuthor(userData);
         }
@@ -52,6 +385,23 @@ const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
     }
   }, [thread?.authorEmail]);
   
+  // Load markdown modules only if needed
+  useEffect(() => {
+    if (thread.format === 'markdown' && !markdownModules) {
+      let mounted = true;
+      setMarkdownLoading(true);
+      
+      loadMarkdownComponents().then(modules => {
+        if (mounted) {
+          setMarkdownModules(modules);
+          setMarkdownLoading(false);
+        }
+      });
+      
+      return () => { mounted = false; };
+    }
+  }, [thread.format, markdownModules]);
+
   return (
     <div style={style} className="virtualized-thread-wrapper">
       <li 
@@ -92,34 +442,71 @@ const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
           <div className="thread-meta">
             <span className="thread-author">by {author?.name || thread.authorName || "Anonymous"}</span>
             <span className="thread-date">Posted on {formatDate(thread.createdAt)}</span>
+            
+            {/* Thread indicators for major and course */}
+            {(thread.major || thread.authorMajor || thread.subject) && (
+              <span className="thread-indicator thread-major" title={thread.major || thread.authorMajor || thread.subject}>
+                <svg className="indicator-icon" viewBox="0 0 24 24" width="12" height="12">
+                  <path fill="currentColor" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+                </svg>
+                {(thread.major || thread.authorMajor || thread.subject).substring(0, 12)}
+                {(thread.major || thread.authorMajor || thread.subject).length > 12 ? "..." : ""}
+              </span>
+            )}
+            
+            {(thread.course || thread.courseKey) && (
+              <span className="thread-indicator thread-course" title={thread.course || thread.courseKey}>
+                <svg className="indicator-icon" viewBox="0 0 24 24" width="12" height="12">
+                  <path fill="currentColor" d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+                </svg>
+                {(thread.course || thread.courseKey).substring(0, 10)}
+                {(thread.course || thread.courseKey).length > 10 ? "..." : ""}
+              </span>
+            )}
+            
+            {thread.authorRole && (
+              <span className={`thread-indicator thread-role th_role-${thread.authorRole.toLowerCase()}`} title={`Posted by ${thread.authorRole}`}>
+                <svg className="indicator-icon" viewBox="0 0 24 24" width="12" height="12">
+                  <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                {thread.authorRole.substring(0, 3)}
+              </span>
+            )}
           </div>
+          
           <div className="thread-excerpt">
             {thread.format === 'markdown' ? (
               <div className="markdown-excerpt">
-                <ReactMarkdown
-                  rehypePlugins={[rehypeSanitize]}
-                  className="thread-excerpt-content"
-                  components={{
-                    code({ inline, className, children }) {
-                      return inline ? (
-                        <code className={className}>{children}</code>
-                      ) : (
-                        <code className="code-block-preview">{'{code}'}</code>
-                      );
-                    },
-                    h1: ({children}) => <strong>{children}</strong>,
-                    h2: ({children}) => <strong>{children}</strong>,
-                    h3: ({children}) => <strong>{children}</strong>,
-                    h4: ({children}) => <strong>{children}</strong>,
-                    h5: ({children}) => <strong>{children}</strong>,
-                    h6: ({children}) => <strong>{children}</strong>,
-                    img: () => <span>[img]</span>,
-                    p: ({children}) => <p>{children}</p>
-                  }}
-                >
-                  {(thread.content || thread.description || "").substring(0, 80)}
-                  {(thread.content || thread.description || "").length > 80 ? "..." : ""}
-                </ReactMarkdown>
+                {markdownLoading ? (
+                  <p>Loading preview...</p>
+                ) : markdownModules ? (
+                  <markdownModules.ReactMarkdown
+                    rehypePlugins={[markdownModules.rehypeSanitize]}
+                    className="thread-excerpt-content"
+                    components={{
+                      code({ inline, className, children }) {
+                        return inline ? (
+                          <code className={className}>{children}</code>
+                        ) : (
+                          <code className="code-block-preview">{'{code}'}</code>
+                        );
+                      },
+                      h1: ({children}) => <strong>{children}</strong>,
+                      h2: ({children}) => <strong>{children}</strong>,
+                      h3: ({children}) => <strong>{children}</strong>,
+                      h4: ({children}) => <strong>{children}</strong>,
+                      h5: ({children}) => <strong>{children}</strong>,
+                      h6: ({children}) => <strong>{children}</strong>,
+                      img: () => <span>[img]</span>,
+                      p: ({children}) => <p>{children}</p>
+                    }}
+                  >
+                    {(thread.content || thread.description || "").substring(0, 80)}
+                    {(thread.content || thread.description || "").length > 80 ? "..." : ""}
+                  </markdownModules.ReactMarkdown>
+                ) : (
+                  <p>{(thread.content || thread.description || "").substring(0, 80)}...</p>
+                )}
               </div>
             ) : (
               <p>
@@ -183,7 +570,7 @@ const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
 
 ThreadRowWithAuthor.displayName = 'ThreadRowWithAuthor';
 
-// Define thread shape for better documentation
+// Update the ThreadShape PropTypes definition
 const ThreadShape = PropTypes.shape({
   threadId: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
@@ -199,6 +586,12 @@ const ThreadShape = PropTypes.shape({
   }),
   authorEmail: PropTypes.string,
   authorName: PropTypes.string,
+  authorRole: PropTypes.string, // Add this line to fix the ESLint errors
+  major: PropTypes.string,      // Also adding these since you're using them
+  authorMajor: PropTypes.string,
+  subject: PropTypes.string,
+  course: PropTypes.string,
+  courseKey: PropTypes.string,
   format: PropTypes.string,
   isRecent: PropTypes.bool
 });
@@ -232,22 +625,44 @@ ThreadRowWithAuthor.defaultProps = {
   }
 };
 
-// Add this thread form reducer
+// Update the threadFormReducer to handle course and major fields:
+
 const threadFormReducer = (state, action) => {
   switch (action.type) {
     case 'SET_TITLE':
       return { ...state, title: action.payload };
     case 'SET_CONTENT':
       return { ...state, content: action.payload };
+    case 'SET_COURSE':
+      return { ...state, course: action.payload };
+    case 'SET_MAJOR':
+      return { ...state, major: action.payload };
     case 'TOGGLE_PREVIEW':
       return { ...state, showPreview: !state.showPreview };
+    case 'TOGGLE_NOTIFICATIONS':
+      return { ...state, notificationsEnabled: !state.notificationsEnabled };
     case 'RESET':
-      return { title: '', content: '', showPreview: false };
+      return { title: '', content: '', course: '', major: '', showPreview: false };
     case 'LOAD_DRAFT':
       return { ...action.payload, showPreview: false };
     default:
       return state;
   }
+};
+
+// Import markdown components dynamically
+const loadMarkdownComponents = async () => {
+  const [ReactMarkdown, rehypeSanitize, remarkGfm] = await Promise.all([
+    import('react-markdown'),
+    import('rehype-sanitize'),
+    import('remark-gfm')
+  ]);
+  
+  return {
+    ReactMarkdown: ReactMarkdown.default,
+    rehypeSanitize: rehypeSanitize.default,
+    remarkGfm: remarkGfm.default
+  };
 };
 
 // Add this above your main Forum component
@@ -256,8 +671,44 @@ const ThreadForm = memo(({
   dispatchThreadForm,
   handleCreateThread,
   setShowNewThreadForm,
-  clearDraft
+  clearDraft,
+  availableCourses,
+  availableMajors
 }) => {
+  const [markdownModules, setMarkdownModules] = useState(null);
+  const [markdownLoading, setMarkdownLoading] = useState(false);
+
+  useEffect(() => {
+    if (threadForm.showPreview && !markdownModules) {
+      let mounted = true;
+      setMarkdownLoading(true);
+      
+      loadMarkdownComponents()
+        .then(modules => {
+          if (mounted && modules) {
+            setMarkdownModules(modules);
+          } else if (mounted) {
+            console.error("Failed to load markdown modules");
+            toast.error("Failed to load markdown preview");
+          }
+        })
+        .catch(err => {
+          if (mounted) {
+            console.error("Error in markdown loading:", err);
+            toast.error("Error loading markdown preview");
+          }
+        })
+        .finally(() => {
+          if (mounted) {
+            setMarkdownLoading(false);
+          }
+        });
+      
+      return () => { mounted = false; };
+    }
+  }, [threadForm.showPreview, markdownModules]);
+  
+
   const insertMarkdown = (prefix, suffix, placeholder) => {
     const textarea = document.getElementById('thread-content');
     if (!textarea) return;
@@ -346,10 +797,12 @@ const ThreadForm = memo(({
             </>
           ) : (
             <div className="markdown-preview">
-              {threadForm.content ? (
-                <ReactMarkdown
-                  rehypePlugins={[rehypeSanitize]}
-                  remarkPlugins={[remarkGfm]}
+              {markdownLoading ? (
+                <p>Loading preview...</p>
+              ) : markdownModules && threadForm.content ? (
+                <markdownModules.ReactMarkdown
+                  rehypePlugins={[markdownModules.rehypeSanitize]}
+                  remarkPlugins={[markdownModules.remarkGfm]}
                   components={{
                     code({ inline, className, children, ...props}) {
                       const match = /language-(\w+)/.exec(className || '');
@@ -371,9 +824,12 @@ const ThreadForm = memo(({
                   }}
                 >
                   {threadForm.content}
-                </ReactMarkdown>
+                </markdownModules.ReactMarkdown>
               ) : (
-                <p className="empty-preview">Nothing to preview yet. Start writing to see how your post will look!</p>
+                <p className="empty-preview">
+                  {!markdownModules ? "Loading markdown renderer..." : 
+                   "Nothing to preview yet. Start writing to see how your post will look!"}
+                </p>
               )}
             </div>
           )}
@@ -413,6 +869,63 @@ const ThreadForm = memo(({
             </details>
           </div>
         </div>
+
+        <div className="form-group">
+          <label htmlFor="thread-course">Related Course (Optional)</label>
+          <select
+            id="thread-course"
+            value={threadForm.course || ""}
+            onChange={(e) => dispatchThreadForm({ 
+              type: 'SET_COURSE', 
+              payload: e.target.value 
+            })}
+            className="thread-select"
+          >
+            <option value="">None</option>
+            {availableCourses.map((course, index) => (
+              <option key={index} value={course}>{course}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="thread-major">Related Major (Optional)</label>
+          <select
+            id="thread-major"
+            value={threadForm.major || ""}
+            onChange={(e) => dispatchThreadForm({ 
+              type: 'SET_MAJOR', 
+              payload: e.target.value 
+            })}
+            className="thread-select"
+          >
+            <option value="">None</option>
+            {availableMajors.map((major, index) => (
+              <option key={index} value={major}>{major}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group notification-toggle-group">
+          <div className="toggle-container">
+            <label htmlFor="notifications-toggle" className="toggle-label">
+              <input
+                id="notifications-toggle"
+                type="checkbox"
+                className="toggle-input"
+                checked={threadForm.notificationsEnabled}
+                onChange={() => dispatchThreadForm({ type: 'TOGGLE_NOTIFICATIONS' })}
+              />
+              <span className="toggle-switch"></span>
+              <span className="toggle-text">
+                Receive notifications for replies
+                <span className="toggle-description">
+                  You&apos;ll be notified when someone comments on your thread
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
         
         <div className="form-actions">
           <button type="submit" className="submit-button">Create Thread</button>
@@ -437,22 +950,41 @@ const ThreadForm = memo(({
 });
 
 ThreadForm.propTypes = {
-  threadForm: PropTypes.object.isRequired,
+  threadForm: PropTypes.shape({
+    title: PropTypes.string.isRequired,
+    content: PropTypes.string.isRequired,
+    course: PropTypes.string,
+    major: PropTypes.string,
+    showPreview: PropTypes.bool.isRequired,
+    notificationsEnabled: PropTypes.bool.isRequired
+  }).isRequired,
   dispatchThreadForm: PropTypes.func.isRequired,
   handleCreateThread: PropTypes.func.isRequired,
   setShowNewThreadForm: PropTypes.func.isRequired,
-  clearDraft: PropTypes.func.isRequired
+  clearDraft: PropTypes.func.isRequired,
+  availableCourses: PropTypes.array.isRequired,
+  availableMajors: PropTypes.array.isRequired
 };
 
 ThreadForm.displayName = 'ThreadForm';
 
-// Add this above your main Forum component
+// Update the ForumSidebar component with new filter options
+
 const ForumSidebar = memo(({
   searchInputValue,
   setSearchInputValue,
   forumStats,
   bookmarks,
-  formatNumber
+  formatNumber,
+  filterMajor,
+  setFilterMajor,
+  filterCourse,
+  setFilterCourse,
+  filterRole,
+  setFilterRole,
+  availableMajors,
+  availableCourses,
+  resetFilters
 }) => {
   return (
     <div className="forum-sidebar">
@@ -466,14 +998,45 @@ const ForumSidebar = memo(({
             onChange={(e) => setSearchInputValue(e.target.value)}
             className="sidebar-search-input"
           />
-          <button className="search-button">
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-          </button>
         </div>
         
         <div className="filter-options">
+          {/* Major filter with searchable dropdown */}
+          <SearchableDropdown
+            options={availableMajors}
+            value={filterMajor}
+            onChange={setFilterMajor}
+            placeholder="All Majors"
+            label="Major:"
+          />
+          
+          {/* Course filter with searchable dropdown */}
+          <SearchableDropdown
+            options={availableCourses}
+            value={filterCourse}
+            onChange={setFilterCourse}
+            placeholder="All Courses"
+            label="Course:"
+          />
+          
+          {/* Role filter with searchable dropdown */}
+          <SearchableDropdown
+            options={["STUDENT", "INSTRUCTOR", "UTA", "GTA"]}
+            value={filterRole}
+            onChange={setFilterRole}
+            placeholder="All Roles"
+            label="Author Role:"
+          />
+          
+          {/* Reset filters button */}
+          <button 
+            className="reset-filters-button" 
+            onClick={resetFilters}
+            disabled={!filterMajor && !filterCourse && !filterRole && !searchInputValue}
+          >
+            Reset Filters
+          </button>
+          
           <div className="filter-group">
             <label>Time period:</label>
             <select className="filter-select">
@@ -482,24 +1045,6 @@ const ForumSidebar = memo(({
               <option value="week">This week</option>
               <option value="month">This month</option>
             </select>
-          </div>
-          
-          <div className="filter-group">
-            <label>Thread type:</label>
-            <div className="filter-checkboxes">
-              <label className="checkbox-label">
-                <input type="checkbox" defaultChecked />
-                <span>Questions</span>
-              </label>
-              <label className="checkbox-label">
-                <input type="checkbox" defaultChecked />
-                <span>Announcements</span>
-              </label>
-              <label className="checkbox-label">
-                <input type="checkbox" defaultChecked />
-                <span>Discussions</span>
-              </label>
-            </div>
           </div>
         </div>
       </div>
@@ -527,15 +1072,105 @@ const ForumSidebar = memo(({
   );
 });
 
+// Update PropTypes for the ForumSidebar
 ForumSidebar.propTypes = {
   searchInputValue: PropTypes.string.isRequired,
   setSearchInputValue: PropTypes.func.isRequired,
   forumStats: PropTypes.object.isRequired,
   bookmarks: PropTypes.array.isRequired,
-  formatNumber: PropTypes.func.isRequired
+  formatNumber: PropTypes.func.isRequired,
+  filterMajor: PropTypes.string.isRequired,
+  setFilterMajor: PropTypes.func.isRequired,
+  filterCourse: PropTypes.string.isRequired,
+  setFilterCourse: PropTypes.func.isRequired,
+  filterRole: PropTypes.string.isRequired,
+  setFilterRole: PropTypes.func.isRequired,
+  availableMajors: PropTypes.array.isRequired,
+  availableCourses: PropTypes.array.isRequired,
+  resetFilters: PropTypes.func.isRequired
 };
 
 ForumSidebar.displayName = 'ForumSidebar';
+
+// Add this to your ThreadListing component
+const ThreadListWithInfiniteScroll = memo(({ displayThreads, listData, itemsPerPage = 10 }) => {
+  const [visibleThreads, setVisibleThreads] = useState([]);
+  const [page, setPage] = useState(1);
+  const loaderRef = useRef(null);
+  
+  useEffect(() => {
+    // Reset pagination when threads change
+    setPage(1);
+    setVisibleThreads(displayThreads.slice(0, itemsPerPage));
+  }, [displayThreads, itemsPerPage]);
+  
+  useEffect(() => {
+    const currentLoaderRef = loaderRef.current;
+    
+    const observer = new IntersectionObserver(entries => {
+      const entry = entries[0];
+      if (entry.isIntersecting && visibleThreads.length < displayThreads.length) {
+        // Load next page of threads
+        const nextPage = page + 1;
+        const nextThreads = displayThreads.slice(0, nextPage * itemsPerPage);
+        setVisibleThreads(nextThreads);
+        setPage(nextPage);
+      }
+    }, { threshold: 0.1 });
+    
+    if (currentLoaderRef) {
+      observer.observe(currentLoaderRef);
+    }
+    
+    return () => {
+      if (currentLoaderRef) {
+        observer.unobserve(currentLoaderRef);
+      }
+    };
+  }, [displayThreads, visibleThreads, page, itemsPerPage]);
+  
+  return (
+    <>
+      <div className="virtualized-thread-container">
+        <AutoSizer disableHeight>
+          {({ width }) => (
+            <List
+              className="virtualized-threads-list"
+              height={Math.min(600, visibleThreads.length * 170)}
+              width={width}
+              itemCount={visibleThreads.length}
+              itemSize={170}
+              itemData={{...listData, threads: visibleThreads}}
+            >
+              {({ index, style }) => (
+                <ThreadRowWithAuthor
+                  thread={visibleThreads[index]}
+                  index={index}
+                  style={style}
+                  data={listData}
+                />
+              )}
+            </List>
+          )}
+        </AutoSizer>
+      </div>
+      
+      {visibleThreads.length < displayThreads.length && (
+        <div ref={loaderRef} className="loading-more">
+          <div className="loading-spinner"></div>
+        </div>
+      )}
+    </>
+  );
+});
+
+ThreadListWithInfiniteScroll.propTypes = {
+  displayThreads: PropTypes.array.isRequired,
+  listData: PropTypes.object.isRequired,
+  itemsPerPage: PropTypes.number
+};
+
+ThreadListWithInfiniteScroll.displayName = 'ThreadListWithInfiniteScroll';
 
 // Add this above your main Forum component
 const ThreadListing = memo(({
@@ -546,10 +1181,7 @@ const ThreadListing = memo(({
   setShowNewThreadForm,
   sortOrder,
   setSortOrder,
-  listData,
-  currentPage,
-  setCurrentPage,
-  totalPages
+  listData
 }) => {
   return (
     <div className="threads-container">
@@ -622,49 +1254,11 @@ const ThreadListing = memo(({
           )}
         </div>
       ) : (
-        <>
-          <div className="virtualized-thread-container">
-            <AutoSizer disableHeight>
-              {({ width }) => (
-                <List
-                  className="virtualized-threads-list"
-                  height={600}
-                  width={width}
-                  itemCount={displayThreads.length}
-                  itemSize={160}
-                  itemData={listData}
-                >
-                  {({ index, style }) => (
-                    <ThreadRowWithAuthor
-                      thread={displayThreads[index]}
-                      index={index}
-                      style={style}
-                      data={listData}
-                    />
-                  )}
-                </List>
-              )}
-            </AutoSizer>
-          </div>
-          
-          <div className="pagination">
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="pagination-button"
-            >
-              Previous
-            </button>
-            <span className="page-info">Page {currentPage} of {totalPages}</span>
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="pagination-button"
-            >
-              Next
-            </button>
-          </div>
-        </>
+        <ThreadListWithInfiniteScroll 
+          displayThreads={displayThreads}
+          listData={listData}
+          itemsPerPage={10}
+        />
       )}
     </div>
   );
@@ -686,6 +1280,21 @@ ThreadListing.propTypes = {
 
 ThreadListing.displayName = 'ThreadListing';
 
+// Add a normalized thread cache to avoid duplicate data
+const normalizeThreads = (threads) => {
+  const normalized = {};
+  const ids = [];
+  
+  threads.forEach(thread => {
+    normalized[thread.threadId] = thread;
+    if (!ids.includes(thread.threadId)) {
+      ids.push(thread.threadId);
+    }
+  });
+  
+  return { byId: normalized, allIds: ids };
+};
+
 function Forum() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -703,12 +1312,72 @@ function Forum() {
   });
   const [bookmarks, setBookmarks] = useState([]);
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
+  const [filterMajor, setFilterMajor] = useState('');
+  const [filterCourse, setFilterCourse] = useState('');
+  const [filterRole, setFilterRole] = useState('');
 
   const [threadForm, dispatchThreadForm] = useReducer(threadFormReducer, {
     title: '',
     content: '',
-    showPreview: false
+    course: '',
+    major: '',
+    showPreview: false,
+    notificationsEnabled: true  // Default to enabled
   });
+
+  const [normalizedThreads, setNormalizedThreads] = useState({ byId: {}, allIds: [] });
+
+  // Process functions
+  const processMajors = useCallback((data) => {
+    return [...new Set(data.map(major => major.name || major))].sort();
+  }, []);
+  
+  const processCourses = useCallback((data) => {
+    return data
+      .filter(course => course && course.courseKey)
+      .map(course => course.courseKey)
+      .sort();
+  }, []);
+  
+  // Use the hook for majors and courses
+  const { 
+    data: availableMajors
+  } = useMemoizedApiData(fetchAllMajors, 'cachedMajors', processMajors);
+  
+  const {
+    data: availableCourses
+  } = useMemoizedApiData(fetchAllCourses, 'cachedCourses', processCourses);
+  
+
+  // Add a function to force refresh the data (useful for admin functions or manual refresh)
+  const refreshCourseAndMajorData = useCallback(async () => {
+    // Clear the cache
+    localStorage.removeItem('cachedCourses');
+    localStorage.removeItem('cachedMajors');
+    
+    // Re-fetch the data
+    try {
+      fetchAllMajors(),
+      fetchAllCourses()
+      
+      toast.success("Filter data refreshed successfully.");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast.error("Failed to refresh filter data.");
+    }
+  }, []);
+
+  // Optional: Add a version check to invalidate cache when app version changes
+  useEffect(() => {
+    const APP_VERSION = "1.0.0"; // Update this when your app version changes
+    const cachedVersion = localStorage.getItem('appVersion');
+    
+    if (cachedVersion !== APP_VERSION) {
+      console.log("App version changed, refreshing cached data");
+      refreshCourseAndMajorData();
+      localStorage.setItem('appVersion', APP_VERSION);
+    }
+  }, [refreshCourseAndMajorData]);
 
   // Memoize these utility functions
   const formatDate = useCallback((dateString) => {
@@ -815,6 +1484,7 @@ function Forum() {
         if (Array.isArray(response.data)) {
           console.log(`Processing ${response.data.length} threads from array response`);
           setUnsortedThreads(response.data);
+          setNormalizedThreads(normalizeThreads(response.data));
           setTotalPages(Math.ceil(response.data.length / 10));
           
           // Calculate and set forum stats
@@ -827,6 +1497,7 @@ function Forum() {
         } else if (response.data.threads && Array.isArray(response.data.threads)) {
           console.log(`Processing ${response.data.threads.length} threads from nested response`);
           setUnsortedThreads(response.data.threads);
+          setNormalizedThreads(normalizeThreads(response.data.threads));
           setTotalPages(response.data.totalPages || Math.ceil(response.data.threads.length / 10));
           
           // Calculate and set forum stats
@@ -839,6 +1510,7 @@ function Forum() {
         } else {
           console.warn('Unexpected response format:', response.data);
           setUnsortedThreads([]);
+          setNormalizedThreads({ byId: {}, allIds: [] });
           setTotalPages(1);
         }
       } catch (error) {
@@ -886,13 +1558,16 @@ function Forum() {
       if (threadForm.title.trim() || threadForm.content.trim()) {
         localStorage.setItem('threadDraft', JSON.stringify({
           title: threadForm.title,
-          content: threadForm.content
+          content: threadForm.content,
+          course: threadForm.course,
+          major: threadForm.major,
+          notificationsEnabled: threadForm.notificationsEnabled
         }));
       }
     }, 500); // 500ms debounce
     
     return () => clearTimeout(draftTimer);
-  }, [threadForm.title, threadForm.content]);
+  }, [threadForm.title, threadForm.content, threadForm.course, threadForm.major, threadForm.notificationsEnabled]);
 
   const clearDraft = useCallback(() => {
     dispatchThreadForm({ type: 'RESET' });
@@ -948,6 +1623,9 @@ function Forum() {
         title: threadForm.title,
         description: threadForm.content,
         authorEmail: userEmail,
+        course: threadForm.course,
+        major: threadForm.major,
+        notificationsEnabled: threadForm.notificationsEnabled
       };
       
       console.log('Creating thread with payload:', threadPayload);
@@ -1001,7 +1679,14 @@ function Forum() {
     navigate(`/forum/thread/${threadId}`);
   }, [navigate]);
 
-  const displayThreads = useMemo(() => {
+  const resetFilters = useCallback(() => {
+    setFilterMajor('');
+    setFilterCourse('');
+    setFilterRole('');
+    setSearchInputValue('');
+  }, []);
+
+  const filteredThreadIds = useMemo(() => {
     if (!unsortedThreads.length) return [];
     
     let filteredThreads = [...unsortedThreads];
@@ -1023,22 +1708,50 @@ function Forum() {
       );
     }
     
+    // Apply major filter
+    if (filterMajor) {
+      filteredThreads = filteredThreads.filter(thread => 
+        thread.authorMajor === filterMajor || 
+        (thread.subject && thread.subject === filterMajor) ||
+        (thread.major && thread.major === filterMajor)
+      );
+    }
+    
+    // Apply course filter
+    if (filterCourse) {
+      filteredThreads = filteredThreads.filter(thread => 
+        thread.courseKey === filterCourse || 
+        (thread.course && thread.course === filterCourse)
+      );
+    }
+    
+    // Apply role filter
+    if (filterRole) {
+      filteredThreads = filteredThreads.filter(thread => 
+        thread.authorRole && thread.authorRole === filterRole
+      );
+    }
+    
     // Apply existing sort order
     switch(sortOrder) {
       case 'recent':
-        return filteredThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return filteredThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(thread => thread.threadId);
       case 'oldest':
-        return filteredThreads.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        return filteredThreads.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map(thread => thread.threadId);
       case 'comments':
-        return filteredThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+        return filteredThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0)).map(thread => thread.threadId);
       case 'score':
         return filteredThreads.sort((a, b) => 
           ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0))
-        );
+        ).map(thread => thread.threadId);
       default:
-        return filteredThreads;
+        return filteredThreads.map(thread => thread.threadId);
     }
-  }, [unsortedThreads, bookmarks, showBookmarksOnly, sortOrder, searchQuery]);
+  }, [unsortedThreads, bookmarks, showBookmarksOnly, sortOrder, searchQuery, filterMajor, filterCourse, filterRole]);
+
+  const displayThreads = useMemo(() => {
+    return filteredThreadIds.map(id => normalizedThreads.byId[id]);
+  }, [filteredThreadIds, normalizedThreads.byId]);
 
   const listData = useMemo(() => ({
     threads: displayThreads,
@@ -1050,6 +1763,38 @@ function Forum() {
     formatDate,
     isHotThread
   }), [displayThreads, bookmarks, toggleBookmark, goToThread, formatNumber, formatDate, isHotThread]);
+
+  useEffect(() => {
+    const loadFilterData = async () => {
+      try {
+        // Fetch majors and courses in parallel
+        const [majorsData, coursesData] = await Promise.all([
+          fetchAllMajors(),
+          fetchAllCourses()
+        ]);
+        
+        // Process majors without useMemo
+        if (Array.isArray(majorsData)) {
+          const uniqueMajors = [...new Set(majorsData.map(major => major.name || major))].sort();
+          console.log(`Processed ${uniqueMajors.length} majors`);
+        }
+        
+        // Extract courseKeys from course data without useMemo
+        if (Array.isArray(coursesData)) {
+          const uniqueCourseKeys = coursesData
+            .filter(course => course && course.courseKey)
+            .map(course => course.courseKey)
+            .sort();
+          console.log(`Processed ${uniqueCourseKeys.length} course keys`);
+        }
+      } catch (error) {
+        console.error("Error loading filter data:", error);
+        toast.error("Failed to load filter options. Some filters may be incomplete.");
+      }
+    };
+
+    loadFilterData();
+  }, []);
 
   return (
     <div className="forum-container">
@@ -1067,6 +1812,8 @@ function Forum() {
           handleCreateThread={handleCreateThread}
           setShowNewThreadForm={setShowNewThreadForm}
           clearDraft={clearDraft}
+          availableCourses={availableCourses}
+          availableMajors={availableMajors}
         />
       )}
       
@@ -1077,6 +1824,15 @@ function Forum() {
           forumStats={forumStats}
           bookmarks={bookmarks}
           formatNumber={formatNumber}
+          filterMajor={filterMajor}
+          setFilterMajor={setFilterMajor}
+          filterCourse={filterCourse}
+          setFilterCourse={setFilterCourse}
+          filterRole={filterRole}
+          setFilterRole={setFilterRole}
+          availableMajors={availableMajors}
+          availableCourses={availableCourses}
+          resetFilters={resetFilters}
         />
         
         <ThreadListing

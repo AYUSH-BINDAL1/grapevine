@@ -11,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,11 +47,11 @@ public class Thread {
 
     @CreationTimestamp
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private ZonedDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private ZonedDateTime updatedAt;
 
     @Column(name = "upvotes")
     private Integer upvotes = 0;
@@ -80,4 +81,7 @@ public class Thread {
     @Column(name = "author_role")
     @Enumerated(EnumType.STRING)
     private User.Role authorRole;
+
+    @Column(name = "notifications_enabled")
+    private Boolean notificationsEnabled;
 }

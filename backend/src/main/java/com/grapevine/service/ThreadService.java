@@ -13,10 +13,14 @@ import java.util.List;
 public class ThreadService {
 
     private final ThreadRepository threadRepository;
+    private final NotificationService notificationService;
 
     @Autowired
-    public ThreadService(ThreadRepository threadRepository) {
+    public ThreadService(ThreadRepository threadRepository,
+                         NotificationService notificationService,
+                         EmailService emailService) {
         this.threadRepository = threadRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Thread> getAllThreads() {
@@ -52,9 +56,25 @@ public class ThreadService {
 
     public Thread addComment(Long threadId, Comment comment) {
         Thread thread = getThreadById(threadId);
+
+        // Add the comment to the thread
         comment.setThread(thread);
         thread.getComments().add(comment);
-        return threadRepository.save(thread);
+        Thread savedThread = threadRepository.save(thread);
+
+        // Send notification to thread author if the commenter is not the author
+        // and notifications are enabled for this thread
+        if (!thread.getAuthorEmail().equals(comment.getAuthorEmail()) &&
+                Boolean.TRUE.equals(thread.getNotificationsEnabled())) {
+            notificationService.createAndSendThreadCommentNotification(
+                    thread.getAuthorEmail(),
+                    comment.getAuthorEmail(),
+                    thread.getTitle(),
+                    threadId
+            );
+        }
+
+        return savedThread;
     }
 
     public Thread upvoteThread(Long id, String userEmail) {

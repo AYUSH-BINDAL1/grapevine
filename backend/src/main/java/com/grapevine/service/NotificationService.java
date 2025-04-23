@@ -81,4 +81,20 @@ public class NotificationService {
     public void markAsRead(Long notificationId, String userEmail) {
         notificationRepository.markAsRead(notificationId, userEmail);
     }
+
+    @Transactional
+    public void createAndSendThreadCommentNotification(String recipientEmail, String commenterEmail,
+                                                       String threadTitle, Long threadId) {
+        // Create notification in database
+        Notification notification = createNotification(
+                recipientEmail,
+                commenterEmail,
+                Notification.NotificationType.COMMENT,  // Changed from MESSAGE to COMMENT
+                "New comment on your thread: " + threadTitle,
+                threadId
+        );
+
+        // Send real-time notification via WebSocket
+        sendNotificationToUser(notification);
+    }
 }

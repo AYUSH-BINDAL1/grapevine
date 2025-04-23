@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { base_url } from '../config';
+import { requestPool } from './reqPool';
 
 /**
  * Fetch user data by email address
@@ -7,6 +8,11 @@ import { base_url } from '../config';
  * @returns {Promise<Object>} - Promise resolving to user data
  */
 export const getUserByEmail = async (email) => {
+  if (!email) {
+    console.error('Email is required to fetch user data');
+    return null;
+  }
+  
   try {
     const sessionId = localStorage.getItem('sessionId');
     if (!sessionId) {
@@ -39,27 +45,27 @@ const userCache = {};
  * @param {number} cacheTime - Time in milliseconds to keep cached data (default: 5 minutes)
  * @returns {Promise<Object>} - Promise resolving to user data
  */
-export const getCachedUserByEmail = async (email, cacheTime = 300000) => {
-  // Return from cache if available and not expired
-  const cachedUser = userCache[email];
-  const now = Date.now();
+export const getCachedUserByEmail = async (email) => {
+  if (!email) return null;
   
-  if (cachedUser && (now - cachedUser.timestamp < cacheTime)) {
-    return cachedUser.data;
-  }
+  // Check memory cache first (if implemented)
   
-  // Fetch fresh data
-  const userData = await getUserByEmail(email);
-  
-  // Cache the result if successful
-  if (userData) {
-    userCache[email] = {
-      data: userData,
-      timestamp: now
-    };
-  }
-  
-  return userData;
+  return requestPool.execute(`user-${email}`, async () => {
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) return null;
+      
+      const response = await axios.get(`${base_url}/users/${email}`, {
+        headers: { 'Session-Id': sessionId }
+      });
+      
+      // Process and return user data
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching user ${email}:`, error);
+      return null;
+    }
+  });
 };
 
 /**

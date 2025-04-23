@@ -700,4 +700,32 @@ class UserControllerTest {
         verify(userService).validateSession(testSessionId);
         verify(userService, never()).removeFriend(anyString(), anyString());
     }
+
+    // STORY 14 (sprint 3) (zhao)
+    @Test
+    void searchUsers_Success() {
+        // Arrange
+        String query = "test";
+        List<String> majors = Arrays.asList("Computer Science", "Engineering");
+        User.Role role = User.Role.STUDENT;
+        List<Long> locationIds = Arrays.asList(1L, 2L);
+
+        List<User> expectedUsers = new ArrayList<>();
+        expectedUsers.add(testUser);
+
+        when(userService.validateSession(testSessionId)).thenReturn(testUser);
+        when(userService.searchUsersByNameWithFilters(query, majors, role, locationIds))
+                .thenReturn(expectedUsers);
+
+        // Act
+        ResponseEntity<List<User>> response = userController.searchUsers(
+                query, majors, role, locationIds, testSessionId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(expectedUsers, response.getBody());
+        assertEquals(1, response.getBody().size());
+        verify(userService).validateSession(testSessionId);
+        verify(userService).searchUsersByNameWithFilters(query, majors, role, locationIds);
+    }
 }

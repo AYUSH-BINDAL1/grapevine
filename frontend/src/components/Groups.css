@@ -44,11 +44,59 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.group-image {
+/* Group image container with click-to-upload functionality */
+.group-image-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
   width: 300px;
   height: 200px;
+}
+
+.group-image {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  transition: filter 0.3s ease;
+}
+
+/* Show edit overlay on hover for hosts */
+.group-image-container.editable {
+  cursor: pointer;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  opacity: 0;
+  pointer-events: none; /* This allows clicks to pass through when invisible */
+  transition: opacity 0.3s ease;
+}
+
+/* Optional: add a subtle effect on the image when hovering */
+.group-image-container.editable:hover .group-image {
+  filter: brightness(0.8);
+}
+
+.edit-icon {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.edit-text {
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .group-title-section {
@@ -444,16 +492,16 @@
   .group-header {
     flex-direction: column;
   }
-  
+
   .group-image {
     width: 100%;
     height: auto;
   }
-  
+
   .members-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-  
+
   .reviews-header {
     flex-direction: column;
     align-items: flex-start;
@@ -986,11 +1034,11 @@ h1 {
   background-color: #f0f0f0;
   margin-bottom: 10px;
   background-image: linear-gradient(
-    to right,
-    #f0f0f0 0%,
-    #e0e0e0 20%,
-    #f0f0f0 40%,
-    #f0f0f0 100%
+          to right,
+          #f0f0f0 0%,
+          #e0e0e0 20%,
+          #f0f0f0 40%,
+          #f0f0f0 100%
   );
   background-size: 800px 104px;
   animation: shimmer 1.5s infinite linear;
@@ -1094,11 +1142,11 @@ h1 {
 .skeleton-review-rating,
 .skeleton-review-comment {
   background-image: linear-gradient(
-    to right,
-    #f0f0f0 0%,
-    #e0e0e0 20%,
-    #f0f0f0 40%,
-    #f0f0f0 100%
+          to right,
+          #f0f0f0 0%,
+          #e0e0e0 20%,
+          #f0f0f0 40%,
+          #f0f0f0 100%
   );
   background-size: 800px 104px;
   animation: shimmer 1.5s infinite linear;
@@ -1234,4 +1282,36 @@ h1 {
 
 .mt-2 {
   margin-top: 8px;
+}
+
+.instructor-status-panel {
+  background-color: #f4f9f4;
+  border-left: 4px solid #8ebd89;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 15px;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.instructor-status-panel strong {
+  margin-right: 10px;
+}
+
+.instructor-toggle-button {
+  padding: 8px 14px;
+  background-color: #4caf50;
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.instructor-toggle-button:hover {
+  background-color: #3c8c40;
 }
