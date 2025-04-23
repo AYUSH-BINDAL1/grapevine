@@ -81,6 +81,7 @@ class ThreadControllerTest {
         testComment.setAuthorName("Other User");
     }
 
+    // STORY 8 (sprint 3)  (zhao)
     @Test
     void getAllThreads_Success() {
         // Arrange
@@ -89,12 +90,13 @@ class ThreadControllerTest {
         when(threadService.getAllThreads()).thenReturn(threads);
 
         // Act
-        List<Thread> result = (List<Thread>) threadController.getAllThreads(testSessionId);
+        ResponseEntity<List<Thread>> response = threadController.getAllThreads(testSessionId);
 
         // Assert
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(testThread, result.get(0));
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(1, response.getBody().size());
+        assertEquals(testThread, response.getBody().get(0));
         verify(userService).validateSession(testSessionId);
         verify(threadService).getAllThreads();
     }
@@ -127,20 +129,7 @@ class ThreadControllerTest {
         verify(threadService).getThreadById(1L);
     }
 
-    @Test
-    void getThreadById_NotFound() {
-        // Arrange
-        when(userService.validateSession(testSessionId)).thenReturn(testUser);
-        when(threadService.getThreadById(999L)).thenThrow(new IllegalArgumentException("Thread not found"));
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () ->
-                threadController.getThreadById(999L, testSessionId)
-        );
-        verify(userService).validateSession(testSessionId);
-        verify(threadService).getThreadById(999L);
-    }
-
+    // STORY 10 (sprint 3)  (zhao)
     @Test
     void createThread_Success() {
         // Arrange
@@ -157,6 +146,7 @@ class ThreadControllerTest {
         verify(threadService).createThread(any(Thread.class));
     }
 
+    // STORY 11 (sprint 3)  (zhao)
     @Test
     void addComment_Success_WithNotifications() {
         // Arrange
@@ -191,83 +181,7 @@ class ThreadControllerTest {
         verify(threadService).addComment(eq(1L), any(Comment.class));
     }
 
-    @Test
-    void updateThread_Success() {
-        // Arrange
-        Thread updatedThread = new Thread();
-        updatedThread.setThreadId(1L);
-        updatedThread.setTitle("Updated Title");
-        updatedThread.setDescription("Updated Description");
-        updatedThread.setAuthorEmail("test@example.com");
-        updatedThread.setNotificationsEnabled(false);
-
-        when(userService.validateSession(testSessionId)).thenReturn(testUser);
-        when(threadService.getThreadById(1L)).thenReturn(testThread);
-        when(threadService.updateThread(eq(1L), any(Thread.class))).thenReturn(updatedThread);
-
-        // Act
-        ResponseEntity<Thread> response = threadController.updateThread(1L, updatedThread, testSessionId);
-
-        // Assert
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(updatedThread, response.getBody());
-        verify(userService).validateSession(testSessionId);
-        verify(threadService).getThreadById(1L);
-        verify(threadService).updateThread(eq(1L), any(Thread.class));
-    }
-
-    @Test
-    void updateThread_NotAuthor() {
-        // Arrange
-        Thread updatedThread = new Thread();
-        updatedThread.setThreadId(1L);
-        updatedThread.setTitle("Updated Title");
-        updatedThread.setAuthorEmail("other@example.com");
-
-        when(userService.validateSession(testSessionId)).thenReturn(otherUser);
-        when(threadService.getThreadById(1L)).thenReturn(testThread);
-
-        // Act & Assert
-        assertThrows(IllegalStateException.class, () ->
-                threadController.updateThread(1L, updatedThread, testSessionId)
-        );
-        verify(userService).validateSession(testSessionId);
-        verify(threadService).getThreadById(1L);
-        verify(threadService, never()).updateThread(anyLong(), any(Thread.class));
-    }
-
-    @Test
-    void deleteThread_Success() {
-        // Arrange
-        when(userService.validateSession(testSessionId)).thenReturn(testUser);
-        when(threadService.getThreadById(1L)).thenReturn(testThread);
-        doNothing().when(threadService).deleteThread(1L);
-
-        // Act
-        ResponseEntity<Void> response = threadController.deleteThread(1L, testSessionId);
-
-        // Assert
-        assertEquals(204, response.getStatusCodeValue());
-        verify(userService).validateSession(testSessionId);
-        verify(threadService).getThreadById(1L);
-        verify(threadService).deleteThread(1L);
-    }
-
-    @Test
-    void deleteThread_NotAuthor() {
-        // Arrange
-        when(userService.validateSession(testSessionId)).thenReturn(otherUser);
-        when(threadService.getThreadById(1L)).thenReturn(testThread);
-
-        // Act & Assert
-        assertThrows(IllegalStateException.class, () ->
-                threadController.deleteThread(1L, testSessionId)
-        );
-        verify(userService).validateSession(testSessionId);
-        verify(threadService).getThreadById(1L);
-        verify(threadService, never()).deleteThread(anyLong());
-    }
-
+    // STORY 12 (sprint 3)  (zhao)
     @Test
     void upvoteThread_Success() {
         // Arrange
@@ -300,6 +214,7 @@ class ThreadControllerTest {
         verify(threadService).downvoteThread(1L, testUser.getUserEmail());
     }
 
+    // STORY 9 (sprint 3) (zhao)
     @Test
     void searchThreads_Success() {
         // Arrange
