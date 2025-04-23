@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import axios from 'axios';
 import { base_url } from '../config';
 import './Thread.css';
