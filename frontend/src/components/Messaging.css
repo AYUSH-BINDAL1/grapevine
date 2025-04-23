@@ -189,6 +189,14 @@
     padding: 10px 15px;
     border-radius: 15px;
     position: relative;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
+  }
+
+  .message-content p {
+    margin: 0;
+    word-break: break-word;
   }
   
   .message.sent .message-content {
@@ -217,24 +225,43 @@
   
   .message-input-form {
     display: flex;
-    padding: 20px;
+    padding: 15px 20px; /* Slightly reduced padding */
     border-top: 1px solid #ddd;
     background-color: white;
+    align-items: center;
   }
   
   .message-input {
-    flex-grow: 1;
+    width: 100%;
     padding: 12px;
+    padding-right: 60px; /* Make room for character count */
     border: 1px solid #ddd;
     border-radius: 20px;
-    margin-right: 10px;
     font-size: 14px;
     transition: border-color 0.2s;
+    height: 42px; /* Set fixed height */
+    line-height: 18px; /* Improve text alignment */
   }
   
   .message-input:focus {
     outline: none;
     border-color: #8ebd89;
+  }
+
+  .message-input-wrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+  }
+  
+  .character-count {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    font-size: 12px;
+    color: #666;
   }
   
   .send-button {
@@ -246,6 +273,9 @@
     cursor: pointer;
     transition: background-color 0.2s;
     font-weight: 500;
+    padding: 11px 20px; /* Match input height */
+    min-width: 80px; /* Set minimum width */
+    height: 42px; /* Match input height */
   }
   
   .send-button:hover {
