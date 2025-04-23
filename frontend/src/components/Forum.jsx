@@ -950,7 +950,14 @@ const ThreadForm = memo(({
 });
 
 ThreadForm.propTypes = {
-  threadForm: PropTypes.object.isRequired,
+  threadForm: PropTypes.shape({
+    title: PropTypes.string.isRequired,
+    content: PropTypes.string.isRequired,
+    course: PropTypes.string,
+    major: PropTypes.string,
+    showPreview: PropTypes.bool.isRequired,
+    notificationsEnabled: PropTypes.bool.isRequired
+  }).isRequired,
   dispatchThreadForm: PropTypes.func.isRequired,
   handleCreateThread: PropTypes.func.isRequired,
   setShowNewThreadForm: PropTypes.func.isRequired,

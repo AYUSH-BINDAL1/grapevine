@@ -340,14 +340,26 @@ function Groups() {
     imagePreview: null
   });
 
-  // Add this function to handle group image fetching
-  const fetchGroupImage = useCallback(async (imageUrl) => {
-    if (!imageUrl || imageUrl === 'undefined') {
+  // Update the fetchGroupImage function to handle profilePictureUrl
+  const fetchGroupImage = useCallback(async (groupData) => {
+    // If we received a full group object, extract the profilePictureUrl
+    if (typeof groupData === 'object' && groupData !== null) {
+      if (groupData.profilePictureUrl) {
+        return groupData.profilePictureUrl;
+      } else if (groupData.image) {
+        groupData = groupData.image; // Fall back to image property
+      } else {
+        return 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image';
+      }
+    }
+
+    // From here, groupData should be a string (URL or ID)
+    if (!groupData || groupData === 'undefined') {
       return 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image';
     }
 
     // Check for cached image URL first
-    const cachedUrl = sessionStorage.getItem(`group-image-${id}`);
+    const cachedUrl = sessionStorage.getItem(`group-image-${id}-${groupData}`);
     if (cachedUrl) {
       return cachedUrl;
     }
@@ -356,12 +368,12 @@ function Groups() {
       // For database stored URLs, check if it's a full URL or just an ID
       let fullImageUrl;
 
-      if (imageUrl.startsWith('http')) {
+      if (groupData.startsWith('http')) {
         // If it's a full URL, use it directly
-        fullImageUrl = imageUrl;
+        fullImageUrl = groupData;
       } else {
         // Otherwise construct the URL using the file ID
-        fullImageUrl = `${image_url}/images/${imageUrl}`;
+        fullImageUrl = `${image_url}/images/${groupData}`;
       }
 
       // Verify the image loads correctly
@@ -375,8 +387,8 @@ function Groups() {
 
         img.onerror = () => {
           // Try alternative URL format if the first one fails
-          if (!imageUrl.startsWith('http')) {
-            const alternativeUrl = `${base_url}/api/files/getImage/${imageUrl}`;
+          if (!groupData.startsWith('http')) {
+            const alternativeUrl = `${base_url}/api/files/getImage/${groupData}`;
 
             const altImg = new Image();
             altImg.onload = () => {
@@ -401,7 +413,7 @@ function Groups() {
       const successfulUrl = await imageLoadPromise;
 
       // Cache the successful URL
-      sessionStorage.setItem(`group-image-${id}`, successfulUrl);
+      sessionStorage.setItem(`group-image-${id}-${groupData}`, successfulUrl);
       return successfulUrl;
 
     } catch (error) {
@@ -410,6 +422,96 @@ function Groups() {
       return 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image';
     }
   }, [id]);
+
+  // Add this function near your other handler functions
+  const handleGroupImageClick = () => {
+    // Only hosts should be able to update the group image
+    if (!userMembership.isHost) return;
+    
+    // Create a hidden file input and trigger it
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    
+    // Handle file selection
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        toast.error("Please upload an image file (JPEG, PNG, GIF, or WEBP)");
+        return;
+      }
+      
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image size should be less than 2MB");
+        return;
+      }
+      
+      // Show loading toast
+      toast.info("Uploading group image...", { autoClose: false, toastId: 'upload-image' });
+      
+      try {
+        const sessionId = localStorage.getItem('sessionId');
+        if (!sessionId) {
+          toast.error("Session expired. Please log in again.");
+          navigate('/');
+          return;
+        }
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Upload the image
+        const response = await axios.post(
+          `${base_url}/groups/${id}/profile-picture`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Session-Id': sessionId
+            }
+          }
+        );
+        
+        // Dismiss loading toast
+        toast.dismiss('upload-image');
+        
+        if (response.status === 200) {
+          toast.success("Group image updated successfully");
+          
+          // Clear image cache for this group
+          sessionStorage.removeItem(`group-image-${id}`);
+          
+          // Show image preview from response or fetch updated group data
+          if (response.data && response.data.imageUrl) {
+            setGroup(prev => ({
+              ...prev,
+              image: response.data.imageUrl
+            }));
+          } else {
+            // Refresh group data to get the new image
+            fetchData();
+          }
+        }
+      } catch (error) {
+        // Dismiss loading toast
+        toast.dismiss('upload-image');
+        console.error('Error uploading group image:', error);
+        toast.error("Failed to upload group image. Please try again.");
+      }
+    };
+    
+    // Trigger file selection
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+  };
 
   // Update the openEditForm function:
   const openEditForm = () => {
@@ -693,7 +795,8 @@ function Groups() {
     const formattedGroup = {
       id: apiGroup.groupId || apiGroup.id,
       title: apiGroup.name || apiGroup.title || 'Unnamed Group',
-      image: apiGroup.image || 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image',
+      image: apiGroup.profilePictureUrl || apiGroup.image || 'https://dummyimage.com/300x200/e0e0e0/333333&text=Group+Image',
+      profilePictureUrl: apiGroup.profilePictureUrl, // Preserve the original URL
       description: apiGroup.description || 'No description available',
       hosts: enhancedHosts,
       members: enhancedMembers,
@@ -748,22 +851,17 @@ function Groups() {
           // Process group data
           const { isUserHost, isUserMember, formattedGroup } = processGroupData(apiGroup, userData.userEmail);
 
-          // Fetch and set the group image
-          if (formattedGroup.image) {
-            fetchGroupImage(formattedGroup.image)
-                .then(imageUrl => {
-                  setGroup({
-                    ...formattedGroup,
-                    image: imageUrl
-                  });
-                })
-                .catch(() => {
-                  // If image fetch fails, continue with the original image URL
-                  setGroup(formattedGroup);
-                });
-          } else {
-            setGroup(formattedGroup);
-          }
+          // Pass the entire group object to fetchGroupImage to handle profilePictureUrl
+          fetchGroupImage(apiGroup)
+            .then(imageUrl => {
+              setGroup({
+                ...formattedGroup,
+                image: imageUrl
+              });
+            })
+            .catch(() => {
+              setGroup(formattedGroup);
+            });
 
           setUserMembership({
             isHost: isUserHost,
@@ -1306,7 +1404,24 @@ function Groups() {
         </button>
 
         <div className="group-header">
-          <img src={group.image} alt={group.title} className="group-image" />
+          <div className={`group-image-container ${userMembership.isHost ? 'editable' : ''}`}>
+            <img 
+              src={group.image} 
+              alt={group.title} 
+              className="group-image" 
+              onClick={handleGroupImageClick}
+            />
+            {userMembership.isHost && (
+              <div className="image-overlay">
+                <div className="edit-icon">
+                  <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39 0-1.41l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                  </svg>
+                </div>
+                <span className="edit-text">Change Image</span>
+              </div>
+            )}
+          </div>
           <div className="group-title-section">
             <h1>{group.title}</h1>
             {userMembership.isHost && (
