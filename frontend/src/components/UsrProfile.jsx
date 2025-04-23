@@ -422,6 +422,22 @@ function UsrProfile() {
     }
   };
 
+  const handleMessageUser = async () => {
+    const sessionId = localStorage.getItem("sessionId");
+
+    try {
+      await axios.post(
+          `${base_url}/conversations/create/${userData.userEmail}`,
+          {},
+          { headers: { "Session-Id": sessionId } }
+      );
+      navigate('/messaging');
+    } catch (err) {
+      console.error("Failed to start conversation", err);
+      alert("Could not start conversation.");
+    }
+  };
+
   // Update the handleRemoveFriend function
   const handleRemoveFriend = async () => {
     if (!currentUserData || !userData) return;
@@ -807,7 +823,7 @@ function UsrProfile() {
           <div className="user-actions">
             {isFriend ? (
               <div className="friend-actions-container">
-                <button className="message-button">
+                <button className="message-button" onClick={handleMessageUser}>
                   <i className="fa fa-envelope"></i> Message
                 </button>
                 <button className="remove-friend-button" onClick={handleRemoveFriend}>
