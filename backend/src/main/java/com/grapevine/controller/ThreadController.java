@@ -11,12 +11,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/threads")
-@CrossOrigin(origins = "http://localhost:5173")
+//@CrossOrigin(origins = "http://localhost:5173")
 public class ThreadController {
 
     private final ThreadService threadService;
@@ -66,8 +68,11 @@ public class ThreadController {
                     "You can only create threads using your own account");
         }
 
-        // Set the author name from the validated user
+        // Set the author name and role from the validated user
         thread.setAuthorName(currentUser.getName());
+        thread.setAuthorRole(currentUser.getRole());
+        thread.setCreatedAt(ZonedDateTime.now(ZoneId.of("US/Eastern")));
+        thread.setUpdatedAt(ZonedDateTime.now(ZoneId.of("US/Eastern")));
 
         Thread createdThread = threadService.createThread(thread);
         return new ResponseEntity<>(createdThread, HttpStatus.CREATED);
@@ -153,4 +158,24 @@ public class ThreadController {
         Integer vote = threadService.getUserVote(id, currentUser.getUserEmail());
         return ResponseEntity.ok(Map.of("vote", vote));
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Thread>> searchThreads(
+            @RequestParam(required = false) String major,
+            @RequestParam(required = false) String course,
+            @RequestParam(required = false) User.Role authorRole,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        userService.validateSession(sessionId);
+
+        // Convert empty strings to null for proper query handling
+        major = (major != null && major.isEmpty()) ? null : major;
+        course = (course != null && course.isEmpty()) ? null : course;
+
+        List<Thread> threads = threadService.searchThreads(major, course, authorRole);
+        return ResponseEntity.ok(threads);
+    }
+
+
 }

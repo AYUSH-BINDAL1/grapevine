@@ -2,6 +2,7 @@ package com.grapevine.service;
 
 import com.grapevine.model.Comment;
 import com.grapevine.model.Thread;
+import com.grapevine.model.User;
 import com.grapevine.repository.ThreadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,10 +13,14 @@ import java.util.List;
 public class ThreadService {
 
     private final ThreadRepository threadRepository;
+    private final NotificationService notificationService;
 
     @Autowired
-    public ThreadService(ThreadRepository threadRepository) {
+    public ThreadService(ThreadRepository threadRepository,
+                         NotificationService notificationService,
+                         EmailService emailService) {
         this.threadRepository = threadRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Thread> getAllThreads() {
@@ -51,9 +56,23 @@ public class ThreadService {
 
     public Thread addComment(Long threadId, Comment comment) {
         Thread thread = getThreadById(threadId);
+
+        // Add the comment to the thread
         comment.setThread(thread);
         thread.getComments().add(comment);
-        return threadRepository.save(thread);
+        Thread savedThread = threadRepository.save(thread);
+
+        // Send notification to thread author if the commenter is not the author
+        if (!thread.getAuthorEmail().equals(comment.getAuthorEmail())) {
+            notificationService.createAndSendThreadCommentNotification(
+                    thread.getAuthorEmail(),
+                    comment.getAuthorEmail(),
+                    thread.getTitle(),
+                    threadId
+            );
+        }
+
+        return savedThread;
     }
 
     public Thread upvoteThread(Long id, String userEmail) {
@@ -105,5 +124,9 @@ public class ThreadService {
     public Integer getUserVote(Long id, String userEmail) {
         Thread thread = getThreadById(id);
         return thread.getVotes().getOrDefault(userEmail, 0);
+    }
+
+    public List<Thread> searchThreads(String major, String course, User.Role authorRole) {
+        return threadRepository.searchThreads(major, course, authorRole);
     }
 }

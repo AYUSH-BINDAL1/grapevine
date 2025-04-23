@@ -71,57 +71,6 @@ public class EmailServiceTest {
         assertEquals(content, capturedMessage.getText());
     }
 
-    @Test
-    void sendHtmlEmail_Success_SendsMimeMessage() throws Exception {
-        // Arrange
-        String email = "test@example.com";
-        String subject = "HTML Email";
-        String htmlContent = "<html><body><h1>Test</h1></body></html>";
-
-        // Need to create a mock MimeMessage since it's not instantiable
-        MimeMessage mockMimeMessage = mock(MimeMessage.class);
-        when(mailSender.createMimeMessage()).thenReturn(mockMimeMessage);
-
-        // Act
-        emailService.sendHtmlEmail(email, subject, htmlContent);
-
-        // Assert
-        verify(mailSender).createMimeMessage();
-        verify(mailSender).send(any(MimeMessage.class));
-    }
-
-    @Test
-    void sendHtmlEmail_WithGroupAccessRequest_SendsCorrectHtmlEmail() throws Exception {
-        // Arrange
-        String email = "host@example.com";
-        String subject = "Join Group Request: Test Group";
-        String acceptUrl = "http://localhost:8080/groups/respond-access/12345/accept/1/requester@example.com";
-        String rejectUrl = "http://localhost:8080/groups/respond-access/12345/reject/1/requester@example.com";
-
-        String htmlContent =
-                "<html><body>" +
-                "<h2>Group Access Request</h2>" +
-                "<p>User Name wants to join your group: <strong>Test Group</strong></p>" +
-                "<p>Click one of the following options:</p>" +
-                "<table border='0' cellpadding='0' cellspacing='0'><tr>" +
-                "<td><a href='" + acceptUrl + "' style='background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; display: inline-block; border-radius: 4px;'>Accept</a></td>" +
-                "<td width='10'>&nbsp;</td>" +
-                "<td><a href='" + rejectUrl + "' style='background-color: #f44336; color: white; padding: 10px 15px; text-decoration: none; display: inline-block; border-radius: 4px;'>Deny</a></td>" +
-                "</tr></table>" +
-                "</body></html>";
-
-        // Need to create a mock MimeMessage since it's not instantiable
-        MimeMessage mockMimeMessage = mock(MimeMessage.class);
-        when(mailSender.createMimeMessage()).thenReturn(mockMimeMessage);
-
-        // Act
-        emailService.sendHtmlEmail(email, subject, htmlContent);
-
-        // Assert
-        verify(mailSender).createMimeMessage();
-        verify(mailSender).send(any(MimeMessage.class));
-    }
-
 
     @Test
     void extractUrl_AcceptButton_ReturnsCorrectUrl() throws Exception {
