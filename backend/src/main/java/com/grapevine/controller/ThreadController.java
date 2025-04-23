@@ -176,4 +176,6 @@ public class ThreadController {
         List<Thread> threads = threadService.searchThreads(major, course, authorRole);
         return ResponseEntity.ok(threads);
     }
+
+
 }
