@@ -639,6 +639,8 @@ const threadFormReducer = (state, action) => {
       return { ...state, major: action.payload };
     case 'TOGGLE_PREVIEW':
       return { ...state, showPreview: !state.showPreview };
+    case 'TOGGLE_NOTIFICATIONS':
+      return { ...state, notificationsEnabled: !state.notificationsEnabled };
     case 'RESET':
       return { title: '', content: '', course: '', major: '', showPreview: false };
     case 'LOAD_DRAFT':
@@ -903,6 +905,27 @@ const ThreadForm = memo(({
             ))}
           </select>
         </div>
+
+        <div className="form-group notification-toggle-group">
+          <div className="toggle-container">
+            <label htmlFor="notifications-toggle" className="toggle-label">
+              <input
+                id="notifications-toggle"
+                type="checkbox"
+                className="toggle-input"
+                checked={threadForm.notificationsEnabled}
+                onChange={() => dispatchThreadForm({ type: 'TOGGLE_NOTIFICATIONS' })}
+              />
+              <span className="toggle-switch"></span>
+              <span className="toggle-text">
+                Receive notifications for replies
+                <span className="toggle-description">
+                  You&apos;ll be notified when someone comments on your thread
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
         
         <div className="form-actions">
           <button type="submit" className="submit-button">Create Thread</button>
@@ -927,7 +950,14 @@ const ThreadForm = memo(({
 });
 
 ThreadForm.propTypes = {
-  threadForm: PropTypes.object.isRequired,
+  threadForm: PropTypes.shape({
+    title: PropTypes.string.isRequired,
+    content: PropTypes.string.isRequired,
+    course: PropTypes.string,
+    major: PropTypes.string,
+    showPreview: PropTypes.bool.isRequired,
+    notificationsEnabled: PropTypes.bool.isRequired
+  }).isRequired,
   dispatchThreadForm: PropTypes.func.isRequired,
   handleCreateThread: PropTypes.func.isRequired,
   setShowNewThreadForm: PropTypes.func.isRequired,
@@ -1291,7 +1321,8 @@ function Forum() {
     content: '',
     course: '',
     major: '',
-    showPreview: false
+    showPreview: false,
+    notificationsEnabled: true  // Default to enabled
   });
 
   const [normalizedThreads, setNormalizedThreads] = useState({ byId: {}, allIds: [] });
@@ -1529,13 +1560,14 @@ function Forum() {
           title: threadForm.title,
           content: threadForm.content,
           course: threadForm.course,
-          major: threadForm.major
+          major: threadForm.major,
+          notificationsEnabled: threadForm.notificationsEnabled
         }));
       }
     }, 500); // 500ms debounce
     
     return () => clearTimeout(draftTimer);
-  }, [threadForm.title, threadForm.content, threadForm.course, threadForm.major]);
+  }, [threadForm.title, threadForm.content, threadForm.course, threadForm.major, threadForm.notificationsEnabled]);
 
   const clearDraft = useCallback(() => {
     dispatchThreadForm({ type: 'RESET' });
@@ -1592,7 +1624,8 @@ function Forum() {
         description: threadForm.content,
         authorEmail: userEmail,
         course: threadForm.course,
-        major: threadForm.major
+        major: threadForm.major,
+        notificationsEnabled: threadForm.notificationsEnabled
       };
       
       console.log('Creating thread with payload:', threadPayload);

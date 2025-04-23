@@ -8,6 +8,8 @@ import { base_url } from '../config';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 
+const MESSAGE_MAX_LENGTH = 500;
+
 function Messaging() {
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -18,7 +20,6 @@ function Messaging() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [stompClient, setStompClient] = useState(null);
-  const [debugMessages, setDebugMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const navigate = useNavigate();
 
@@ -29,7 +30,6 @@ function Messaging() {
     const timestamp = new Date().toLocaleTimeString();
     const debugMsg = `${timestamp}: ${message}`;
     console.log(debugMsg);
-    setDebugMessages(prev => [...prev, debugMsg]);
   }, []);
 
   const updateConversationWithMessage = useCallback((messageData) => {
@@ -89,7 +89,7 @@ function Messaging() {
               if (!conversationExists) {
                 addDebugMessage('New conversation detected - fetching and updating');
                 // First fetch new conversations
-                fetchConversations().then(newConversations => {
+                fetchConversations().then(() => {
                   // Then update the most recent message
                   setConversations(prevConvs => 
                     prevConvs.map(conv => {
@@ -332,7 +332,7 @@ function Messaging() {
   
     // If no existing conversation, create new one
     try {
-      const response = await axios.post(
+      await axios.post(
         `${base_url}/conversations/create/${friendEmail}`,
         {},
         {
@@ -422,7 +422,7 @@ function Messaging() {
             ))}
             {searchQuery && searchResults.length === 0 && (
               <div className="no-conversations">
-                <p>No friends found matching "{searchQuery}"</p>
+                <p>No friends found matching &quot;{searchQuery}&quot;</p>
               </div>
             )}
           </div>
@@ -506,17 +506,28 @@ function Messaging() {
 
 
             <form className="message-input-form" onSubmit={handleSendMessage}>
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="message-input"
-              />
+              <div className="message-input-wrapper">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => {
+                    // Limit input to max length
+                    if (e.target.value.length <= MESSAGE_MAX_LENGTH) {
+                      setNewMessage(e.target.value);
+                    }
+                  }}
+                  maxLength={MESSAGE_MAX_LENGTH}
+                  placeholder="Type a message..."
+                  className="message-input"
+                />
+                <span className="character-count">
+                  {newMessage.length}/{MESSAGE_MAX_LENGTH}
+                </span>
+              </div>
               <button 
                 type="submit" 
                 className="send-button"
-                disabled={!newMessage.trim()}
+                disabled={!newMessage.trim() || newMessage.length > MESSAGE_MAX_LENGTH}
               >
                 Send
               </button>

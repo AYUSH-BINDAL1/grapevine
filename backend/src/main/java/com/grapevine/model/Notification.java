@@ -51,5 +51,6 @@ public class Notification {
     public enum NotificationType {
         MESSAGE,
         EVENT_REMINDER,
+        COMMENT
     }
 }

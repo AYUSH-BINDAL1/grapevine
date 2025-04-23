@@ -4,12 +4,15 @@ import com.grapevine.exception.RatingOperationException;
 import com.grapevine.model.*;
 import com.grapevine.service.EventService;
 import com.grapevine.service.GroupService;
+import com.grapevine.service.S3Service;
 import com.grapevine.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +23,7 @@ public class GroupController {
     private final GroupService groupService;
     private final UserService userService;
     private final EventService eventService;
+    private final S3Service s3Service;
 
 
     @GetMapping("/all")
@@ -311,5 +315,124 @@ public class GroupController {
         }
     }
 
+    @PostMapping("/{groupId}/profile-picture")
+    public ResponseEntity<?> uploadGroupProfilePicture(
+            @PathVariable Long groupId,
+            @RequestHeader("Session-Id") String sessionId,
+            @RequestParam("file") MultipartFile file) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        Group group = groupService.getGroupById(groupId);
+
+        // Check if user is a host of the group
+        if (!group.getHosts().contains(currentUser.getUserEmail())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only group hosts can update the group profile picture");
+        }
+
+        // Size validation (2MB max)
+        if (file.getSize() > 2 * 1024 * 1024) {
+            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                    .body("Profile picture must be less than 2MB");
+        }
+
+        // Type validation
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                    .body("Only image files are allowed for profile pictures");
+        }
+
+        try {
+            // Get S3Service from autowired service
+            S3Service s3Service = userService.getS3Service();
+
+            // Delete old profile picture if it exists
+            if (group.getProfilePictureUrl() != null) {
+                String oldFileName = group.getProfilePictureUrl()
+                        .substring(group.getProfilePictureUrl().lastIndexOf("/") + 1);
+                s3Service.deleteFile(oldFileName);
+            }
+
+            // Upload new profile picture
+            String fileName = s3Service.uploadFile(file);
+            String publicUrl = s3Service.getPublicUrl(fileName);
+
+            // Update group with new picture URL
+            group.setProfilePictureUrl(publicUrl);
+            Group updatedGroup = groupService.updateGroupProfilePicture(groupId, publicUrl);
+
+            return ResponseEntity.ok(Map.of(
+                    "fileName", fileName,
+                    "profilePictureUrl", publicUrl
+            ));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to upload profile picture: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{groupId}/profile-picture")
+    public ResponseEntity<?> getGroupProfilePicture(
+            @PathVariable Long groupId,
+            @RequestHeader(value = "Session-Id", required = false) String sessionId) {
+
+        // Optionally validate session if you want to restrict profile picture access
+        if (sessionId != null) {
+            userService.validateSession(sessionId);
+        }
+
+        // Get group and its profile picture URL
+        Group group = groupService.getGroupById(groupId);
+
+        if (group.getProfilePictureUrl() != null) {
+            return ResponseEntity.ok(Map.of("profilePictureUrl", group.getProfilePictureUrl()));
+        } else {
+            return ResponseEntity.noContent().build();
+        }
+    }
+
+    @DeleteMapping("/{groupId}/profile-picture")
+    public ResponseEntity<?> deleteGroupProfilePicture(
+            @PathVariable Long groupId,
+            @RequestHeader("Session-Id") String sessionId) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        Group group = groupService.getGroupById(groupId);
+
+        // Check if user is a host of the group
+        if (!group.getHosts().contains(currentUser.getUserEmail())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only group hosts can delete the group profile picture");
+        }
+
+        // Check if group has a profile picture
+        if (group.getProfilePictureUrl() == null) {
+            return ResponseEntity.noContent().build();
+        }
+
+        try {
+            // Get S3Service from autowired service
+            S3Service s3Service = userService.getS3Service();
+
+            // Extract filename from URL
+            String fileName = group.getProfilePictureUrl()
+                    .substring(group.getProfilePictureUrl().lastIndexOf("/") + 1);
+
+            // Delete file from S3
+            s3Service.deleteFile(fileName);
+
+            // Update group profile
+            group.setProfilePictureUrl(null);
+            groupService.updateGroupProfilePicture(groupId, null);
+
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to delete profile picture: " + e.getMessage());
+        }
+    }
 
 }
