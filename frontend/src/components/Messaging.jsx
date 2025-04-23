@@ -332,7 +332,7 @@ function Messaging() {
   
     // If no existing conversation, create new one
     try {
-      const response = await axios.post(
+      await axios.post(
         `${base_url}/conversations/create/${friendEmail}`,
         {},
         {
@@ -422,7 +422,7 @@ function Messaging() {
             ))}
             {searchQuery && searchResults.length === 0 && (
               <div className="no-conversations">
-                <p>No friends found matching "{searchQuery}"</p>
+                <p>No friends found matching &quot;{searchQuery}&quot;</p>
               </div>
             )}
           </div>

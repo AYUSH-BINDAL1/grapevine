@@ -142,7 +142,7 @@ function EventDetails() {
         if (!sessionId || !currentUserEmail) return;
 
         try {
-            const response = await axios.post(
+            await axios.post(
                 `${base_url}/events/${eventId}/register`,
                 { userEmail: currentUserEmail },
                 { headers: { "Session-Id": sessionId } }
@@ -162,9 +162,6 @@ function EventDetails() {
     };
 
     const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
-    const isHost = eventData?.hosts?.includes(currentUserEmail);
-    const isParticipant = eventData?.participants?.includes(currentUserEmail);
-    const eventIsFull = eventData?.participants?.length >= eventData?.maxUsers;
     if (!eventData) {
         return <div className="event-details-loading">Loading...</div>;
     }

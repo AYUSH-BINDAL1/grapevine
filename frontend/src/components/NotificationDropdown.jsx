@@ -83,7 +83,7 @@ const NotificationDropdown = () => {
             case "MESSAGE":
                 navigate(`/forum/thread/${notification.referenceId}`);
                 break;
-            case "THREAD":
+            case "COMMENT":
                 navigate(`/forum/thread/${notification.referenceId}`);
                 break;
             default:
