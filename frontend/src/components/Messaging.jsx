@@ -27,6 +27,7 @@ function Messaging() {
       return;
     }
 
+
     try {
       const response = await axios.get(
         `${base_url}/conversations`,
@@ -46,39 +47,47 @@ function Messaging() {
     }
   }, [navigate]);
 
+
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedConversation) return;
+  // Move fetchMessages outside of useEffect
+const fetchMessages = useCallback(async () => {
+  if (!selectedConversation) return;
 
-      const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) {
-        navigate('/');
-        return;
+  const sessionId = localStorage.getItem('sessionId');
+  if (!sessionId) {
+    navigate('/');
+    return;
+  }
+
+  try {
+    const response = await axios.get(
+      `${base_url}/conversations/${selectedConversation.conversationId}`,
+      {
+        headers: {
+          'Session-Id': sessionId,
+          'Content-Type': 'application/json'
+        }
       }
+    );
+    // Extract messages array from response
+    const messagesList = response.data.messages || [];
+    setMessages(messagesList);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    toast.error('Failed to load messages');
+    setMessages([]);
+  }
+}, [selectedConversation, navigate]);
 
-      try {
-        const response = await axios.get(
-          `${base_url}/conversations/${selectedConversation.conversationId}`,
-          {
-            headers: {
-              'Session-Id': sessionId,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        setMessages(response.data);
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-        toast.error('Failed to load messages');
-      }
-    };
+//hi
 
-    fetchMessages();
-  }, [selectedConversation, navigate]);
+// Update useEffect to use the extracted function
+useEffect(() => {
+  fetchMessages();
+}, [fetchMessages]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -174,14 +183,6 @@ function Messaging() {
     });
   };
 
-  const getOtherParticipantEmail = (participantEmails) => {
-    // Add null check and type check
-    if (!participantEmails || !Array.isArray(participantEmails) || participantEmails.length === 0) {
-      return 'Unknown User';
-    }
-    return participantEmails.find(email => email !== currentUserEmail) || 'Unknown User';
-  };
-
   if (loading) {
     return <div className="messaging-loading">Loading conversations...</div>;
   }
@@ -198,6 +199,7 @@ function Messaging() {
             {isSearchMode ? 'Back' : 'Search'}
           </button>
         </div>
+
 
         {isSearchMode ? (
           <div className="search-container">
@@ -249,19 +251,19 @@ function Messaging() {
                 onClick={() => setSelectedConversation(conversation)}
               >
                 <img 
-                  src={profileImage} 
-                  alt="Profile" 
+                  src={conversation.friendProfilePicUrl || profileImage}
+                  alt={conversation.friendName} 
                   className="contact-avatar" 
                 />
                 <div className="contact-info">
-                  <h3>{getOtherParticipantEmail(conversation.participantEmails)}</h3>
+                  <h3>{conversation.friendName}</h3>
                   <p className="last-message">
                     {conversation.lastMessage || 'No messages yet'}
                   </p>
                 </div>
-                {conversation.unreadCount > 0 && (
+                {conversation.unread && (
                   <div className="unread-count">
-                    {conversation.unreadCount}
+                    New
                   </div>
                 )}
               </div>
@@ -275,30 +277,32 @@ function Messaging() {
         )}
       </div>
 
+
       <div className="chat-window">
         {selectedConversation ? (
           <>
             <div 
               className="chat-header"
-              onClick={() => handleProfileClick(getOtherParticipantEmail(selectedConversation.participantEmails))}
+              onClick={() => handleProfileClick(selectedConversation.friendEmail)}
               style={{ cursor: 'pointer' }}
             >
               <img 
-                src={profileImage} 
-                alt="Profile" 
+                src={selectedConversation.friendProfilePicUrl || profileImage}
+                alt={selectedConversation.friendName}
                 className="chat-avatar" 
               />
               <div className="chat-user-info">
                 <h3>
-                  {getOtherParticipantEmail(selectedConversation.participantEmails)}
+                  {selectedConversation.friendName}
                 </h3>
               </div>
             </div>
 
+
             <div className="messages-container">
               {messages.map(message => (
                 <div
-                  key={message.id}
+                  key={message.messageId}  // Changed from message.id to message.messageId
                   className={`message ${
                     message.senderEmail === currentUserEmail ? 'sent' : 'received'
                   }`}
@@ -306,12 +310,13 @@ function Messaging() {
                   <div className="message-content">
                     <p>{message.content}</p>
                     <span className="message-time">
-                      {formatTime(message.timestamp)}
+                      {formatTime(message.sentAt)}
                     </span>
                   </div>
                 </div>
               ))}
             </div>
+
 
             <form className="message-input-form" onSubmit={handleSendMessage}>
               <input
@@ -339,5 +344,6 @@ function Messaging() {
     </div>
   );
 }
+
 
 export default Messaging;

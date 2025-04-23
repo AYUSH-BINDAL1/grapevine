@@ -237,6 +237,25 @@
   height: auto;
 }
 
+/* Updated image styling without container divs */
+.markdown-image {
+  max-width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: block;
+  margin: 16px auto;
+}
+
+.image-caption {
+  display: block;
+  text-align: center;
+  font-style: italic;
+  color: #666;
+  font-size: 14px;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
 /* Markdown hint */
 .markdown-hint {
   margin-top: 8px;
@@ -394,6 +413,23 @@
   color: #666;
   font-size: 14px;
   text-align: center;
+}
+
+/* For images that can't be in containers due to HTML structure */
+.standalone-image {
+  max-width: 100%;
+  border-radius: 4px;
+  display: block;
+  margin: 1rem auto;
+}
+
+.standalone-caption {
+  display: block;
+  text-align: center;
+  font-style: italic;
+  color: #666;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 /* Table Styles */
@@ -1055,5 +1091,67 @@
   
   .thread-stats-skeleton {
     width: 100%;
+  }
+}
+
+/* Thread Indicators */
+.thread-view-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.thread-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.thread-indicator .indicator-icon {
+  margin-right: 6px;
+}
+
+.thread-major {
+  background-color: #cb645f;
+}
+
+.thread-course {
+  background-color: #5ca960;
+}
+
+.thread-role {
+  background-color: #9c27b0;
+}
+
+.role-student {
+  background-color: #2196f3;
+}
+
+.role-instructor {
+  background-color: #ff9800;
+}
+
+.role-uta {
+  background-color: #009688;
+}
+
+.role-gta {
+  background-color: #673ab7;
+}
+
+/* Make indicators responsive */
+@media (max-width: 576px) {
+  .thread-view-indicators {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .thread-indicator {
+    font-size: 12px;
   }
 }
