@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -126,10 +126,15 @@ const Comment = memo(({ comment, formatDate, onUserClick, className = '' }) => {
             },
             img({ src, alt, ...props }) {
               return (
-                <div className="markdown-image-container">
-                  <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+                <React.Fragment>
+                  <img 
+                    src={src} 
+                    alt={alt || "Image"} 
+                    className="markdown-image" 
+                    {...props} 
+                  />
                   {alt && <span className="image-caption">{alt}</span>}
-                </div>
+                </React.Fragment>
               );
             },
             table({ children, ...props }) {
@@ -231,10 +236,15 @@ const MarkdownPreview = memo(({ content }) => {
         },
         img({ src, alt, ...props }) {
           return (
-            <div className="markdown-image-container">
-              <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+            <React.Fragment>
+              <img 
+                src={src} 
+                alt={alt || "Image"} 
+                className="markdown-image" 
+                {...props} 
+              />
               {alt && <span className="image-caption">{alt}</span>}
-            </div>
+            </React.Fragment>
           );
         },
         table({ children, ...props }) {
@@ -320,10 +330,15 @@ const ThreadContent = memo(({ content }) => {
           },
           img({ src, alt, ...props }) {
             return (
-              <div className="markdown-image-container">
-                <img src={src} alt={alt || "Image"} className="markdown-image" {...props} />
+              <React.Fragment>
+                <img 
+                  src={src} 
+                  alt={alt || "Image"} 
+                  className="markdown-image" 
+                  {...props} 
+                />
                 {alt && <span className="image-caption">{alt}</span>}
-              </div>
+              </React.Fragment>
             );
           },
           table({ children, ...props }) {
@@ -764,6 +779,37 @@ function Thread() {
           Back to Forum
         </button>
         <h1 className="thread-view-title">{thread.title}</h1>
+
+        {/* Add thread indicators for major, course, and role */}
+        <div className="thread-view-indicators">
+          {(thread.major || thread.authorMajor || thread.subject) && (
+            <span className="thread-indicator thread-major" title={thread.major || thread.authorMajor || thread.subject}>
+              <svg className="indicator-icon" viewBox="0 0 24 24" width="14" height="14">
+                <path fill="currentColor" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+              </svg>
+              {(thread.major || thread.authorMajor || thread.subject)}
+            </span>
+          )}
+          
+          {(thread.course || thread.courseKey) && (
+            <span className="thread-indicator thread-course" title={thread.course || thread.courseKey}>
+              <svg className="indicator-icon" viewBox="0 0 24 24" width="14" height="14">
+                <path fill="currentColor" d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+              </svg>
+              {(thread.course || thread.courseKey)}
+            </span>
+          )}
+          
+          {thread.authorRole && (
+            <span className={`thread-indicator thread-role role-${thread.authorRole.toLowerCase()}`} title={`Posted by ${thread.authorRole}`}>
+              <svg className="indicator-icon" viewBox="0 0 24 24" width="14" height="14">
+                <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+              {thread.authorRole}
+            </span>
+          )}
+        </div>
+
         <div className="thread-view-meta">
           <div className="thread-view-author-info">
             <div className="thread-view-author-avatar">

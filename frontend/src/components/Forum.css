@@ -252,67 +252,53 @@
   font-size: 13px;
 }
 
+.thread-view-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
 .thread-indicator {
   display: inline-flex;
   align-items: center;
-  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 2px 6px;
-  border-radius: 12px;
-  max-width: 140px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  gap: 4px;
-  transition: all 0.2s ease;
+  color: #fff;
 }
 
-.thread-indicator:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.indicator-icon {
-  flex-shrink: 0;
+.thread-indicator .indicator-icon {
+  margin-right: 6px;
 }
 
 .thread-major {
-  background-color: #d3b5b5;
-  color: #df1e1e;
-  border: 1px solid #d6acac;
+  background-color: #cb645f;
 }
 
 .thread-course {
-  background-color: #f3e5f5;
-  color: #7b1fa2;
-  border: 1px solid #e1bee7;
+  background-color: #5ca960;
 }
 
 .thread-role {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #c8e6c9;
+  background-color: #9c27b0;
 }
 
-/* Role-specific colors */
 .role-student {
-  background-color: #e8f5e9;
-  color: #2e7d32;
+  background-color: #2196f3;
 }
 
 .role-instructor {
-  background-color: #fff3e0;
-  color: #e65100;
+  background-color: #ff9800;
 }
 
-.role-ta, .role-uta, .role-gta {
-  background-color: #e3f2fd;
-  color: #1565c0;
+.role-uta {
+  background-color: #009688;
 }
 
-.role-admin {
-  background-color: #fce4ec;
-  color: #c2185b;
+.role-gta {
+  background-color: #673ab7;
 }
 
 /* Responsive adjustments */
@@ -1372,6 +1358,86 @@
     padding: 10px 8px;
     font-size: 13px;
   }
+}
+
+/* Add this to your Forum.css */
+
+/* Lazy loading styles */
+.loading-placeholder {
+  background: #f0f0f0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  color: #888;
+  animation: pulse 1.5s infinite;
+}
+
+.lazy-image-container {
+  position: relative;
+  overflow: hidden;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+}
+
+.image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #f0f0f0, #e0e0e0, #f0f0f0);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.lazy-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.loading-more {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(142, 189, 137, 0.3);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 

@@ -1,5 +1,5 @@
 // src/components/NotificationDropdown.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './NotificationDropdown.css';
 import { FaBell } from 'react-icons/fa';
 

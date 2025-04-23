@@ -2,20 +2,18 @@ import { useState, useEffect, useCallback, memo, useMemo, useReducer, useRef } f
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
-import ReactMarkdown from 'react-markdown';
-import rehypeSanitize from 'rehype-sanitize';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FixedSizeList as List } from 'react-window';
 import PropTypes from 'prop-types';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import remarkGfm from 'remark-gfm';
 import 'react-toastify/dist/ReactToastify.css';
 import './Forum.css';
 import { base_url } from '../config';
 import MarkdownToolbar from './MarkdownToolbar';
 import { getProfilePictureUrl } from '../utils/imageUtils';
 import { getCachedUserByEmail } from '../utils/userUtils';
+import { requestPool } from '../utils/reqPool';
 
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -115,7 +113,7 @@ const useMemoizedApiData = (fetchFunction, cacheKey, processFunction) => {
   return { data, loading, error, refreshData: () => fetchData(true) };
 };
 
-// Update these functions to use memoization
+// Update fetchAllCourses to use request pooling
 const fetchAllCourses = async () => {
   // Try to get data from cache first
   const cachedCourses = getCachedData('cachedCourses');
@@ -124,28 +122,31 @@ const fetchAllCourses = async () => {
     return cachedCourses;
   }
 
-  // If not in cache, fetch from API
+  // Use request pooling for API call
   const sessionId = localStorage.getItem('sessionId');
   if (!sessionId) return [];
   
-  try {
-    console.log('Fetching courses from API');
-    const response = await axios.get(`${base_url}/courses/all`, {
-      headers: { 'Session-Id': sessionId }
-    });
-    
-    const coursesData = response.data || [];
-    
-    // Cache the results
-    setCachedData('cachedCourses', coursesData);
-    
-    return coursesData;
-  } catch (error) {
-    console.error("Error fetching courses:", error);
-    return [];
-  }
+  return requestPool.execute('courses', async () => {
+    try {
+      console.log('Fetching courses from API');
+      const response = await axios.get(`${base_url}/courses/all`, {
+        headers: { 'Session-Id': sessionId }
+      });
+      
+      const coursesData = response.data || [];
+      
+      // Cache the results
+      setCachedData('cachedCourses', coursesData);
+      
+      return coursesData;
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+      return [];
+    }
+  });
 };
 
+// Update fetchAllMajors with request pooling
 const fetchAllMajors = async () => {
   // Try to get data from cache first
   const cachedMajors = getCachedData('cachedMajors');
@@ -154,26 +155,96 @@ const fetchAllMajors = async () => {
     return cachedMajors;
   }
   
+  // Use request pooling for API call
   const sessionId = localStorage.getItem('sessionId');
   if (!sessionId) return [];
   
-  try {
-    console.log('Fetching majors from API');
-    const response = await axios.get(`${base_url}/courses/subjects`, {
-      headers: { 'Session-Id': sessionId }
-    });
-    
-    const majorsData = response.data || [];
-    
-    // Cache the results
-    setCachedData('cachedMajors', majorsData);
-    
-    return majorsData;
-  } catch (error) {
-    console.error("Error fetching subjects/majors:", error);
-    return [];
-  }
+  return requestPool.execute('majors', async () => {
+    try {
+      console.log('Fetching majors from API');
+      const response = await axios.get(`${base_url}/courses/subjects`, {
+        headers: { 'Session-Id': sessionId }
+      });
+      
+      const majorsData = response.data || [];
+      
+      // Cache the results
+      setCachedData('cachedMajors', majorsData);
+      
+      return majorsData;
+    } catch (error) {
+      console.error("Error fetching subjects/majors:", error);
+      return [];
+    }
+  });
 };
+
+// Create a LazyImage component
+const LazyImage = memo(({ src, alt, fallback, width, height }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const imgRef = useRef(null);
+  
+  useEffect(() => {
+    const currentImgRef = imgRef.current;
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { rootMargin: '100px' }
+    );
+    
+    if (currentImgRef) {
+      observer.observe(currentImgRef);
+    }
+    
+    return () => {
+      if (currentImgRef) {
+        observer.unobserve(currentImgRef);
+      }
+    };
+  }, []);
+  
+  return (
+    <div 
+      ref={imgRef}
+      className={`lazy-image-container ${loaded ? 'loaded' : ''}`}
+      style={{ width, height }}
+    >
+      {!loaded && !error && <div className="image-placeholder"></div>}
+      
+      {isVisible && (
+        <img
+          src={src}
+          alt={alt}
+          className="lazy-image"
+          style={{ opacity: loaded ? 1 : 0 }}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          width={width}
+          height={height}
+        />
+      )}
+      
+      {error && fallback}
+    </div>
+  );
+});
+
+LazyImage.propTypes = {
+  src: PropTypes.string.isRequired,
+  alt: PropTypes.string.isRequired,
+  fallback: PropTypes.node,
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+};
+
+LazyImage.displayName = 'LazyImage';
 
 // Create a new SearchableDropdown component for filter selections
 const SearchableDropdown = memo(({ 
@@ -292,11 +363,19 @@ SearchableDropdown.displayName = 'SearchableDropdown';
 const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
   const { isThreadRead, bookmarks, toggleBookmark, formatDate, goToThread } = data;
   const [author, setAuthor] = useState(null);
+  const [markdownModules, setMarkdownModules] = useState(null);
+  const [markdownLoading, setMarkdownLoading] = useState(false);
   
+  // Load author data
   useEffect(() => {
     if (thread?.authorEmail) {
       const fetchAuthor = async () => {
-        const userData = await getCachedUserByEmail(thread.authorEmail);
+        // Use request pooling for user data
+        const userData = await requestPool.execute(
+          `user-${thread.authorEmail}`, 
+          () => getCachedUserByEmail(thread.authorEmail)
+        );
+        
         if (userData) {
           setAuthor(userData);
         }
@@ -306,6 +385,23 @@ const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
     }
   }, [thread?.authorEmail]);
   
+  // Load markdown modules only if needed
+  useEffect(() => {
+    if (thread.format === 'markdown' && !markdownModules) {
+      let mounted = true;
+      setMarkdownLoading(true);
+      
+      loadMarkdownComponents().then(modules => {
+        if (mounted) {
+          setMarkdownModules(modules);
+          setMarkdownLoading(false);
+        }
+      });
+      
+      return () => { mounted = false; };
+    }
+  }, [thread.format, markdownModules]);
+
   return (
     <div style={style} className="virtualized-thread-wrapper">
       <li 
@@ -381,30 +477,36 @@ const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
           <div className="thread-excerpt">
             {thread.format === 'markdown' ? (
               <div className="markdown-excerpt">
-                <ReactMarkdown
-                  rehypePlugins={[rehypeSanitize]}
-                  className="thread-excerpt-content"
-                  components={{
-                    code({ inline, className, children }) {
-                      return inline ? (
-                        <code className={className}>{children}</code>
-                      ) : (
-                        <code className="code-block-preview">{'{code}'}</code>
-                      );
-                    },
-                    h1: ({children}) => <strong>{children}</strong>,
-                    h2: ({children}) => <strong>{children}</strong>,
-                    h3: ({children}) => <strong>{children}</strong>,
-                    h4: ({children}) => <strong>{children}</strong>,
-                    h5: ({children}) => <strong>{children}</strong>,
-                    h6: ({children}) => <strong>{children}</strong>,
-                    img: () => <span>[img]</span>,
-                    p: ({children}) => <p>{children}</p>
-                  }}
-                >
-                  {(thread.content || thread.description || "").substring(0, 80)}
-                  {(thread.content || thread.description || "").length > 80 ? "..." : ""}
-                </ReactMarkdown>
+                {markdownLoading ? (
+                  <p>Loading preview...</p>
+                ) : markdownModules ? (
+                  <markdownModules.ReactMarkdown
+                    rehypePlugins={[markdownModules.rehypeSanitize]}
+                    className="thread-excerpt-content"
+                    components={{
+                      code({ inline, className, children }) {
+                        return inline ? (
+                          <code className={className}>{children}</code>
+                        ) : (
+                          <code className="code-block-preview">{'{code}'}</code>
+                        );
+                      },
+                      h1: ({children}) => <strong>{children}</strong>,
+                      h2: ({children}) => <strong>{children}</strong>,
+                      h3: ({children}) => <strong>{children}</strong>,
+                      h4: ({children}) => <strong>{children}</strong>,
+                      h5: ({children}) => <strong>{children}</strong>,
+                      h6: ({children}) => <strong>{children}</strong>,
+                      img: () => <span>[img]</span>,
+                      p: ({children}) => <p>{children}</p>
+                    }}
+                  >
+                    {(thread.content || thread.description || "").substring(0, 80)}
+                    {(thread.content || thread.description || "").length > 80 ? "..." : ""}
+                  </markdownModules.ReactMarkdown>
+                ) : (
+                  <p>{(thread.content || thread.description || "").substring(0, 80)}...</p>
+                )}
               </div>
             ) : (
               <p>
@@ -546,6 +648,21 @@ const threadFormReducer = (state, action) => {
   }
 };
 
+// Import markdown components dynamically
+const loadMarkdownComponents = async () => {
+  const [ReactMarkdown, rehypeSanitize, remarkGfm] = await Promise.all([
+    import('react-markdown'),
+    import('rehype-sanitize'),
+    import('remark-gfm')
+  ]);
+  
+  return {
+    ReactMarkdown: ReactMarkdown.default,
+    rehypeSanitize: rehypeSanitize.default,
+    remarkGfm: remarkGfm.default
+  };
+};
+
 // Add this above your main Forum component
 const ThreadForm = memo(({ 
   threadForm,
@@ -556,6 +673,40 @@ const ThreadForm = memo(({
   availableCourses,
   availableMajors
 }) => {
+  const [markdownModules, setMarkdownModules] = useState(null);
+  const [markdownLoading, setMarkdownLoading] = useState(false);
+
+  useEffect(() => {
+    if (threadForm.showPreview && !markdownModules) {
+      let mounted = true;
+      setMarkdownLoading(true);
+      
+      loadMarkdownComponents()
+        .then(modules => {
+          if (mounted && modules) {
+            setMarkdownModules(modules);
+          } else if (mounted) {
+            console.error("Failed to load markdown modules");
+            toast.error("Failed to load markdown preview");
+          }
+        })
+        .catch(err => {
+          if (mounted) {
+            console.error("Error in markdown loading:", err);
+            toast.error("Error loading markdown preview");
+          }
+        })
+        .finally(() => {
+          if (mounted) {
+            setMarkdownLoading(false);
+          }
+        });
+      
+      return () => { mounted = false; };
+    }
+  }, [threadForm.showPreview, markdownModules]);
+  
+
   const insertMarkdown = (prefix, suffix, placeholder) => {
     const textarea = document.getElementById('thread-content');
     if (!textarea) return;
@@ -644,10 +795,12 @@ const ThreadForm = memo(({
             </>
           ) : (
             <div className="markdown-preview">
-              {threadForm.content ? (
-                <ReactMarkdown
-                  rehypePlugins={[rehypeSanitize]}
-                  remarkPlugins={[remarkGfm]}
+              {markdownLoading ? (
+                <p>Loading preview...</p>
+              ) : markdownModules && threadForm.content ? (
+                <markdownModules.ReactMarkdown
+                  rehypePlugins={[markdownModules.rehypeSanitize]}
+                  remarkPlugins={[markdownModules.remarkGfm]}
                   components={{
                     code({ inline, className, children, ...props}) {
                       const match = /language-(\w+)/.exec(className || '');
@@ -669,9 +822,12 @@ const ThreadForm = memo(({
                   }}
                 >
                   {threadForm.content}
-                </ReactMarkdown>
+                </markdownModules.ReactMarkdown>
               ) : (
-                <p className="empty-preview">Nothing to preview yet. Start writing to see how your post will look!</p>
+                <p className="empty-preview">
+                  {!markdownModules ? "Loading markdown renderer..." : 
+                   "Nothing to preview yet. Start writing to see how your post will look!"}
+                </p>
               )}
             </div>
           )}
@@ -906,6 +1062,86 @@ ForumSidebar.propTypes = {
 
 ForumSidebar.displayName = 'ForumSidebar';
 
+// Add this to your ThreadListing component
+const ThreadListWithInfiniteScroll = memo(({ displayThreads, listData, itemsPerPage = 10 }) => {
+  const [visibleThreads, setVisibleThreads] = useState([]);
+  const [page, setPage] = useState(1);
+  const loaderRef = useRef(null);
+  
+  useEffect(() => {
+    // Reset pagination when threads change
+    setPage(1);
+    setVisibleThreads(displayThreads.slice(0, itemsPerPage));
+  }, [displayThreads, itemsPerPage]);
+  
+  useEffect(() => {
+    const currentLoaderRef = loaderRef.current;
+    
+    const observer = new IntersectionObserver(entries => {
+      const entry = entries[0];
+      if (entry.isIntersecting && visibleThreads.length < displayThreads.length) {
+        // Load next page of threads
+        const nextPage = page + 1;
+        const nextThreads = displayThreads.slice(0, nextPage * itemsPerPage);
+        setVisibleThreads(nextThreads);
+        setPage(nextPage);
+      }
+    }, { threshold: 0.1 });
+    
+    if (currentLoaderRef) {
+      observer.observe(currentLoaderRef);
+    }
+    
+    return () => {
+      if (currentLoaderRef) {
+        observer.unobserve(currentLoaderRef);
+      }
+    };
+  }, [displayThreads, visibleThreads, page, itemsPerPage]);
+  
+  return (
+    <>
+      <div className="virtualized-thread-container">
+        <AutoSizer disableHeight>
+          {({ width }) => (
+            <List
+              className="virtualized-threads-list"
+              height={Math.min(600, visibleThreads.length * 170)}
+              width={width}
+              itemCount={visibleThreads.length}
+              itemSize={170}
+              itemData={{...listData, threads: visibleThreads}}
+            >
+              {({ index, style }) => (
+                <ThreadRowWithAuthor
+                  thread={visibleThreads[index]}
+                  index={index}
+                  style={style}
+                  data={listData}
+                />
+              )}
+            </List>
+          )}
+        </AutoSizer>
+      </div>
+      
+      {visibleThreads.length < displayThreads.length && (
+        <div ref={loaderRef} className="loading-more">
+          <div className="loading-spinner"></div>
+        </div>
+      )}
+    </>
+  );
+});
+
+ThreadListWithInfiniteScroll.propTypes = {
+  displayThreads: PropTypes.array.isRequired,
+  listData: PropTypes.object.isRequired,
+  itemsPerPage: PropTypes.number
+};
+
+ThreadListWithInfiniteScroll.displayName = 'ThreadListWithInfiniteScroll';
+
 // Add this above your main Forum component
 const ThreadListing = memo(({
   loading,
@@ -915,10 +1151,7 @@ const ThreadListing = memo(({
   setShowNewThreadForm,
   sortOrder,
   setSortOrder,
-  listData,
-  currentPage,
-  setCurrentPage,
-  totalPages
+  listData
 }) => {
   return (
     <div className="threads-container">
@@ -991,49 +1224,11 @@ const ThreadListing = memo(({
           )}
         </div>
       ) : (
-        <>
-          <div className="virtualized-thread-container">
-            <AutoSizer disableHeight>
-              {({ width }) => (
-                <List
-                  className="virtualized-threads-list"
-                  height={600}
-                  width={width}
-                  itemCount={displayThreads.length}
-                  itemSize={160}
-                  itemData={listData}
-                >
-                  {({ index, style }) => (
-                    <ThreadRowWithAuthor
-                      thread={displayThreads[index]}
-                      index={index}
-                      style={style}
-                      data={listData}
-                    />
-                  )}
-                </List>
-              )}
-            </AutoSizer>
-          </div>
-          
-          <div className="pagination">
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="pagination-button"
-            >
-              Previous
-            </button>
-            <span className="page-info">Page {currentPage} of {totalPages}</span>
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="pagination-button"
-            >
-              Next
-            </button>
-          </div>
-        </>
+        <ThreadListWithInfiniteScroll 
+          displayThreads={displayThreads}
+          listData={listData}
+          itemsPerPage={10}
+        />
       )}
     </div>
   );
@@ -1054,6 +1249,21 @@ ThreadListing.propTypes = {
 };
 
 ThreadListing.displayName = 'ThreadListing';
+
+// Add a normalized thread cache to avoid duplicate data
+const normalizeThreads = (threads) => {
+  const normalized = {};
+  const ids = [];
+  
+  threads.forEach(thread => {
+    normalized[thread.threadId] = thread;
+    if (!ids.includes(thread.threadId)) {
+      ids.push(thread.threadId);
+    }
+  });
+  
+  return { byId: normalized, allIds: ids };
+};
 
 function Forum() {
   const navigate = useNavigate();
@@ -1083,6 +1293,8 @@ function Forum() {
     major: '',
     showPreview: false
   });
+
+  const [normalizedThreads, setNormalizedThreads] = useState({ byId: {}, allIds: [] });
 
   // Process functions
   const processMajors = useCallback((data) => {
@@ -1241,6 +1453,7 @@ function Forum() {
         if (Array.isArray(response.data)) {
           console.log(`Processing ${response.data.length} threads from array response`);
           setUnsortedThreads(response.data);
+          setNormalizedThreads(normalizeThreads(response.data));
           setTotalPages(Math.ceil(response.data.length / 10));
           
           // Calculate and set forum stats
@@ -1253,6 +1466,7 @@ function Forum() {
         } else if (response.data.threads && Array.isArray(response.data.threads)) {
           console.log(`Processing ${response.data.threads.length} threads from nested response`);
           setUnsortedThreads(response.data.threads);
+          setNormalizedThreads(normalizeThreads(response.data.threads));
           setTotalPages(response.data.totalPages || Math.ceil(response.data.threads.length / 10));
           
           // Calculate and set forum stats
@@ -1265,6 +1479,7 @@ function Forum() {
         } else {
           console.warn('Unexpected response format:', response.data);
           setUnsortedThreads([]);
+          setNormalizedThreads({ byId: {}, allIds: [] });
           setTotalPages(1);
         }
       } catch (error) {
@@ -1438,7 +1653,7 @@ function Forum() {
     setSearchInputValue('');
   }, []);
 
-  const displayThreads = useMemo(() => {
+  const filteredThreadIds = useMemo(() => {
     if (!unsortedThreads.length) return [];
     
     let filteredThreads = [...unsortedThreads];
@@ -1487,19 +1702,23 @@ function Forum() {
     // Apply existing sort order
     switch(sortOrder) {
       case 'recent':
-        return filteredThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return filteredThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(thread => thread.threadId);
       case 'oldest':
-        return filteredThreads.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        return filteredThreads.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map(thread => thread.threadId);
       case 'comments':
-        return filteredThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+        return filteredThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0)).map(thread => thread.threadId);
       case 'score':
         return filteredThreads.sort((a, b) => 
           ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0))
-        );
+        ).map(thread => thread.threadId);
       default:
-        return filteredThreads;
+        return filteredThreads.map(thread => thread.threadId);
     }
   }, [unsortedThreads, bookmarks, showBookmarksOnly, sortOrder, searchQuery, filterMajor, filterCourse, filterRole]);
+
+  const displayThreads = useMemo(() => {
+    return filteredThreadIds.map(id => normalizedThreads.byId[id]);
+  }, [filteredThreadIds, normalizedThreads.byId]);
 
   const listData = useMemo(() => ({
     threads: displayThreads,
