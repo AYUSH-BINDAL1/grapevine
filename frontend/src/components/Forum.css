@@ -252,55 +252,6 @@
   font-size: 13px;
 }
 
-.thread-view-indicators {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.thread-indicator {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-}
-
-.thread-indicator .indicator-icon {
-  margin-right: 6px;
-}
-
-.thread-major {
-  background-color: #cb645f;
-}
-
-.thread-course {
-  background-color: #5ca960;
-}
-
-.thread-role {
-  background-color: #9c27b0;
-}
-
-.role-student {
-  background-color: #2196f3;
-}
-
-.role-instructor {
-  background-color: #ff9800;
-}
-
-.role-uta {
-  background-color: #009688;
-}
-
-.role-gta {
-  background-color: #673ab7;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .thread-meta {
