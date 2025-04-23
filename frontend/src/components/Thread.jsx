@@ -932,6 +932,8 @@ function Thread() {
               </div>
             ) : (
               <textarea
+                id='comment-input'
+                className="comment-input"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment... Supports markdown formatting!"

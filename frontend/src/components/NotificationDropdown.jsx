@@ -295,6 +295,3 @@ const NotificationDropdown = () => {
 };
 
 export default NotificationDropdown;
-
-// Add this when you receive the login response
-localStorage.setItem("userEmail", response.data.user.userEmail);

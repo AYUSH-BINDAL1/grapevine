@@ -1328,6 +1328,8 @@ function Profile() {
                 value={descriptionInput}
                 onChange={(e) => setDescriptionInput(e.target.value)}
                 className="description-textarea"
+                name="userDescription"
+                id="userDescription"
                 rows={4}
                 placeholder="Enter your description..."
               />
@@ -1357,6 +1359,8 @@ function Profile() {
           <h3>Role</h3>
           <select 
             className="role-select"
+            name="userRole"
+            id="userRole"
             value={userRole}
             onChange={handleRoleChange}
           >
@@ -1609,6 +1613,8 @@ function Profile() {
           
           <select 
             className="location-select"
+            name="locationSelector"
+            id="locationSelector"
             onChange={(e) => {
               if (e.target.value && userData) {
                 // Convert selected value to numeric ID
@@ -1790,6 +1796,7 @@ function Profile() {
                 name="name"
                 value={editedProfileData.name}
                 onChange={handleProfileInputChange}
+                autoComplete="name"
               />
             </div>
             <div className="form-group">
@@ -1801,14 +1808,17 @@ function Profile() {
                 value={editedProfileData.userEmail}
                 onChange={handleProfileInputChange}
                 className={emailError ? "input-error" : ""}
+                autoComplete="email"
               />
               {emailError && <span className="error-message">{emailError}</span>}
             </div>
             <div className="form-group">
-              <label htmlFor="majors">Majors</label>
+              <label htmlFor="majorSelector">Majors</label>
               <div className="majors-selector">
                 <select
                   className="major-select"
+                  name="majorSelector"
+                  id="majorSelector"
                   value=""
                   onChange={(e) => {
                     if (e.target.value) {
@@ -1894,6 +1904,8 @@ function Profile() {
               <input 
                 type={showPassword ? "text" : "password"} 
                 placeholder="Password" 
+                name="deleteAccountPassword"
+                id="deleteAccountPassword"
                 value={deletePassword}
                 onChange={(e) => {
                   setDeletePassword(e.target.value);
@@ -1903,6 +1915,7 @@ function Profile() {
                     confirmDeleteProfile();
                   }
                 }}
+                autoComplete="current-password"
               />
               <button 
                 type="button" 

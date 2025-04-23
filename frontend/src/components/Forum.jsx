@@ -296,8 +296,22 @@ const SearchableDropdown = memo(({
   
   return (
     <div className="filter-group searchable-dropdown-container" ref={dropdownRef}>
-      <label className="filter-label">{label}</label>
-      <div className="searchable-dropdown">
+      {/* Add a visually hidden but accessible select element that matches the label's htmlFor attribute */}
+      <select 
+        id={`dropdown-${label.replace(/\s+/g, '-').toLowerCase()}`}
+        tabIndex="-1"
+        aria-hidden="true"
+        className="sr-only"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">{placeholder || "Select..."}</option>
+        {options.map((option, index) => (
+          <option key={index} value={option}>{option}</option>
+        ))}
+      </select>
+      <label htmlFor={`dropdown-${label.replace(/\s+/g, '-').toLowerCase()}`} className="filter-label">{label}</label>
+      <div className="searchable-dropdown" id=''>
         <div 
           className={`dropdown-header ${isOpen ? 'open' : ''}`}
           onClick={() => setIsOpen(!isOpen)}
@@ -309,7 +323,12 @@ const SearchableDropdown = memo(({
         {isOpen && (
           <div className="dropdown-content">
             <div className="search-wrapper">
+            <label htmlFor={`dropdown-search-${label.replace(/\s+/g, '-').toLowerCase()}`} className="sr-only">
+              Search {label}
+            </label>
               <input
+                id={`dropdown-search-${label.replace(/\s+/g, '-').toLowerCase()}`}
+                name={`dropdown-search-${label.replace(/\s+/g, '-').toLowerCase()}`}
                 type="text"
                 className="dropdown-search"
                 placeholder="Search..."
@@ -991,8 +1010,11 @@ const ForumSidebar = memo(({
       <div className="sidebar-search">
         <h3>Filter Threads</h3>
         <div className="search-form">
+          <label htmlFor="forum-search" className="sr-only">Search in threads</label>
           <input
             type="text"
+            id='forum-search'
+            name='forum-search'
             placeholder="Search in threads..."
             value={searchInputValue}
             onChange={(e) => setSearchInputValue(e.target.value)}
@@ -1038,8 +1060,12 @@ const ForumSidebar = memo(({
           </button>
           
           <div className="filter-group">
-            <label>Time period:</label>
-            <select className="filter-select">
+            <label htmlFor='time-period-filter'>Time period:</label>
+            <select
+              className="filter-select"
+              id='time-period-filter'
+              name='time-period-filter'
+            >
               <option value="all">All time</option>
               <option value="today">Today</option>
               <option value="week">This week</option>
@@ -1188,8 +1214,11 @@ const ThreadListing = memo(({
       <div className="threads-header">
         <h2>All Threads</h2>
         <div className="thread-filters">
+          <label htmlFor="thread-sort-order" className="sort-label">Sort by:</label>
           <select 
             className="sort-select"
+            id='thread-sort-order'
+            name='thread-sort-order'
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           >
@@ -1201,6 +1230,8 @@ const ThreadListing = memo(({
           <label className="bookmark-filter">
             <input 
               type="checkbox" 
+              id='show-bookmarks-only'
+              name='show-bookmarks-only'
               checked={showBookmarksOnly} 
               onChange={(e) => setShowBookmarksOnly(e.target.checked)} 
             />
