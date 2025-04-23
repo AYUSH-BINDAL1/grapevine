@@ -10,24 +10,61 @@
 
 .taskbar-elem {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
-  max-width: 1300px;
+  padding: 0 20px;
+  max-width: 1400px;
+  height: 60px;
   margin: 0 auto;
+  position: relative;
 }
 
-.taskbar-elem  img{
-  margin-right: 40px;
+.taskbar-logo {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-right: 15px;
+}
+
+.logo-text {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fff;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.taskbar-logo:hover .logo-text {
+  transform: scale(1.05);
+}
+
+.nav-items {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.taskbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.nav-icon {
+  display: none;
+  margin-right: 6px;
 }
 
 /* Active route highlighting for taskbar */
 .taskbar-elem .elem {
   position: relative;
-  transition: color 0.3s ease, font-weight 0.3s ease;
+  transition: color 0.3s ease, font-weight 0.3s ease, background-color 0.3s ease;
   padding: 10px 15px;
   border-radius: 6px;
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
 }
 
 .taskbar-elem .elem.active {
@@ -76,6 +113,7 @@
   cursor: pointer;
   border: 2px solid #8ebd89;
   transition: all 0.3s ease;
+  margin: 0 15px;
 }
 
 .profile.active-profile {
@@ -85,10 +123,11 @@
 
 .elem {
   cursor: pointer;
-  margin: 0 15px;
+  margin: 0 10px;
   font-size: 16px;
   transition: color 0.2s;
-  color: #333;
+  color: #fff;
+  user-select: none;
 }
 
 .elem:hover {
@@ -101,22 +140,18 @@
 
 /* Special styling for logout button */
 .taskbar-elem .elem.logout {
-  margin-left: 15px;
-  color: #ff5e5e;
+  margin-left: 5px;
+  color: #fff;
+  opacity: 0.9;
 }
 
 .taskbar-elem .elem.logout:hover {
   color: #ff3333;
+  opacity: 1;
 }
 
 .taskbar-elem .elem.logout::after {
   background-color: #ff5e5e;
-}
-
-/* Add these styles to your CSS */
-.elem.logout.disabled {
-  opacity: 0.6;
-  pointer-events: none;
 }
 
 /* Optional loading indicator animation */
@@ -127,7 +162,173 @@
 }
 
 .elem.logout.disabled {
+  opacity: 0.6;
+  pointer-events: none;
   animation: pulse 1.5s infinite;
+}
+
+/* Mobile menu button */
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 21px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+}
+
+.menu-bar {
+  width: 30px;
+  height: 3px;
+  background-color: #fff;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 1024px) {
+  .taskbar-elem {
+    padding: 0 15px;
+  }
+  
+  .elem {
+    margin: 0 8px;
+    font-size: 15px;
+  }
+  
+  .profile {
+    height: 36px;
+    width: 36px;
+  }
+}
+
+@media (max-width: 900px) {
+  .taskbar-elem {
+    padding: 0 10px;
+  }
+  
+  .elem {
+    margin: 0 5px;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+    order: -1;
+  }
+  
+  .taskbar-elem.menu-open .menu-bar:nth-child(1) {
+    transform: translateY(9px) rotate(45deg);
+  }
+  
+  .taskbar-elem.menu-open .menu-bar:nth-child(2) {
+    opacity: 0;
+  }
+  
+  .taskbar-elem.menu-open .menu-bar:nth-child(3) {
+    transform: translateY(-9px) rotate(-45deg);
+  }
+  
+  .nav-items {
+    position: absolute;
+    flex-direction: column;
+    background-color: #ae92c6;
+    top: 60px;
+    left: 0;
+    right: 0;
+    height: 0;
+    overflow: hidden;
+    transition: height 0.3s ease;
+    opacity: 0;
+    box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+  
+  .nav-items.show {
+    height: auto;
+    padding: 10px 0;
+    opacity: 1;
+  }
+  
+  .taskbar-elem .elem {
+    width: 100%;
+    padding: 15px 20px;
+    margin: 0;
+    border-radius: 0;
+    justify-content: flex-start;
+  }
+  
+  .taskbar-elem .elem::after {
+    display: none;
+  }
+  
+  .nav-icon.mobile-only {
+    display: inline-block;
+  }
+  
+  .taskbar-right {
+    margin-left: auto;
+  }
+  
+  .profile {
+    margin: 0 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .taskbar-elem {
+    padding: 0 8px;
+  }
+  
+  .logo-text {
+    font-size: 1rem;
+  }
+  
+  .profile {
+    height: 32px;
+    width: 32px;
+    margin: 0 8px;
+  }
+  
+  .taskbar-right .elem.logout .nav-text {
+    display: none;
+  }
+  
+  .taskbar-right .elem.logout .nav-icon.mobile-only {
+    display: inline-block;
+    margin: 0;
+  }
+}
+
+/* Add a smooth slide-in animation for dropdown */
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nav-items.show {
+  animation: slideIn 0.3s ease forwards;
+}
+
+/* Accessibility focus styles */
+.elem:focus-visible,
+.profile:focus-visible,
+.taskbar-logo:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .main-container2{

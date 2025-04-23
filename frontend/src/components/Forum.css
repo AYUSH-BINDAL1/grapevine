@@ -1,8 +1,11 @@
 .forum-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 20px 15px;
+  padding-top: 80px;
   color: var(--text-dark);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .forum-header {
@@ -13,7 +16,7 @@
 }
 
 .forum-header h1 {
-  color: var(--secondary-color);
+  color: var(--primary-color);
   font-size: 28px;
   margin: 0;
 }
@@ -30,22 +33,7 @@
   width: 250px;
 }
 
-.new-thread-button {
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.new-thread-button:hover {
-  background-color: var(--primary-hover);
-}
-
-/* Change forum-content back to flex layout */
+/* More fluid forum content layout */
 .forum-content {
   display: flex;
   gap: 20px;
@@ -251,6 +239,43 @@
   color: var(--text-dark);
 }
 
+/* Add these styles to your Forum.css file */
+
+/* Thread indicators styling */
+.thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-medium);
+  font-size: 13px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .thread-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .thread-indicator {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+}
+
+/* Make indicators work well when thread is hovered */
+.thread-item:hover .thread-indicator {
+  opacity: 0.9;
+}
+
+/* Adjust existing styles */
+.thread-author, .thread-date {
+  margin-right: 5px;
+}
+
 .thread-meta {
   display: flex;
   gap: 15px;
@@ -260,10 +285,21 @@
 }
 
 .thread-excerpt {
-  margin: 0 0 10px 0;
-  color: var(--text-medium);
-  font-size: 15px;
-  line-height: 1.4;
+  margin: 5px 0;
+  color: #555;
+  font-size: 14px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.thread-excerpt-content p {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .thread-stats {
@@ -462,6 +498,31 @@
 }
 
 /* Responsive styles */
+@media (max-width: 1024px) {
+  .forum-container {
+    padding: 15px;
+    padding-top: 80px;
+  }
+  
+  .forum-content {
+    gap: 15px;
+  }
+  
+  .threads-container {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 900px) {
+  .forum-sidebar {
+    width: 240px;
+  }
+  
+  .threads-container {
+    max-width: calc(100% - 260px);
+  }
+}
+
 @media (max-width: 768px) {
   .forum-content {
     flex-direction: column;
@@ -469,25 +530,75 @@
   
   .forum-sidebar {
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    position: static;
   }
   
-  .forum-header {
+  .threads-container {
+    max-width: 100%;
+  }
+  
+  /* Make sidebar sections collapsible on mobile */
+  .sidebar-search h3,
+  .forum-stats h3 {
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .sidebar-search h3:after,
+  .forum-stats h3:after {
+    content: '▼';
+    font-size: 12px;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar-search h3.collapsed:after,
+  .forum-stats h3.collapsed:after {
+    transform: translateY(-50%) rotate(-90deg);
+  }
+  
+  .filter-options,
+  .stat-items-container {
+    max-height: 300px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  
+  .filter-options.collapsed,
+  .stat-items-container.collapsed {
+    max-height: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .forum-container {
+    padding: 10px;
+    padding-top: 70px;
+  }
+  
+  .forum-header h1 {
+    font-size: 24px;
+  }
+  
+  .threads-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
+    gap: 10px;
   }
   
-  .forum-search-controls {
+  .thread-filters {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
   
-  .search-input {
-    flex-grow: 1;
-  }
-
-  .threads-list {
-    max-height: 500px;
+  .sort-select {
+    width: 100%;
   }
 }
 
@@ -592,30 +703,15 @@
 .search-form {
   display: flex;
   margin-bottom: 12px;
+
 }
 
 .sidebar-search-input {
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #ddd;
-  border-radius: 4px 0 0 4px;
+  border-radius: 4px;
   font-size: 14px;
-}
-
-.search-button {
-  background-color: var(--primary-color, #4a6da7);
-  color: white;
-  border: none;
-  border-radius: 0 4px 4px 0;
-  padding: 0 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-button:hover {
-  background-color: var(--primary-hover, #3a5d97);
 }
 
 .filter-options {
@@ -641,24 +737,6 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-}
-
-.filter-checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.checkbox-label input {
-  margin: 0;
 }
 
 /* Styles for read threads */
@@ -709,4 +787,608 @@
   border-width: 2px;
   margin-right: 10px;
 }
+
+/* Thread Editor Tabs */
+.thread-editor-tabs {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.thread-editor-tabs .tab {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.thread-editor-tabs .tab.active {
+  border-bottom: 2px solid var(--secondary-color);
+  font-weight: 600;
+}
+
+/* Markdown Preview */
+.markdown-preview {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  min-height: 200px;
+  max-height: 500px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+}
+
+.markdown-preview h1, 
+.markdown-preview h2, 
+.markdown-preview h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.markdown-preview h1 {
+  font-size: 1.8em;
+}
+
+.markdown-preview h2 {
+  font-size: 1.5em;
+}
+
+.markdown-preview h3 {
+  font-size: 1.3em;
+}
+
+.markdown-preview p {
+  margin-bottom: 1em;
+}
+
+.markdown-preview a {
+  color: #4a6da7;
+  text-decoration: none;
+}
+
+.markdown-preview a:hover {
+  text-decoration: underline;
+}
+
+.markdown-preview blockquote {
+  border-left: 3px solid #ddd;
+  color: #666;
+  margin-left: 0;
+  padding-left: 15px;
+}
+
+.markdown-preview pre {
+  margin-bottom: 1em;
+  border-radius: 4px;
+  overflow: auto;
+}
+
+.markdown-preview code {
+  background-color: #f0f0f0;
+  border-radius: 3px;
+  font-family: monospace;
+  padding: 2px 4px;
+}
+
+.markdown-preview ul, 
+.markdown-preview ol {
+  margin-left: 20px;
+  margin-bottom: 1em;
+}
+
+.markdown-preview li {
+  margin-bottom: 0.5em;
+}
+
+.markdown-preview img {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-excerpt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Empty preview message */
+.empty-preview {
+  color: #777;
+  font-style: italic;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* Thread excerpt styling */
+.markdown-excerpt {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  color: #444;
+  max-height: 100px;
+  overflow: hidden;
+}
+
+.markdown-excerpt p {
+  margin: 0 0 6px 0;
+}
+
+.markdown-excerpt a {
+  color: #4a6da7;
+  text-decoration: none;
+}
+
+.markdown-excerpt strong, 
+.markdown-excerpt b {
+  font-weight: 600;
+}
+
+.markdown-excerpt em, 
+.markdown-excerpt i {
+  font-style: italic;
+}
+
+.markdown-excerpt .code-block-preview {
+  background-color: #f7f7f7;
+  padding: 2px 5px;
+  border: 1px dashed #ddd;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #666;
+}
+
+.thread-excerpt-content {
+  margin: 0;
+  padding: 0;
+}
+
+/* Enhance read/unread distinction */
+.thread-read .thread-excerpt {
+  opacity: 0.85;
+}
+
+/* Add skeleton loading animations */
+@keyframes pulse {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: -135% 0%;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, 
+    #f0f0f0 25%, 
+    #e0e0e0 50%, 
+    #f0f0f0 75%);
+  background-size: 400% 100%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.thread-skeleton {
+  display: flex;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.thread-skeleton:last-child {
+  border-bottom: none;
+}
+
+.skeleton-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 15px;
+}
+
+.skeleton-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 70%;
+  border-radius: 4px;
+}
+
+.skeleton-meta {
+  height: 12px;
+  width: 40%;
+  border-radius: 4px;
+}
+
+.skeleton-excerpt {
+  height: 40px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+.skeleton-stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.skeleton-stat-item {
+  height: 16px;
+  width: 60px;
+  border-radius: 4px;
+}
+
+/* Thread bookmark styles */
+.thread-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.bookmark-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  margin-left: 5px;
+  color: #888;
+}
+
+.bookmark-button:hover {
+  background-color: rgba(0,0,0,0.05);
+  color: var(--primary-color);
+}
+
+.thread-bookmarked .bookmark-button {
+  color: var(--primary-color);
+}
+
+.thread-bookmarked {
+  border-left: 3px solid var(--primary-color);
+}
+
+/* Bookmark filter styling */
+.bookmark-filter {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.bookmark-filter svg {
+  margin-right: 5px;
+}
+
+.bookmark-filter input:checked + span {
+  color: var(--primary-color);
+}
+
+.bookmark-filter input:checked + span svg {
+  fill: var(--primary-color);
+}
+
+/* No bookmarks message */
+.no-bookmarks {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+}
+
+.bookmark-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.clear-bookmarks {
+  background-color: transparent;
+  color: #666;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.clear-bookmarks:hover {
+  background-color: #f5f5f5;
+  border-color: #999;
+}
+
+/* Virtualized list styles */
+.virtualized-thread-container {
+  height: 600px;
+  width: 100%;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.virtualized-threads-list {
+  scrollbar-width: thin;
+  scrollbar-color: #c4c4c4 #f5f5f5;
+}
+
+/* Add these styles to your Forum.css file */
+.reset-filters-button {
+  background-color: var(--background-light);
+  color: var(--text-medium);
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  padding: 8px 12px;
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-filters-button:hover:not(:disabled) {
+  background-color: #e0e0e0;
+  color: var(--text-dark);
+}
+
+.reset-filters-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Make sure filter selects are styled consistently */
+.filter-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  background-color: black;
+}
+
+/* Improve responsive layout */
+@media (max-width: 768px) {
+  .filter-options {
+    gap: 10px;
+  }
+  
+  .filter-group {
+    margin-bottom: 5px;
+  }
+  
+  .reset-filters-button {
+    margin-top: 5px;
+  }
+}
+
+/* Add these styles to your Forum.css file */
+
+/* Searchable Dropdown Styles */
+.searchable-dropdown-container {
+  width: 100%;
+}
+
+.searchable-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  background-color: lightgray;
+  cursor: pointer;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.dropdown-header:hover {
+  border-color: #b0b0b0;
+}
+
+.dropdown-header.open {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(142, 189, 137, 0.25);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  transform: rotate(0);
+  transition: transform 0.2s;
+}
+
+.dropdown-header.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--primary-color);
+  border-top: none;
+  border-bottom-left-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.search-wrapper {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.dropdown-search {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+}
+
+.dropdown-options {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdown-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.dropdown-option:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown-option.selected {
+  background-color: rgba(142, 189, 137, 0.1);
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.no-options {
+  padding: 12px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+/* Scrollbar styling for the dropdown */
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dropdown-content {
+    max-height: 250px;
+  }
+  
+  .dropdown-options {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dropdown-header {
+    padding: 8px;
+    font-size: 13px;
+  }
+  
+  .dropdown-option {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
+/* Add this to your Forum.css */
+
+/* Lazy loading styles */
+.loading-placeholder {
+  background: #f0f0f0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  color: #888;
+  animation: pulse 1.5s infinite;
+}
+
+.lazy-image-container {
+  position: relative;
+  overflow: hidden;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+}
+
+.image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #f0f0f0, #e0e0e0, #f0f0f0);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.lazy-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.loading-more {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(142, 189, 137, 0.3);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 
