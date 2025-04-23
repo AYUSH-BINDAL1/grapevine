@@ -81,7 +81,7 @@ const NotificationDropdown = () => {
         // Navigate based on notification type
         switch(notification.type) {
             case "MESSAGE":
-                navigate(`/forum/thread/${notification.referenceId}`);
+                navigate(`/messaging`);
                 break;
             case "THREAD":
                 navigate(`/forum/thread/${notification.referenceId}`);
