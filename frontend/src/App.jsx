@@ -465,7 +465,7 @@ function App() {
             <Route path="/event/:eventId" element={<EventDetails />} />
             <Route path="/forum" element={<Forum />} />
             <Route path="/forum/thread/:threadId" element={<Thread />} />
-            <Route path="/messages" element={<Messaging />} />
+            <Route path="/messaging" element={<Messaging />} />
           </Route>
         </Routes>
       </Router>
