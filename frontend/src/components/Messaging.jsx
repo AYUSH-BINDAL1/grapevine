@@ -233,7 +233,7 @@ useEffect(() => {
               ))}
               {searchQuery && searchResults.length === 0 && (
                 <div className="no-results">
-                  <p>No friends found matching "{searchQuery}"</p>
+                  <p>No friends found matching &#34;{searchQuery}&#34;</p>
                 </div>
               )}
             </div>
