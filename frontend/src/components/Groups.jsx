@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback, memo } from 'react';
 import axios from 'axios';
 import profileImage from '../assets/temp-profile.webp';
 import PropTypes from 'prop-types';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { FixedSizeList as List } from 'react-window';
 import { base_url, image_url } from '../config';
 
@@ -1254,7 +1253,6 @@ function Groups() {
       // For public groups - direct join
       if (group.public !== false) {
         // Show loading toast
-        toast.info("Joining group...", { autoClose: false, toastId: 'join-group' });
 
         const response = await axios.post(
             `${base_url}/groups/${id}/join`,
@@ -1267,20 +1265,21 @@ function Groups() {
             }
         );
 
-        toast.dismiss('join-group');
+        toast.success("You've successfully joined the group!");
 
-        if (response.data.success) {
-          toast.success("You've successfully joined the group!");
 
-          // Update membership status
-          setUserMembership({
-            ...userMembership,
-            isMember: true
-          });
+        console.log('Join group response:', response.data);
 
-          // Refresh group data
-          fetchData(); // You'll need to extract your data fetching logic to a named function
-        }
+        console.log("joined group");
+
+        // Update membership status
+        setUserMembership({
+          ...userMembership,
+          isMember: true
+        });
+
+        // Refresh group data
+        fetchData(); // You'll need to extract your data fetching logic to a named function
       } else {
         // For private groups - request access
         requestAccess();
@@ -1755,17 +1754,6 @@ function Groups() {
             </div>
         )}
 
-        <ToastContainer
-            position="bottom-left"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-        />
       </div>
   );
 }

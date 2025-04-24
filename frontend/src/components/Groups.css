@@ -1315,3 +1315,12 @@ h1 {
 .instructor-toggle-button:hover {
   background-color: #3c8c40;
 }
+
+/* Add to the bottom of your CSS file */
+.Toastify__toast-container {
+  z-index: 9999 !important;
+}
+
+.Toastify__toast {
+  min-height: 50px !important;
+}
