@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import profileImage from '../assets/temp-profile.webp';
 import './Messaging.css';
 import { base_url } from '../config';
@@ -22,6 +23,8 @@ function Messaging() {
   const [stompClient, setStompClient] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedEmail = searchParams.get("user");
 
   const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
   const sessionId = localStorage.getItem('sessionId');
@@ -124,12 +127,23 @@ function Messaging() {
 
               // Update messages if we're in the correct conversation
               if (selectedConversation?.conversationId === messageData.conversationId) {
+                // Message is for the currently open thread — update UI directly
                 addDebugMessage('Message matches current conversation - updating messages');
                 setMessages(prevMessages => {
                   if (!prevMessages.some(m => m.messageId === messageData.messageId)) {
                     return [...prevMessages, messageData];
                   }
                   return prevMessages;
+                });
+              } else {
+                // Message is for a different thread — show toast
+                toast.info(`New message from ${messageData.senderEmail}: ${messageData.content}`, {
+                  position: 'bottom-right',
+                  autoClose: 5000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true
                 });
               }
             },
@@ -190,6 +204,15 @@ function Messaging() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
     }, [messages]);
+
+  useEffect(() => {
+    if (preselectedEmail && conversations.length > 0 && !selectedConversation) {
+      const match = conversations.find(c => c.friendEmail === preselectedEmail);
+      if (match) {
+        setSelectedConversation(match);
+      }
+    }
+  }, [preselectedEmail, conversations, selectedConversation]);
 
     const handleSendMessage = (e) => {
       e.preventDefault();

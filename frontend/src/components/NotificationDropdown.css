@@ -213,3 +213,21 @@
     color: #666;
     font-weight: normal;
 }
+
+.mark-all-read-link {
+    display: flex;
+    justify-content: flex-end;
+    padding: 5px 10px;
+}
+
+.mark-all-read-link button {
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.mark-all-read-link button:hover {
+    text-decoration: underline;
+}

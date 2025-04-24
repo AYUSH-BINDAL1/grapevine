@@ -22,6 +22,10 @@ import NotificationDropdown from './components/NotificationDropdown';
 import './App.css';
 import './components/Groups.css';
 import {base_url, image_url} from './config.js';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import SockJS from 'sockjs-client';
+import { over } from 'stompjs';
 
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
@@ -506,7 +510,94 @@ function Home() {
 }
 
 function App() {
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const userEmail = userData?.userEmail;
+    const sessionId = localStorage.getItem('sessionId');
+
+    if (!userEmail || !sessionId) {
+      console.log("Missing userEmail or sessionId, skipping WebSocket setup");
+      return;
+    }
+
+    const socket = new SockJS(`${base_url}/ws?email=${encodeURIComponent(userEmail)}`);
+    const client = over(socket);
+    client.debug = null;
+
+    let isConnected = false;
+    const userNameCache = {}; // 🧠 Cache sender names
+
+    client.connect({}, () => {
+      isConnected = true;
+      console.log("WebSocket connected as:", userEmail);
+
+      // ✅ Subscribe to direct messages
+      client.subscribe('/user/queue/messages', async (msg) => {
+        const message = JSON.parse(msg.body);
+        const senderEmail = message.senderEmail;
+
+        if (window.location.pathname !== "/messaging") {
+          let senderName = userNameCache[senderEmail];
+
+          if (!senderName) {
+            try {
+              const res = await axios.get(`${base_url}/users/${senderEmail}`, {
+                headers: { "Session-Id": sessionId }
+              });
+              senderName = res.data.name || senderEmail;
+              userNameCache[senderEmail] = senderName;
+            } catch (err) {
+              console.error("Failed to fetch user name, fallback to email:", err);
+              senderName = senderEmail;
+            }
+          }
+
+          toast.info(`💬 ${senderName}: ${message.content}`, {
+            onClick: () => window.location.href = `/messaging?user=${senderEmail}`,
+            position: "bottom-right",
+            autoClose: 5000,
+          });
+        }
+      });
+
+      // ✅ Subscribe to general notifications
+      client.subscribe('/user/queue/notifications', (msg) => {
+        const notif = JSON.parse(msg.body);
+
+        toast.info(notif.content, {
+          onClick: () => {
+            switch (notif.type) {
+              case 'MESSAGE':
+                window.location.href = `/messaging?user=${notif.senderEmail}`;
+                break;
+              case 'EVENT_REMINDER':
+                window.location.href = `/events/${notif.referenceId}`;
+                break;
+              case 'COMMENT':
+                window.location.href = `/forum/thread/${notif.referenceId}`;
+                break;
+              default:
+                break;
+            }
+          },
+          position: 'bottom-right',
+          autoClose: 5000,
+        });
+      });
+    });
+
+    return () => {
+      if (isConnected) {
+        client.disconnect(() => {
+          console.log("WebSocket disconnected");
+        });
+      }
+    };
+  }, []);
+
   return (
+      <>
       <Router>
         <Routes>
           <Route 
@@ -538,6 +629,8 @@ function App() {
           </Route>
         </Routes>
       </Router>
+        <ToastContainer />
+        </>
   );
 }
 
