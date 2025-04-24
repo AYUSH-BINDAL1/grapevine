@@ -161,16 +161,6 @@ function Messaging() {
                   }
                   return prevMessages;
                 });
-              } else {
-                // Message is for a different thread — show toast
-                toast.info(`New message from ${messageData.senderEmail}: ${messageData.content}`, {
-                  position: 'bottom-right',
-                  autoClose: 5000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true
-                });
               }
             },
             { id: 'messages-sub' }
