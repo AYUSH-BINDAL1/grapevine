@@ -25,13 +25,13 @@ function Login() {
       clearTimeout(debounceTimerRef.current);
     }
     
-    // Set a new debounce timer (300ms delay)
+    // Set a new debounce timer (0ms delay)
     debounceTimerRef.current = setTimeout(() => {
       setFormData(prevData => ({
         ...prevData,
         [name]: value
       }));
-    }, 300);
+    }, 0);
     
     // For immediate UI feedback, update the input value directly
     e.target.value = value;

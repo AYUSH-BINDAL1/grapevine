@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, memo } from 'react';
 import axios from 'axios';
 import profileImage from '../assets/temp-profile.webp';
 import PropTypes from 'prop-types';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { FixedSizeList as List } from 'react-window';
 import { base_url, image_url } from '../config';
 
@@ -1249,12 +1250,15 @@ function Groups() {
   const handleJoinGroup = async () => {
     try {
       const sessionId = localStorage.getItem('sessionId');
-
+      if (!sessionId) return;
+      
+      // Create a toast ID to track this specific toast
+      const toastId = toast.loading("Joining group...");
+      
       // For public groups - direct join
       if (group.public !== false) {
-        // Show loading toast
-
-        const response = await axios.post(
+        try {
+          const response = await axios.post(
             `${base_url}/groups/${id}/join`,
             {},
             {
@@ -1263,31 +1267,43 @@ function Groups() {
                 'Content-Type': 'application/json'
               }
             }
-        );
+          );
+          
+          // Update the toast to success
+          toast.update(toastId, {
+            render: "You've successfully joined the group!",
+            type: "success",
+            isLoading: false,
+            autoClose: 3000,
+          });
 
-        toast.success("You've successfully joined the group!");
+          console.log('Join group response:', response.data);
 
+          // Update membership status
+          setUserMembership({
+            ...userMembership,
+            isMember: true
+          });
 
-        console.log('Join group response:', response.data);
-
-        console.log("joined group");
-
-        // Update membership status
-        setUserMembership({
-          ...userMembership,
-          isMember: true
-        });
-
-        // Refresh group data
-        fetchData(); // You'll need to extract your data fetching logic to a named function
+          // Refresh group data
+          fetchData();
+        } catch (error) {
+          toast.update(toastId, {
+            render: "Failed to join group",
+            type: "error",
+            isLoading: false,
+            autoClose: 3000,
+          });
+          console.error('Error joining group:', error);
+        }
       } else {
-        // For private groups - request access
+        // For private groups
+        toast.dismiss(toastId);
         requestAccess();
       }
     } catch (error) {
-      console.error('Error joining group:', error);
-      toast.dismiss('join-group');
-      toast.error("Failed to join the group. Please try again.");
+      console.error('Error in join flow:', error);
+      toast.error("An unexpected error occurred");
     }
   };
 
@@ -1754,6 +1770,17 @@ function Groups() {
             </div>
         )}
 
+        <ToastContainer
+            position="bottom-left"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+        />
       </div>
   );
 }
