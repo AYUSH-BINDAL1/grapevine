@@ -106,4 +106,14 @@ public class User {
     //Other Fields?: Contact Information, Account Creation Date, Last Online, Privacy Settings
 
     //Additional Attributes: Account Creation Date, Last Online Date, Profile Picture
+
+    // Add these fields to your User class
+    @Column(name = "notify_forum_replies")
+    private Boolean notifyForumReplies = true;
+
+    @Column(name = "notify_direct_messages")
+    private Boolean notifyDirectMessages = true;
+
+    @Column(name = "notify_event_reminders")
+    private Boolean notifyEventReminders = true;
 }

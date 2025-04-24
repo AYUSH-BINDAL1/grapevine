@@ -8,6 +8,13 @@ import { base_url } from '../config';
 const NotificationDropdown = () => {
     const [open, setOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
+    const [showSettings, setShowSettings] = useState(false);
+    const [preferences, setPreferences] = useState({
+        forumReplies: true,
+        directMessages: true,
+        eventReminders: true
+    });
+    const [loadingPreferences, setLoadingPreferences] = useState(false);
     const navigate = useNavigate();
     const dropdownRef = useRef(null);
 
@@ -42,6 +49,25 @@ const NotificationDropdown = () => {
             setNotifications(response.data);
         } catch (error) {
             console.error("Failed to fetch notifications", error);
+        }
+    }, [sessionId]);
+
+    const fetchNotificationPreferences = useCallback(async () => {
+        try {
+            setLoadingPreferences(true);
+            const response = await axios.get(`${base_url}/user/notification-preferences`, {
+                headers: { "Session-Id": sessionId }
+            });
+            
+            setPreferences({
+                forumReplies: response.data.forumReplies !== false,
+                directMessages: response.data.directMessages !== false,
+                eventReminders: response.data.eventReminders !== false
+            });
+        } catch (error) {
+            console.error("Failed to fetch notification preferences", error);
+        } finally {
+            setLoadingPreferences(false);
         }
     }, [sessionId]);
 
@@ -94,6 +120,33 @@ const NotificationDropdown = () => {
                 if (notification.referenceId) {
                     navigate(`/forum/thread/${notification.referenceId}`);
                 }
+        }
+    };
+
+    const handleTogglePreference = async (key) => {
+        const updatedPreferences = {
+            ...preferences,
+            [key]: !preferences[key]
+        };
+        
+        setPreferences(updatedPreferences);
+        
+        try {
+            // Get the current user's email
+            const userEmail = localStorage.getItem("userEmail");
+            
+            // Use the correct endpoint format to match your backend structure
+            await axios.post(
+                `${base_url}/users/${userEmail}/notification-preferences`,
+                updatedPreferences,
+                {
+                    headers: { "Session-Id": sessionId }
+                }
+            );
+        } catch (error) {
+            console.error("Failed to update notification preferences", error);
+            // Revert change on failure
+            setPreferences(preferences);
         }
     };
 
@@ -153,7 +206,87 @@ const NotificationDropdown = () => {
                             >
                                 Mark all as read
                             </button>
+
                         </div>
+                    )}
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSettings(!showSettings);
+                            if (!showSettings) {
+                                fetchNotificationPreferences();
+                            }
+                        }}
+                        className="settings-button"
+                    >
+                        Notification Settings
+                    </button>
+                </div>
+            )}
+
+            {showSettings && (
+                <div className="notification-settings-panel">
+                    <h3>Notification Settings</h3>
+                    
+                    {loadingPreferences ? (
+                        <div className="loading-preferences">Loading your preferences...</div>
+                    ) : (
+                        <>
+                            <div className="preference-item">
+                                <label className="toggle-label">
+                                    <input
+                                        type="checkbox"
+                                        checked={preferences.forumReplies}
+                                        onChange={() => handleTogglePreference('forumReplies')}
+                                    />
+                                    <span className="toggle-switch"></span>
+                                    <span className="toggle-text">
+                                        Forum Replies
+                                        <span className="toggle-description">
+                                            Get notified when someone replies to your threads
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <div className="preference-item">
+                                <label className="toggle-label">
+                                    <input
+                                        type="checkbox"
+                                        checked={preferences.directMessages}
+                                        onChange={() => handleTogglePreference('directMessages')}
+                                    />
+                                    <span className="toggle-switch"></span>
+                                    <span className="toggle-text">
+                                        Direct Messages
+                                        <span className="toggle-description">
+                                            Get notified when you receive a new message
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <div className="preference-item">
+                                <label className="toggle-label">
+                                    <input
+                                        type="checkbox"
+                                        checked={preferences.eventReminders}
+                                        onChange={() => handleTogglePreference('eventReminders')}
+                                    />
+                                    <span className="toggle-switch"></span>
+                                    <span className="toggle-text">
+                                        Event Reminders
+                                        <span className="toggle-description">
+                                            Get notified about upcoming events
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <div className="settings-footer">
+                                <button onClick={() => setShowSettings(false)}>Close</button>
+                            </div>
+                        </>
                     )}
                 </div>
             )}

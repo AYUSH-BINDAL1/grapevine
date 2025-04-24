@@ -15,6 +15,7 @@ function EventDetails() {
     const [hostNames, setHostNames] = useState({});
     const [reminders, setReminders] = useState([]);
     const [reminderTime, setReminderTime] = useState("");
+    
 
 
     const hardcodedLocations = [
@@ -210,6 +211,11 @@ function EventDetails() {
     };
 
     const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
+
+    // Define these variables to check if the user is a host or participant
+    const isHost = eventData?.hosts?.includes(currentUserEmail) || false;
+    const isParticipant = eventData?.participants?.includes(currentUserEmail) || false;
+
     if (!eventData) {
         return <div className="event-details-loading">Loading...</div>;
     }

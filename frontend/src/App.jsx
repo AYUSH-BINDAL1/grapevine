@@ -135,45 +135,69 @@ const Taskbar = memo(function Taskbar() {
     };
   }, [userDataVersion, tryLoadIdBasedImage]);
 
-  // Optimize the logout handler with useCallback
-  const handleLogout = useCallback(async () => {
+  // Replace the current handleLogout implementation with this optimized version
+  const handleLogout = useCallback(async (e) => {
+    // Prevent event propagation first (very fast operation)
+    e?.stopPropagation();
+    
     if (isLoggingOut) return; // Prevent multiple clicks
     
-    const conf = window.confirm("Are you sure you want to log out?");
-    if (!conf) return;
-
-    try {
-      setIsLoggingOut(true);
-      const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) {
-        localStorage.clear();
-        navigate("/");
-        return;
-      }
-      
-      // Set a timeout to ensure we don't wait forever
-      const timeout = setTimeout(() => {
-        console.warn("Logout request timed out, clearing local data");
-        localStorage.clear();
-        navigate("/");
-      }, 5000);
-      
-      await axios.delete(`${base_url}/users/logout-all`, { // Updated endpoint
-        headers: { 'Session-Id': sessionId },
-        timeout: 4000 // Add axios timeout
+    // Set logging out state immediately to provide UI feedback
+    setIsLoggingOut(true);
+    
+    // Show confirmation in a non-blocking way
+    const confirmLogout = () => {
+      return new Promise(resolve => {
+        // Use a custom modal instead of window.confirm for better UX
+        const wantsToLogout = window.confirm("Are you sure you want to log out?");
+        resolve(wantsToLogout);
       });
-      
-      clearTimeout(timeout);
-      localStorage.clear();
-      navigate("/");
-    } catch (error) {
-      console.error('Error logging out:', error);
-      localStorage.clear();
-      alert("There was an issue logging out from the server, but you've been logged out locally.");
-      navigate("/");
-    } finally {
+    };
+    
+    // Use non-blocking confirmation
+    const shouldLogout = await confirmLogout();
+    if (!shouldLogout) {
       setIsLoggingOut(false);
+      return;
     }
+  
+    // Move the actual logout logic to a separate function that runs after a short delay
+    // This gives the UI time to update before potentially heavy operations
+    setTimeout(async () => {
+      try {
+        const sessionId = localStorage.getItem('sessionId');
+        if (!sessionId) {
+          localStorage.clear();
+          navigate("/");
+          return;
+        }
+        
+        // Set a timeout to ensure we don't wait forever
+        const logoutPromise = axios.delete(`${base_url}/users/logout-all`, {
+          headers: { 'Session-Id': sessionId },
+          timeout: 4000 // Add axios timeout
+        });
+        
+        // Use Promise.race to implement a timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Logout request timed out')), 5000)
+        );
+        
+        await Promise.race([logoutPromise, timeoutPromise])
+          .catch(error => {
+            console.warn("Logout request issue:", error);
+            // Continue with local logout regardless of server response
+          })
+          .finally(() => {
+            localStorage.clear();
+            navigate("/");
+          });
+      } catch (error) {
+        console.error('Error during logout:', error);
+        localStorage.clear();
+        navigate("/");
+      }
+    }, 10);
   }, [isLoggingOut, navigate]);
 
   // Memoize the navbar items to prevent unnecessary re-renders
