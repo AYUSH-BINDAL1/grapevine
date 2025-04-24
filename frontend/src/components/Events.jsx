@@ -60,10 +60,11 @@ function Events() {
                 const email = userData.userEmail;
 
                 const response = await axios.get(
-                    `${base_url}/events/all`,
+                    `${base_url}/users/${userData.userEmail}/all-events`,
                     { headers: { 'Session-Id': sessionId } }
                 );
 
+                console.log("My Events Response:", response.data);
                 const allEvents = response.data;
 
                 // Filter for events where the user is a host or participant
