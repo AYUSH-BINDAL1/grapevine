@@ -108,6 +108,28 @@ const NotificationDropdown = () => {
 
             {open && (
                 <div className="notification-dropdown">
+                    {notifications.length > 0 && (
+                        <div className="mark-all-read-link">
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                        await axios.post(`${base_url}/notifications/mark-all-read`, {}, {
+                                            headers: { "Session-Id": sessionId }
+                                        });
+                                        setNotifications(prev =>
+                                            prev.map(n => ({ ...n, read: true }))
+                                        );
+                                    } catch (error) {
+                                        console.error("Failed to mark all as read", error);
+                                    }
+                                }}
+                            >
+                                Mark all as read
+                            </button>
+                        </div>
+                    )}
+
                     {notifications.length === 0 ? (
                         <div className="notification-card">
                             <span className="notif-content">No new notifications.</span>
