@@ -19,10 +19,11 @@ import Messaging from './components/Messaging.jsx';
 import Forum from './components/Forum';
 import Thread from './components/Thread.jsx';
 import NotificationDropdown from './components/NotificationDropdown';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import './components/Groups.css';
 import {base_url, image_url} from './config.js';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import SockJS from 'sockjs-client';
 import { over } from 'stompjs';
@@ -612,40 +613,37 @@ function App() {
   }, []);
 
   return (
-      <>
-      <Router>
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              <Suspense fallback={<div>Loading...</div>}>
-                <Login />
-              </Suspense>
-            } 
-          />
-          <Route path="/registration" element={<Registration />} />
-          <Route path="/confirmation" element={<Confirmation />} />
-          <Route path="/user/:userEmail" element={<UsrProfile />} />
-          <Route path="*" element={<Nopath />} />
-          <Route element={<Layout />}>
-            <Route path="/home" element={<Home />} />
-            <Route path="/create-group" element={<CreateGroup />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/create-event" element={<CreateEvent />} />
-            <Route path="/friends" element={<Friends />} />
-            <Route path="/courseSearch" element={<CourseSearch />} />
-            <Route path="/view-students" element={<ViewStudents />} />
-            <Route path="/group/:id" element={<Groups />} />
-            <Route path="/event/:eventId" element={<EventDetails />} />
-            <Route path="/forum" element={<Forum />} />
-            <Route path="/forum/thread/:threadId" element={<Thread />} />
-            <Route path="/messaging" element={<Messaging />} />
-          </Route>
-        </Routes>
-      </Router>
-        <ToastContainer />
-        </>
+    <Router>
+      <Routes>
+        <Route 
+          path="/" 
+          element={
+            <Suspense fallback={<div>Loading...</div>}>
+              <Login />
+            </Suspense>
+          } 
+        />
+        <Route path="/registration" element={<Registration />} />
+        <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/user/:userEmail" element={<UsrProfile />} />
+        <Route path="*" element={<Nopath />} />
+        <Route element={<Layout />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/create-group" element={<CreateGroup />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/create-event" element={<CreateEvent />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/courseSearch" element={<CourseSearch />} />
+          <Route path="/view-students" element={<ViewStudents />} />
+          <Route path="/group/:id" element={<Groups />} />
+          <Route path="/event/:eventId" element={<EventDetails />} />
+          <Route path="/forum" element={<Forum />} />
+          <Route path="/forum/thread/:threadId" element={<Thread />} />
+          <Route path="/messaging" element={<Messaging />} />
+        </Route>
+      </Routes>
+    </Router>
   );
 }
 

@@ -1,9 +1,10 @@
-import  { useEffect, useState } from 'react';
+import  { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './ViewEvent.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { base_url } from '../config';
 
 function ViewEvent() {
   const { eventId } = useParams();
@@ -47,7 +48,7 @@ function ViewEvent() {
     26: "STEW"
   };
 
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axios.get(
@@ -73,7 +74,7 @@ function ViewEvent() {
       setLoading(false);
       toast.error('Failed to load event details. Please try again later.');
     }
-  };
+  }, [eventId, sessionId, userEmail]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -83,7 +84,7 @@ function ViewEvent() {
     }
     
     fetchEvent();
-  }, [eventId, navigate, sessionId, userEmail]);
+  }, [eventId, navigate, sessionId, userEmail, fetchEvent]);
 
   const handleJoinEvent = async () => {
     try {

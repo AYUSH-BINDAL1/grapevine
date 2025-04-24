@@ -35,6 +35,32 @@ function Messaging() {
     console.log(debugMsg);
   }, []);
 
+  const fetchConversations = useCallback(async () => {
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+  
+    try {
+      const response = await axios.get(
+        `${base_url}/conversations`,
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      setConversations(response.data);
+      return response.data; // Return the data for chaining
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      toast.error('Failed to load conversations');
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId, navigate]);
+
   const updateConversationWithMessage = useCallback((messageData) => {
     setConversations(prevConversations => 
       prevConversations.map(conv => {
@@ -186,7 +212,7 @@ function Messaging() {
           }
         }
       };
-    }, [currentUserEmail, sessionId, selectedConversation, addDebugMessage, updateConversationWithMessage, navigate]);
+    }, [currentUserEmail, sessionId, selectedConversation, addDebugMessage, updateConversationWithMessage, navigate, conversations, isConnected, fetchConversations]);
   
     useEffect(() => {
       const messagesContainer = document.querySelector('.messages-container');
@@ -239,32 +265,6 @@ function Messaging() {
       }
     };
 
-    const fetchConversations = useCallback(async () => {
-      if (!sessionId) {
-        navigate('/');
-        return;
-      }
-    
-      try {
-        const response = await axios.get(
-          `${base_url}/conversations`,
-          {
-            headers: {
-              'Session-Id': sessionId,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        setConversations(response.data);
-        return response.data; // Return the data for chaining
-      } catch (error) {
-        console.error('Error fetching conversations:', error);
-        toast.error('Failed to load conversations');
-      } finally {
-        setLoading(false);
-      }
-    }, [sessionId, navigate]);
-
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
@@ -293,7 +293,7 @@ function Messaging() {
   // Fetch messages when conversation selected
   useEffect(() => {
     fetchMessages();
-  }, [selectedConversation?.conversationId]);
+  }, [selectedConversation?.conversationId, fetchMessages]);
 
   const handleProfileClick = useCallback((userEmail) => {
     navigate(`/user/${userEmail}`);
