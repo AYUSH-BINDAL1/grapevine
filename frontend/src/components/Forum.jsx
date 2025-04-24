@@ -1598,10 +1598,10 @@ function Forum() {
         
         // Build search query parameters
         const searchParams = new URLSearchParams();
-        if (filterRole) searchParams.append('role', filterRole);
-        if (filterCourse) searchParams.append('course', filterCourse);
-        if (filterMajor) searchParams.append('major', filterMajor);
-        if (searchQuery) searchParams.append('query', searchQuery);
+        if (state.filterRole) searchParams.append('role', state.filterRole);
+        if (state.filterCourse) searchParams.append('course', state.filterCourse);
+        if (state.filterMajor) searchParams.append('major', state.filterMajor);
+        if (state.searchQuery) searchParams.append('query', state.searchQuery);
         
         // Construct URL with search parameters
         const searchUrl = `${base_url}/threads/search${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
@@ -1645,7 +1645,7 @@ function Forum() {
       dispatch({ type: 'SET_LOADING', payload: false });
       console.log('Thread fetching complete.');
     }
-  }, [navigate, calculateForumStats, filterRole, filterCourse, filterMajor, searchQuery]);
+  }, [navigate, calculateForumStats, state.filterRole, state.filterCourse, state.filterMajor, state.searchQuery]);
   useEffect(() => {
     fetchForumData();
   }, [fetchForumData]);
