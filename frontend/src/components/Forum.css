@@ -1222,6 +1222,13 @@
   z-index: 100;
   max-height: 350px;
   overflow-y: auto;
+  transform-origin: top center;
+  animation: dropdownFadeIn 150ms ease-out forwards;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .search-wrapper {

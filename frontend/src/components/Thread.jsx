@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -85,7 +85,13 @@ const Comment = memo(({ comment, formatDate, onUserClick, className = '' }) => {
                     <button 
                       onClick={() => {
                         navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
-                        toast.info('Code copied to clipboard!', {autoClose: 1000})
+                          .then(() => {
+                            toast.info('Code copied to clipboard!', {autoClose: 1000});
+                          })
+                          .catch(err => {
+                            console.error('Failed to copy text: ', err);
+                            toast.error('Failed to copy to clipboard', {autoClose: 1500});
+                          });
                       }}
                       className="copy-code-button"
                       aria-label="Copy code"
@@ -195,7 +201,13 @@ const MarkdownPreview = memo(({ content }) => {
                 <button 
                   onClick={() => {
                     navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
-                    toast.info('Code copied to clipboard!', {autoClose: 1000})
+                      .then(() => {
+                        toast.info('Code copied to clipboard!', {autoClose: 1000});
+                      })
+                      .catch(err => {
+                        console.error('Failed to copy text: ', err);
+                        toast.error('Failed to copy to clipboard', {autoClose: 1500});
+                      });
                   }}
                   className="copy-code-button"
                   aria-label="Copy code"
@@ -289,7 +301,13 @@ const ThreadContent = memo(({ content }) => {
                   <button 
                     onClick={() => {
                       navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
-                      toast.info('Code copied to clipboard!', {autoClose: 1000})
+                        .then(() => {
+                          toast.info('Code copied to clipboard!', {autoClose: 1000});
+                        })
+                        .catch(err => {
+                          console.error('Failed to copy text: ', err);
+                          toast.error('Failed to copy to clipboard', {autoClose: 1500});
+                        });
                     }}
                     className="copy-code-button"
                     aria-label="Copy code"
@@ -437,6 +455,7 @@ function Thread() {
   const [showPreview, setShowPreview] = useState(false);
   const [authorData, setAuthorData] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const textareaRef = useRef(null);
   
   const [threadVotes, setThreadVotes] = useState({
     score: thread?.likes || 0,
@@ -657,7 +676,11 @@ function Thread() {
   }, [newComment, navigate, threadId, currentUser]);
   
   const handleBackToForum = useCallback(() => {
-    navigate('/forum');
+    // Use replace instead of push to avoid adding to history stack
+    navigate('/forum', { 
+      state: { preserveState: true },
+      replace: true 
+    });
   }, [navigate]);
 
   const handleThreadVote = useCallback(async (vote) => {
@@ -725,7 +748,7 @@ function Thread() {
   }, [thread, threadId, threadVotes.userVote]);
 
   const insertMarkdown = useCallback((prefix, suffix = '', placeholder = '') => {
-    const textarea = document.querySelector('.comment-form textarea');
+    const textarea = textareaRef.current;
     if (!textarea) return;
     
     const start = textarea.selectionStart;
@@ -769,7 +792,7 @@ function Thread() {
 
   return (
     <div className="thread-view-container">
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="bottom-left" autoClose={2500} />
       
       <div className="thread-view-header">
         <button className="back-button" onClick={handleBackToForum}>
@@ -923,7 +946,7 @@ function Thread() {
             </div>
 
             {!showPreview && (
-              <MarkdownToolbar onInsert={insertMarkdown} />
+              <MarkdownToolbar onInsert={insertMarkdown} textareaRef={textareaRef} />
             )}
             
             {showPreview ? (
@@ -940,6 +963,7 @@ function Thread() {
                 rows={4}
                 disabled={submitting}
                 required
+                ref={textareaRef}
               ></textarea>
             )}
             
