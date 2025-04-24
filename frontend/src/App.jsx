@@ -19,7 +19,6 @@ import Messaging from './components/Messaging.jsx';
 import Forum from './components/Forum';
 import Thread from './components/Thread.jsx';
 import NotificationDropdown from './components/NotificationDropdown';
-import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import './components/Groups.css';
