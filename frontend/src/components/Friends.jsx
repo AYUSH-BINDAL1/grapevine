@@ -301,9 +301,11 @@ const FilterPanel = ({
       
       <div className="fr_filter-content">
         <div className="fr_filter-group">
-          <label className="fr_filter-label">Major/Minor:</label>
+          <label htmlFor='filterMajor' className="fr_filter-label">Major/Minor:</label>
           <select 
             className="fr_filter-select"
+            id='filterMajor'
+            name='filterMajor'
             value={filterMajor}
             onChange={(e) => setFilterMajor(e.target.value)}
           >
@@ -315,9 +317,11 @@ const FilterPanel = ({
         </div>
         
         <div className="fr_filter-group">
-          <label className="fr_filter-label">Role:</label>
+          <label htmlFor='filterRole' className="fr_filter-label">Role:</label>
           <select 
             className="fr_filter-select"
+            id='filterRole'
+            name='filterRole'
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
           >
@@ -330,9 +334,11 @@ const FilterPanel = ({
         </div>
         
         <div className="fr_filter-group">
-          <label className="fr_filter-label">Study Location:</label>
+          <label htmlFor='filterLocations' className="fr_filter-label">Study Location:</label>
           <select 
             className="fr_filter-select"
+            id='filterLocations'
+            name='filterLocations'
             value={filterLocations.join(',')}
             onChange={(e) => {
               const value = e.target.value;
@@ -351,9 +357,11 @@ const FilterPanel = ({
         </div>
         
         <div className="fr_filter-group">
-          <label className="fr_filter-label">Sort By:</label>
+          <label htmlFor='sortOrder' className="fr_filter-label">Sort By:</label>
           <select 
             className="fr_filter-select"
+            id='sortOrder'
+            name='sortOrder'
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           >
@@ -1163,8 +1171,11 @@ function Friends() {
                 <div className="fr_search-filter-container">
                     <form className="fr_search-container" onSubmit={handleSearch}>
                         <div className="fr_search-input-container">
+                            <label htmlFor="freindSearch" className='sr-only'>Search for friends</label>
                             <input
                                 type="text"
+                                id='freindSearch'
+                                name='freindSearch'
                                 className="fr_search-bar"
                                 placeholder="Search to add friends..."
                                 value={searchQuery}

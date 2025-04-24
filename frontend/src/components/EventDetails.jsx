@@ -15,6 +15,7 @@ function EventDetails() {
     const [hostNames, setHostNames] = useState({});
     const [reminders, setReminders] = useState([]);
     const [reminderTime, setReminderTime] = useState("");
+    
 
 
     const hardcodedLocations = [
@@ -190,7 +191,7 @@ function EventDetails() {
         if (!sessionId || !currentUserEmail) return;
 
         try {
-            const response = await axios.post(
+            await axios.post(
                 `${base_url}/events/${eventId}/join`,
                 { userEmail: currentUserEmail },
                 { headers: { "Session-Id": sessionId } }
@@ -210,9 +211,11 @@ function EventDetails() {
     };
 
     const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
-    const isHost = eventData?.hosts?.includes(currentUserEmail);
-    const isParticipant = eventData?.participants?.includes(currentUserEmail);
-    const eventIsFull = eventData?.participants?.length >= eventData?.maxUsers;
+
+    // Define these variables to check if the user is a host or participant
+    const isHost = eventData?.hosts?.includes(currentUserEmail) || false;
+    const isParticipant = eventData?.participants?.includes(currentUserEmail) || false;
+
     if (!eventData) {
         return <div className="event-details-loading">Loading...</div>;
     }

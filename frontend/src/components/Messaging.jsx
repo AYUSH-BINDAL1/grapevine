@@ -20,7 +20,6 @@ function Messaging() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [stompClient, setStompClient] = useState(null);
-  const [debugMessages, setDebugMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const navigate = useNavigate();
 
@@ -31,7 +30,6 @@ function Messaging() {
     const timestamp = new Date().toLocaleTimeString();
     const debugMsg = `${timestamp}: ${message}`;
     console.log(debugMsg);
-    setDebugMessages(prev => [...prev, debugMsg]);
   }, []);
 
   const updateConversationWithMessage = useCallback((messageData) => {
@@ -91,7 +89,7 @@ function Messaging() {
               if (!conversationExists) {
                 addDebugMessage('New conversation detected - fetching and updating');
                 // First fetch new conversations
-                fetchConversations().then(newConversations => {
+                fetchConversations().then(() => {
                   // Then update the most recent message
                   setConversations(prevConvs => 
                     prevConvs.map(conv => {
@@ -334,7 +332,7 @@ function Messaging() {
   
     // If no existing conversation, create new one
     try {
-      const response = await axios.post(
+      await axios.post(
         `${base_url}/conversations/create/${friendEmail}`,
         {},
         {
@@ -424,7 +422,7 @@ function Messaging() {
             ))}
             {searchQuery && searchResults.length === 0 && (
               <div className="no-conversations">
-                <p>No friends found matching "{searchQuery}"</p>
+                <p>No friends found matching &quot;{searchQuery}&quot;</p>
               </div>
             )}
           </div>

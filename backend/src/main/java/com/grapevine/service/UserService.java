@@ -698,4 +698,33 @@ public class UserService {
         return activeSessions.values().stream()
                 .anyMatch(session -> session.userEmail.equals(userEmail));
     }
+
+    public User updateNotificationPreferences(String userEmail, Map<String, Boolean> preferences) {
+        User user = getUserByEmail(userEmail);
+        
+        if (preferences.containsKey("forumReplies")) {
+            user.setNotifyForumReplies(preferences.get("forumReplies"));
+        }
+        
+        if (preferences.containsKey("directMessages")) {
+            user.setNotifyDirectMessages(preferences.get("directMessages"));
+        }
+        
+        if (preferences.containsKey("eventReminders")) {
+            user.setNotifyEventReminders(preferences.get("eventReminders"));
+        }
+        
+        return userRepository.save(user);
+    }
+
+    public Map<String, Boolean> getNotificationPreferences(String userEmail) {
+        User user = getUserByEmail(userEmail);
+        Map<String, Boolean> preferences = new HashMap<>();
+        
+        preferences.put("forumReplies", user.getNotifyForumReplies() != null ? user.getNotifyForumReplies() : true);
+        preferences.put("directMessages", user.getNotifyDirectMessages() != null ? user.getNotifyDirectMessages() : true);
+        preferences.put("eventReminders", user.getNotifyEventReminders() != null ? user.getNotifyEventReminders() : true);
+        
+        return preferences;
+    }
 }
