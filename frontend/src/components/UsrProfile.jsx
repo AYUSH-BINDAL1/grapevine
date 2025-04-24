@@ -889,9 +889,6 @@ function UsrProfile() {
                 <button className="add-friend-button" onClick={handleAddFriend}>
                   <i className="fa fa-user-plus"></i> Add Friend
                 </button>
-                <button className="message-button">
-                  <i className="fa fa-envelope"></i> Message
-                </button>
               </div>
             )}
           </div>
