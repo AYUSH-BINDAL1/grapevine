@@ -23,7 +23,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import './components/Groups.css';
 import {base_url, image_url} from './config.js';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import SockJS from 'sockjs-client';
 import { over } from 'stompjs';
@@ -628,21 +628,6 @@ function App() {
           <Route path="/messaging" element={<Messaging />} />
         </Route>
       </Routes>
-      
-      {/* Single ToastContainer for entire application */}
-      <ToastContainer 
-        position="bottom-left"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        limit={5}
-      />
     </Router>
   );
 }
