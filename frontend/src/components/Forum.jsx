@@ -1579,11 +1579,6 @@ function Forum() {
   };
 
   const fetchForumData = useCallback(async () => {
-    if (location.state?.preserveState && state.unsortedThreads.length > 0) {
-      dispatch({ type: 'SET_LOADING', payload: false });
-      return;
-    }
-    
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const sessionId = localStorage.getItem('sessionId');
@@ -1592,63 +1587,116 @@ function Forum() {
         navigate("/");
         return;
       }
-  
+
       try {
-        console.log('Fetching threads from API...');
+        console.log('Fetching threads with server-side filters...');
         
-        // Build search query parameters
+        // Build server-side filter parameters
         const searchParams = new URLSearchParams();
+        
+        // Only these filters are handled on server side
         if (state.filterRole) searchParams.append('role', state.filterRole);
         if (state.filterCourse) searchParams.append('course', state.filterCourse);
         if (state.filterMajor) searchParams.append('major', state.filterMajor);
-        if (state.searchQuery) searchParams.append('query', state.searchQuery);
         
         // Construct URL with search parameters
-        const searchUrl = `${base_url}/threads/search${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
-        console.log('Search URL:', searchUrl);
+        const url = searchParams.toString() 
+          ? `${base_url}/threads/search?${searchParams.toString()}`
+          : `${base_url}/threads`;
+          
+        console.log('API URL:', url);
         
-        // Get threads from API with filters
-        const response = await axios.get(searchUrl, {
+        const response = await axios.get(url, {
           headers: { 'Session-Id': sessionId, 'Content-Type': 'application/json' }
         });
         
-        // Log the raw API response
-        console.log('Raw API response:', response);
-        console.log('Thread data received:', response.data);
+        console.log(`Received ${response.data?.length || 0} threads from API`);
         
         // Store complete forum data
         setForumData(response.data);
         
         // Process the response data
         if (Array.isArray(response.data)) {
-          console.log(`Processing ${response.data.length} threads from array response`);
           dispatch({ type: 'SET_THREADS', payload: response.data });
           setForumStats(calculateForumStats(response.data));
-          console.log('Forum statistics calculated:', calculateForumStats(response.data));
         } else if (response.data.threads && Array.isArray(response.data.threads)) {
-          console.log(`Processing ${response.data.threads.length} threads from nested response`);
           dispatch({ type: 'SET_THREADS', payload: response.data.threads });
           setForumStats(calculateForumStats(response.data.threads));
-          console.log('Forum statistics calculated:', calculateForumStats(response.data.threads));
         } else {
-          console.warn('Unexpected response format:', response.data);
           dispatch({ type: 'SET_THREADS', payload: [] });
         }
       } catch (error) {
-        console.warn("Error fetching forum data from API:", error);
-        console.log("Error details:", error.response || error.message);
+        console.error("Error fetching forum data:", error);
+        toast.error("Failed to load forum data. Please try again later.");
       }
     } catch (error) {
-      console.error("Unexpected error in fetchForumData:", error);
-      toast.error("Failed to load forum data. Please try again later.");
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
-      console.log('Thread fetching complete.');
     }
-  }, [navigate, calculateForumStats, state.filterRole, state.filterCourse, state.filterMajor, state.searchQuery]);
+  }, [navigate, calculateForumStats, state.filterMajor, state.filterCourse, state.filterRole]);
+
   useEffect(() => {
     fetchForumData();
-  }, [fetchForumData]);
+  }, [state.filterMajor, state.filterCourse, state.filterRole, fetchForumData]);
+
+  const getClientSideFilteredThreads = useCallback((threads, filters) => {
+    const { searchQuery, bookmarksOnly, bookmarks, dateFilter } = filters;
+    
+    return threads.filter(thread => {
+      // Check bookmarks filter (client-side only)
+      if (bookmarksOnly && !bookmarks.includes(thread.threadId)) {
+        return false;
+      }
+      
+      // Check search query (client-side)
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const titleMatch = thread.title?.toLowerCase().includes(query) || false;
+        const contentMatch = thread.content?.toLowerCase().includes(query) || 
+                            thread.description?.toLowerCase().includes(query) || false;
+        const authorMatch = thread.authorName?.toLowerCase().includes(query) || false;
+        
+        if (!titleMatch && !contentMatch && !authorMatch) {
+          return false;
+        }
+      }
+      
+      // Check date filter (client-side)
+      if (dateFilter && dateFilter !== 'all') {
+        const threadDate = new Date(thread.createdAt);
+        const now = new Date();
+        
+        switch(dateFilter) {
+          case 'today':
+            // Check if thread is from today
+            if (threadDate.toDateString() !== now.toDateString()) {
+              return false;
+            }
+            break;
+          case 'week':
+            // Check if thread is from this week
+            { const weekAgo = new Date();
+            weekAgo.setDate(now.getDate() - 7);
+            if (threadDate < weekAgo) {
+              return false;
+            }
+            break; }
+          case 'month':
+            // Check if thread is from this month
+            { const monthAgo = new Date();
+            monthAgo.setMonth(now.getMonth() - 1);
+            if (threadDate < monthAgo) {
+              return false;
+            }
+            break; }
+        }
+      }
+      
+      return true;
+    });
+  }, []);
 
   useEffect(() => {
     // Load saved draft when component mounts
@@ -1817,20 +1865,28 @@ function Forum() {
   const filteredThreadIds = useMemo(() => {
     if (!state.unsortedThreads.length) return [];
     
-    const filters = {
+    const clientFilters = {
       searchQuery: state.searchInputValue.toLowerCase().trim(),
       bookmarksOnly: showBookmarksOnly,
       bookmarks,
-      majorFilter: state.filterMajor,
-      courseFilter: state.filterCourse,
-      roleFilter: state.filterRole
+      dateFilter: state.dateFilter || 'all'
     };
     
-    const filteredThreads = getFilteredThreads(state.unsortedThreads, filters);
+    // Client-side filtering only for search, bookmarks and date
+    const filteredThreads = getClientSideFilteredThreads(state.unsortedThreads, clientFilters);
     
     // Apply sort after filtering
     return applySortOrder(filteredThreads, sortOrder).map(thread => thread.threadId);
-  }, [state.unsortedThreads, state.searchInputValue, state.filterMajor, state.filterCourse, state.filterRole, showBookmarksOnly, bookmarks, getFilteredThreads, applySortOrder, sortOrder]);
+  }, [
+    state.unsortedThreads, 
+    state.searchInputValue,
+    state.dateFilter,
+    showBookmarksOnly,
+    bookmarks,
+    getClientSideFilteredThreads,
+    applySortOrder,
+    sortOrder
+  ]);
 
   const displayThreads = useMemo(() => {
     return filteredThreadIds.map(id => state.normalizedThreads.byId[id]);
