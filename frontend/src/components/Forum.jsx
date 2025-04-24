@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, memo, useMemo, useReducer, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -742,7 +742,8 @@ function forumReducer(state, action) {
         filterMajor: '', 
         filterCourse: '', 
         filterRole: '', 
-        searchInputValue: '' 
+        searchInputValue: '',
+        dateFilter: 'all' 
       };
     default:
       return state;
@@ -1057,6 +1058,8 @@ ThreadForm.displayName = 'ThreadForm';
 const ForumSidebar = memo(({
   searchInputValue,
   setSearchInputValue,
+  dateFilter,
+  setDateFilter,
   forumStats,
   bookmarks,
   formatNumber,
@@ -1125,11 +1128,13 @@ const ForumSidebar = memo(({
           </button>
           
           <div className="filter-group">
-            <label htmlFor='time-period-filter'>Time period:</label>
+            <label htmlFor='time-period-filter' className="filter-label">Time period:</label>
             <select
               className="filter-select"
               id='time-period-filter'
               name='time-period-filter'
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
             >
               <option value="all">All time</option>
               <option value="today">Today</option>
@@ -1168,6 +1173,8 @@ ForumSidebar.propTypes = {
   searchInputValue: PropTypes.string.isRequired,
   setSearchInputValue: PropTypes.func.isRequired,
   forumStats: PropTypes.object.isRequired,
+  dateFilter: PropTypes.string.isRequired,
+  setDateFilter: PropTypes.func.isRequired,
   bookmarks: PropTypes.array.isRequired,
   formatNumber: PropTypes.func.isRequired,
   filterMajor: PropTypes.string.isRequired,
@@ -1392,31 +1399,8 @@ const normalizeThreads = (threads) => {
   return { byId: normalized, allIds: ids };
 };
 
-// Define a regular function for filtering threads - will be converted to useCallback inside component
-const filterThreads = (threads, filters) => {
-  const { searchQuery, bookmarksOnly, bookmarks, majorFilter, courseFilter, roleFilter } = filters;
-  
-  return threads.filter(thread => {
-    // Only run expensive text search if necessary
-    const matchesSearch = !searchQuery || 
-      (thread.title?.toLowerCase().includes(searchQuery)) || 
-      (thread.content?.toLowerCase().includes(searchQuery)) ||
-      (thread.description?.toLowerCase().includes(searchQuery));
-    
-    // Short-circuit to avoid unnecessary checks
-    if (!matchesSearch) return false;
-    if (bookmarksOnly && !bookmarks.includes(thread.threadId)) return false;
-    if (majorFilter && thread.authorMajor !== majorFilter && thread.subject !== majorFilter) return false;
-    if (courseFilter && thread.courseKey !== courseFilter) return false;
-    if (roleFilter && thread.authorRole !== roleFilter) return false;
-    
-    return true;
-  });
-};
-
 function Forum() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [state, dispatch] = useReducer(forumReducer, {
     loading: true,
     unsortedThreads: [],
@@ -1425,6 +1409,7 @@ function Forum() {
     filterCourse: '',
     filterRole: '',
     searchInputValue: '',
+    dateFilter: 'all',
   });
   const [showNewThreadForm, setShowNewThreadForm] = useState(false);
   const [forumData, setForumData] = useState([]);
@@ -1436,10 +1421,6 @@ function Forum() {
   const [bookmarks, setBookmarks] = useState([]);
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
   
-  // Move the getFilteredThreads function inside the component as useCallback
-  const getFilteredThreads = useCallback((threads, filters) => {
-    return filterThreads(threads, filters);
-  }, []);
 
   const [threadForm, dispatchThreadForm] = useReducer(threadFormReducer, {
     title: '',
@@ -1960,6 +1941,8 @@ function Forum() {
         <ForumSidebar
           searchInputValue={state.searchInputValue}
           setSearchInputValue={(value) => dispatch({ type: 'SET_FILTERS', payload: { searchInputValue: value } })}
+          dateFilter={state.dateFilter}
+          setDateFilter={(value) => dispatch({ type: 'SET_FILTERS', payload: { dateFilter: value } })}
           forumStats={forumStats}
           bookmarks={bookmarks}
           formatNumber={formatNumber}
