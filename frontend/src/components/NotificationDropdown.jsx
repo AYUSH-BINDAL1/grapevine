@@ -107,7 +107,7 @@ const NotificationDropdown = () => {
         // Navigate based on notification type
         switch(notification.type) {
             case "MESSAGE":
-                navigate(`/messaging`);
+                navigate(`/messaging?user=${notification.senderEmail}`);
                 break;
             case "COMMENT":
                 navigate(`/forum/thread/${notification.referenceId}`);
@@ -226,7 +226,6 @@ const NotificationDropdown = () => {
                                     }
                                 }}
                             >
-                                Mark all as read
                             </button>
 
                         </div>

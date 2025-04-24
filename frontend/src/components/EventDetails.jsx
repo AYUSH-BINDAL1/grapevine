@@ -15,7 +15,6 @@ function EventDetails() {
     const [hostNames, setHostNames] = useState({});
     const [reminders, setReminders] = useState([]);
     const [reminderTime, setReminderTime] = useState("");
-    
 
 
     const hardcodedLocations = [
@@ -46,6 +45,7 @@ function EventDetails() {
         { id: 25, shortName: "PMU" },
         { id: 26, shortName: "STEW" }
     ];
+
 
     useEffect(() => {
         const fetchReminders = async () => {
@@ -111,28 +111,45 @@ function EventDetails() {
     }, [eventId, navigate]);
 
     const handleSaveReminder = async () => {
+        const sessionId = localStorage.getItem("sessionId");
+
+        if (!reminderTime) {
+            console.error("No reminder time selected");
+            return;
+        }
+
+        const minutes = parseInt(reminderTime, 10);
+        const eventStart = new Date(eventData.startTime);
+
+        // ✅ Check for duplicates by comparing minute offsets
+        const duplicate = reminders.some(r => {
+            const reminderDate = new Date(r.reminderTime);
+            const diff = Math.round((eventStart - reminderDate) / 60000); // in minutes
+            return diff === minutes;
+        });
+
+        if (duplicate) {
+            console.warn("Reminder for that time already exists.");
+            return;
+        }
+
         try {
-            const eventTime = new Date(eventData.eventTime);
-            eventTime.setMinutes(eventTime.getMinutes() - parseInt(reminderTime));
-            const reminderTimeFormatted = eventTime.toISOString();
-            const sessionId = localStorage.getItem("sessionId");
-
             await axios.post(`${base_url}/events/${eventId}/reminders`, {
-                reminderTime: reminderTimeFormatted
+                minutesBefore: minutes
             }, {
-                headers: { 'Session-Id': sessionId }
+                headers: { "Session-Id": sessionId }
             });
 
-            setReminderTime("");
+            console.log("Reminder saved successfully");
+
+            // ✅ Refresh reminders
             const res = await axios.get(`${base_url}/events/${eventId}/reminders`, {
-                headers: { 'Session-Id': sessionId }
+                headers: { "Session-Id": sessionId }
             });
-            const userEmail = JSON.parse(localStorage.getItem("userData"))?.userEmail;
-            const userReminders = res.data.filter(rem => rem.userEmail === userEmail);
-            setReminders(userReminders);
-        } catch (err) {
-            console.error("Failed to save reminder", err);
-            alert("Failed to save reminder");
+            setReminders(res.data);
+
+        } catch (error) {
+            console.error("Failed to save reminder:", error.response?.data || error.message);
         }
     };
 

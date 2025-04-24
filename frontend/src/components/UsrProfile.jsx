@@ -478,7 +478,7 @@ function UsrProfile() {
           {},
           { headers: { "Session-Id": sessionId } }
       );
-      navigate('/messaging');
+      navigate(`/messaging?user=${userData.userEmail}`);
     } catch (err) {
       console.error("Failed to start conversation", err);
       alert("Could not start conversation.");
