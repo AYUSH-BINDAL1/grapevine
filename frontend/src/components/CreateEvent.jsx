@@ -89,10 +89,7 @@ function CreateEvent() {
                 return;
             }
 
-            const eventTime = new Date(`${formData.date}T${formData.time}`)
-                .toISOString()
-                .slice(0, 19);
-
+            const eventTime = formData.eventTime;
             const locationId = parseInt(formData.locationId, 10);
             console.log("Selected locationId:", formData.locationId);
             console.log("Parsed locationId (int):", locationId);
@@ -151,18 +148,9 @@ function CreateEvent() {
                 </div>
                 <div className="form-group">
                     <input
-                        type="date"
-                        name="date"
-                        value={formData.date}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <input
-                        type="time"
-                        name="time"
-                        value={formData.time}
+                        type="datetime-local"
+                        name="eventTime"
+                        value={formData.eventTime}
                         onChange={handleChange}
                         required
                     />

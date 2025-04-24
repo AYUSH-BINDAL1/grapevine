@@ -1,5 +1,6 @@
 .event-details-container {
     max-width: 1000px;
+    margin: 0 auto;
     padding: 80px 20px 40px;
     font-family: Arial, sans-serif;
 }

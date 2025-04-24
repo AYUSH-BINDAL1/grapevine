@@ -139,13 +139,6 @@ function Events() {
                     navigate("/");
                     return;
                 }
-                /*
-                const response = await axios.get(`http://localhost:8080/events/all-short`, {
-                    headers: {'Session-Id': sessionId}
-                });
-                setAllEvents(response.data);
-                setFilteredEvents(response.data);
-                */
                applyEventFilter();
             } catch (error) {
                 console.error("Error fetching all events:", error);
@@ -203,9 +196,11 @@ function Events() {
                     <h2>Filter Events</h2>
 
                     <div className="filter-group">
-                        <label>Search:</label>
+                        <label htmlFor='event-search'>Search:</label>
                         <input
                             type="text"
+                            id='event-search'
+                            name='event-search'
                             placeholder="Enter keywords..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -219,8 +214,10 @@ function Events() {
                     </div>
 
                     <div className="filter-group">
-                        <label>Location:</label>
+                        <label htmlFor='event-location'>Location:</label>
                         <select
+                            id='event-location'
+                            name='event-location'
                             value={locationId}
                             onChange={(e) => setLocationId(e.target.value)}
                         >
@@ -234,8 +231,10 @@ function Events() {
                     </div>
 
                     <div className="filter-group">
-                        <label>Max Users:</label>
+                        <label htmlFor='event-max-users'>Max Users:</label>
                         <input
+                            id='event-max-users'
+                            name='event-max-users'
                             type="number"
                             placeholder="e.g. 25"
                             value={maxUsers}
@@ -244,8 +243,10 @@ function Events() {
                     </div>
 
                     <div className="filter-group">
-                        <label>Start Time:</label>
+                        <label htmlFor='event-start-time'>Start Time:</label>
                         <input
+                            id='event-start-time'
+                            name='event-start-time'
                             type="datetime-local"
                             value={startTime}
                             onChange={(e) => setStartTime(e.target.value)}
@@ -253,8 +254,10 @@ function Events() {
                     </div>
 
                     <div className="filter-group">
-                        <label>End Time:</label>
+                        <label htmlFor='event-end-time'>End Time:</label>
                         <input
+                            id='event-end-time'
+                            name='event-end-time'
                             type="datetime-local"
                             value={endTime}
                             onChange={(e) => setEndTime(e.target.value)}
@@ -262,9 +265,11 @@ function Events() {
                     </div>
 
                     <div className="filter-group">
-                        <label className="checkbox-label">
+                        <label htmlFor='include-past-events' className="checkbox-label">
                             <input
                                 type="checkbox"
+                                id='include-past-events'
+                                name='include-past-events'
                                 checked={includePastEvents}
                                 onChange={(e) => setIncludePastEvents(e.target.checked)}
                             />
@@ -276,6 +281,8 @@ function Events() {
                         <label className="checkbox-label">
                             <input
                                 type="checkbox"
+                                id='only-full-events'
+                                name='only-full-events'
                                 checked={onlyFullEvents}
                                 onChange={(e) => setOnlyFullEvents(e.target.checked)}
                             />

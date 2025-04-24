@@ -146,7 +146,6 @@ jobs:
             git push
 
             cd backend
-
             # Stop and remove old containers
             docker-compose down --volumes --remove-orphans
             # Run setup.sh to start containers

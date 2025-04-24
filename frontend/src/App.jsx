@@ -19,9 +19,14 @@ import Messaging from './components/Messaging.jsx';
 import Forum from './components/Forum';
 import Thread from './components/Thread.jsx';
 import NotificationDropdown from './components/NotificationDropdown';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import './components/Groups.css';
 import {base_url, image_url} from './config.js';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import SockJS from 'sockjs-client';
+import { over } from 'stompjs';
 
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
@@ -135,45 +140,69 @@ const Taskbar = memo(function Taskbar() {
     };
   }, [userDataVersion, tryLoadIdBasedImage]);
 
-  // Optimize the logout handler with useCallback
-  const handleLogout = useCallback(async () => {
+  // Replace the current handleLogout implementation with this optimized version
+  const handleLogout = useCallback(async (e) => {
+    // Prevent event propagation first (very fast operation)
+    e?.stopPropagation();
+    
     if (isLoggingOut) return; // Prevent multiple clicks
     
-    const conf = window.confirm("Are you sure you want to log out?");
-    if (!conf) return;
-
-    try {
-      setIsLoggingOut(true);
-      const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) {
-        localStorage.clear();
-        navigate("/");
-        return;
-      }
-      
-      // Set a timeout to ensure we don't wait forever
-      const timeout = setTimeout(() => {
-        console.warn("Logout request timed out, clearing local data");
-        localStorage.clear();
-        navigate("/");
-      }, 5000);
-      
-      await axios.delete(`${base_url}/users/logout-all`, { // Updated endpoint
-        headers: { 'Session-Id': sessionId },
-        timeout: 4000 // Add axios timeout
+    // Set logging out state immediately to provide UI feedback
+    setIsLoggingOut(true);
+    
+    // Show confirmation in a non-blocking way
+    const confirmLogout = () => {
+      return new Promise(resolve => {
+        // Use a custom modal instead of window.confirm for better UX
+        const wantsToLogout = window.confirm("Are you sure you want to log out?");
+        resolve(wantsToLogout);
       });
-      
-      clearTimeout(timeout);
-      localStorage.clear();
-      navigate("/");
-    } catch (error) {
-      console.error('Error logging out:', error);
-      localStorage.clear();
-      alert("There was an issue logging out from the server, but you've been logged out locally.");
-      navigate("/");
-    } finally {
+    };
+    
+    // Use non-blocking confirmation
+    const shouldLogout = await confirmLogout();
+    if (!shouldLogout) {
       setIsLoggingOut(false);
+      return;
     }
+  
+    // Move the actual logout logic to a separate function that runs after a short delay
+    // This gives the UI time to update before potentially heavy operations
+    setTimeout(async () => {
+      try {
+        const sessionId = localStorage.getItem('sessionId');
+        if (!sessionId) {
+          localStorage.clear();
+          navigate("/");
+          return;
+        }
+        
+        // Set a timeout to ensure we don't wait forever
+        const logoutPromise = axios.delete(`${base_url}/users/logout-all`, {
+          headers: { 'Session-Id': sessionId },
+          timeout: 4000 // Add axios timeout
+        });
+        
+        // Use Promise.race to implement a timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Logout request timed out')), 5000)
+        );
+        
+        await Promise.race([logoutPromise, timeoutPromise])
+          .catch(error => {
+            console.warn("Logout request issue:", error);
+            // Continue with local logout regardless of server response
+          })
+          .finally(() => {
+            localStorage.clear();
+            navigate("/");
+          });
+      } catch (error) {
+        console.error('Error during logout:', error);
+        localStorage.clear();
+        navigate("/");
+      }
+    }, 10);
   }, [isLoggingOut, navigate]);
 
   // Memoize the navbar items to prevent unnecessary re-renders
@@ -482,38 +511,124 @@ function Home() {
 }
 
 function App() {
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const userEmail = userData?.userEmail;
+    const sessionId = localStorage.getItem('sessionId');
+
+    if (!userEmail || !sessionId) {
+      console.log("Missing userEmail or sessionId, skipping WebSocket setup");
+      return;
+    }
+
+    const socket = new SockJS(`${base_url}/ws?email=${encodeURIComponent(userEmail)}`);
+    const client = over(socket);
+    client.debug = null;
+
+    let isConnected = false;
+    const userNameCache = {}; // 🧠 Cache sender names
+
+    client.connect({}, () => {
+      isConnected = true;
+      console.log("WebSocket connected as:", userEmail);
+
+      // ✅ Subscribe to direct messages
+      client.subscribe('/user/queue/messages', async (msg) => {
+        const message = JSON.parse(msg.body);
+        const senderEmail = message.senderEmail;
+
+        if (window.location.pathname !== "/messaging") {
+          let senderName = userNameCache[senderEmail];
+
+          if (!senderName) {
+            try {
+              const res = await axios.get(`${base_url}/users/${senderEmail}`, {
+                headers: { "Session-Id": sessionId }
+              });
+              senderName = res.data.name || senderEmail;
+              userNameCache[senderEmail] = senderName;
+            } catch (err) {
+              console.error("Failed to fetch user name, fallback to email:", err);
+              senderName = senderEmail;
+            }
+          }
+
+          toast.info(`💬 ${senderName}: ${message.content}`, {
+            onClick: () => window.location.href = `/messaging?user=${senderEmail}`,
+            position: "bottom-right",
+            autoClose: 5000,
+          });
+        }
+      });
+
+      // ✅ Subscribe to general notifications
+      client.subscribe('/user/queue/notifications', (msg) => {
+        const notif = JSON.parse(msg.body);
+
+        toast.info(notif.content, {
+          onClick: () => {
+            switch (notif.type) {
+              case 'MESSAGE':
+                window.location.href = `/messaging?user=${notif.senderEmail}`;
+                break;
+              case 'EVENT_REMINDER':
+                window.location.href = `/events/${notif.referenceId}`;
+                break;
+              case 'COMMENT':
+                window.location.href = `/forum/thread/${notif.referenceId}`;
+                break;
+              default:
+                break;
+            }
+          },
+          position: 'bottom-right',
+          autoClose: 5000,
+        });
+      });
+    });
+
+    return () => {
+      if (isConnected) {
+        client.disconnect(() => {
+          console.log("WebSocket disconnected");
+        });
+      }
+    };
+  }, []);
+
   return (
-      <Router>
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              <Suspense fallback={<div>Loading...</div>}>
-                <Login />
-              </Suspense>
-            } 
-          />
-          <Route path="/registration" element={<Registration />} />
-          <Route path="/confirmation" element={<Confirmation />} />
-          <Route path="/user/:userEmail" element={<UsrProfile />} />
-          <Route path="*" element={<Nopath />} />
-          <Route element={<Layout />}>
-            <Route path="/home" element={<Home />} />
-            <Route path="/create-group" element={<CreateGroup />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/create-event" element={<CreateEvent />} />
-            <Route path="/friends" element={<Friends />} />
-            <Route path="/courseSearch" element={<CourseSearch />} />
-            <Route path="/view-students" element={<ViewStudents />} />
-            <Route path="/group/:id" element={<Groups />} />
-            <Route path="/event/:eventId" element={<EventDetails />} />
-            <Route path="/forum" element={<Forum />} />
-            <Route path="/forum/thread/:threadId" element={<Thread />} />
-            <Route path="/messaging" element={<Messaging />} />
-          </Route>
-        </Routes>
-      </Router>
+    <Router>
+      <Routes>
+        <Route 
+          path="/" 
+          element={
+            <Suspense fallback={<div>Loading...</div>}>
+              <Login />
+            </Suspense>
+          } 
+        />
+        <Route path="/registration" element={<Registration />} />
+        <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/user/:userEmail" element={<UsrProfile />} />
+        <Route path="*" element={<Nopath />} />
+        <Route element={<Layout />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/create-group" element={<CreateGroup />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/create-event" element={<CreateEvent />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/courseSearch" element={<CourseSearch />} />
+          <Route path="/view-students" element={<ViewStudents />} />
+          <Route path="/group/:id" element={<Groups />} />
+          <Route path="/event/:eventId" element={<EventDetails />} />
+          <Route path="/forum" element={<Forum />} />
+          <Route path="/forum/thread/:threadId" element={<Thread />} />
+          <Route path="/messaging" element={<Messaging />} />
+        </Route>
+      </Routes>
+    </Router>
   );
 }
 

@@ -162,6 +162,8 @@ function CourseSearch() {
             value={searchQuery}
             onChange={handleInputChange}
             placeholder="Enter course code..."
+            id='course-search-input'
+            name='course-search-input'
             className="search-input"
             pattern="[A-Za-z0-9 ]+"
             title="Please enter letters, numbers, and spaces only"
