@@ -1592,13 +1592,24 @@ function Forum() {
         navigate("/");
         return;
       }
-
+  
       try {
         console.log('Fetching threads from API...');
         
-        // Get threads from API
-        const response = await axios.get(`${base_url}/threads`, {
-          headers: { 'Session-Id': sessionId }
+        // Build search query parameters
+        const searchParams = new URLSearchParams();
+        if (filterRole) searchParams.append('role', filterRole);
+        if (filterCourse) searchParams.append('course', filterCourse);
+        if (filterMajor) searchParams.append('major', filterMajor);
+        if (searchQuery) searchParams.append('query', searchQuery);
+        
+        // Construct URL with search parameters
+        const searchUrl = `${base_url}/threads/search${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+        console.log('Search URL:', searchUrl);
+        
+        // Get threads from API with filters
+        const response = await axios.get(searchUrl, {
+          headers: { 'Session-Id': sessionId, 'Content-Type': 'application/json' }
         });
         
         // Log the raw API response
@@ -1634,8 +1645,7 @@ function Forum() {
       dispatch({ type: 'SET_LOADING', payload: false });
       console.log('Thread fetching complete.');
     }
-  }, [navigate, calculateForumStats, location.state, state.unsortedThreads.length]);
-
+  }, [navigate, calculateForumStats, filterRole, filterCourse, filterMajor, searchQuery]);
   useEffect(() => {
     fetchForumData();
   }, [fetchForumData]);
