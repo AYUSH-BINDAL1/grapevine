@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import profileImage from '../assets/temp-profile.webp';
 import './Messaging.css';
 import { base_url } from '../config';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
+
+const MESSAGE_MAX_LENGTH = 500;
 
 function Messaging() {
   const [conversations, setConversations] = useState([]);
@@ -18,9 +21,10 @@ function Messaging() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [stompClient, setStompClient] = useState(null);
-  const [debugMessages, setDebugMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedEmail = searchParams.get("user");
 
   const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
   const sessionId = localStorage.getItem('sessionId');
@@ -29,8 +33,33 @@ function Messaging() {
     const timestamp = new Date().toLocaleTimeString();
     const debugMsg = `${timestamp}: ${message}`;
     console.log(debugMsg);
-    setDebugMessages(prev => [...prev, debugMsg]);
   }, []);
+
+  const fetchConversations = useCallback(async () => {
+    if (!sessionId) {
+      navigate('/');
+      return;
+    }
+  
+    try {
+      const response = await axios.get(
+        `${base_url}/conversations`,
+        {
+          headers: {
+            'Session-Id': sessionId,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      setConversations(response.data);
+      return response.data; // Return the data for chaining
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      toast.error('Failed to load conversations');
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId, navigate]);
 
   const updateConversationWithMessage = useCallback((messageData) => {
     setConversations(prevConversations => 
@@ -89,7 +118,7 @@ function Messaging() {
               if (!conversationExists) {
                 addDebugMessage('New conversation detected - fetching and updating');
                 // First fetch new conversations
-                fetchConversations().then(newConversations => {
+                fetchConversations().then(() => {
                   // Then update the most recent message
                   setConversations(prevConvs => 
                     prevConvs.map(conv => {
@@ -124,12 +153,23 @@ function Messaging() {
 
               // Update messages if we're in the correct conversation
               if (selectedConversation?.conversationId === messageData.conversationId) {
+                // Message is for the currently open thread — update UI directly
                 addDebugMessage('Message matches current conversation - updating messages');
                 setMessages(prevMessages => {
                   if (!prevMessages.some(m => m.messageId === messageData.messageId)) {
                     return [...prevMessages, messageData];
                   }
                   return prevMessages;
+                });
+              } else {
+                // Message is for a different thread — show toast
+                toast.info(`New message from ${messageData.senderEmail}: ${messageData.content}`, {
+                  position: 'bottom-right',
+                  autoClose: 5000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true
                 });
               }
             },
@@ -182,7 +222,7 @@ function Messaging() {
           }
         }
       };
-    }, [currentUserEmail, sessionId, selectedConversation, addDebugMessage, updateConversationWithMessage, navigate]);
+    }, [currentUserEmail, sessionId, selectedConversation, addDebugMessage, updateConversationWithMessage, navigate, conversations, isConnected, fetchConversations]);
   
     useEffect(() => {
       const messagesContainer = document.querySelector('.messages-container');
@@ -190,6 +230,15 @@ function Messaging() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
     }, [messages]);
+
+  useEffect(() => {
+    if (preselectedEmail && conversations.length > 0 && !selectedConversation) {
+      const match = conversations.find(c => c.friendEmail === preselectedEmail);
+      if (match) {
+        setSelectedConversation(match);
+      }
+    }
+  }, [preselectedEmail, conversations, selectedConversation]);
 
     const handleSendMessage = (e) => {
       e.preventDefault();
@@ -226,32 +275,6 @@ function Messaging() {
       }
     };
 
-    const fetchConversations = useCallback(async () => {
-      if (!sessionId) {
-        navigate('/');
-        return;
-      }
-    
-      try {
-        const response = await axios.get(
-          `${base_url}/conversations`,
-          {
-            headers: {
-              'Session-Id': sessionId,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        setConversations(response.data);
-        return response.data; // Return the data for chaining
-      } catch (error) {
-        console.error('Error fetching conversations:', error);
-        toast.error('Failed to load conversations');
-      } finally {
-        setLoading(false);
-      }
-    }, [sessionId, navigate]);
-
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
@@ -280,7 +303,7 @@ function Messaging() {
   // Fetch messages when conversation selected
   useEffect(() => {
     fetchMessages();
-  }, [selectedConversation?.conversationId]);
+  }, [selectedConversation?.conversationId, fetchMessages]);
 
   const handleProfileClick = useCallback((userEmail) => {
     navigate(`/user/${userEmail}`);
@@ -332,7 +355,7 @@ function Messaging() {
   
     // If no existing conversation, create new one
     try {
-      const response = await axios.post(
+      await axios.post(
         `${base_url}/conversations/create/${friendEmail}`,
         {},
         {
@@ -422,7 +445,7 @@ function Messaging() {
             ))}
             {searchQuery && searchResults.length === 0 && (
               <div className="no-conversations">
-                <p>No friends found matching "{searchQuery}"</p>
+                <p>No friends found matching &quot;{searchQuery}&quot;</p>
               </div>
             )}
           </div>
@@ -506,17 +529,28 @@ function Messaging() {
 
 
             <form className="message-input-form" onSubmit={handleSendMessage}>
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="message-input"
-              />
+              <div className="message-input-wrapper">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => {
+                    // Limit input to max length
+                    if (e.target.value.length <= MESSAGE_MAX_LENGTH) {
+                      setNewMessage(e.target.value);
+                    }
+                  }}
+                  maxLength={MESSAGE_MAX_LENGTH}
+                  placeholder="Type a message..."
+                  className="message-input"
+                />
+                <span className="character-count">
+                  {newMessage.length}/{MESSAGE_MAX_LENGTH}
+                </span>
+              </div>
               <button 
                 type="submit" 
                 className="send-button"
-                disabled={!newMessage.trim()}
+                disabled={!newMessage.trim() || newMessage.length > MESSAGE_MAX_LENGTH}
               >
                 Send
               </button>

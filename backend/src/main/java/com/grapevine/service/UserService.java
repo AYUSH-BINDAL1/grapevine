@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final VerificationTokenRepository tokenRepository;
@@ -22,9 +22,26 @@ public class UserService {
     private final GroupRepository groupRepository;
     private final EventRepository eventRepository;
     private final LocationRepository locationRepository;
+    private final S3Service s3Service;
 
     // session storage: sessionId -> SessionInfo
     private final Map<String, SessionInfo> activeSessions = new HashMap<>();
+    public UserService(UserRepository userRepository, VerificationTokenRepository tokenRepository,
+                       EmailService emailService, GroupRepository groupRepository,
+                       EventRepository eventRepository, LocationRepository locationRepository,
+                       S3Service s3Service) {
+        this.userRepository = userRepository;
+        this.tokenRepository = tokenRepository;
+        this.emailService = emailService;
+        this.groupRepository = groupRepository;
+        this.eventRepository = eventRepository;
+        this.locationRepository = locationRepository;
+        this.s3Service = s3Service;
+    }
+
+    public S3Service getS3Service() {
+        return s3Service;
+    }
 
     public String initiateUserRegistration(User user) {
         // Check if user already exists
@@ -680,5 +697,34 @@ public class UserService {
     public boolean isUserOnline(String userEmail) {
         return activeSessions.values().stream()
                 .anyMatch(session -> session.userEmail.equals(userEmail));
+    }
+
+    public User updateNotificationPreferences(String userEmail, Map<String, Boolean> preferences) {
+        User user = getUserByEmail(userEmail);
+        
+        if (preferences.containsKey("forumReplies")) {
+            user.setNotifyForumReplies(preferences.get("forumReplies"));
+        }
+        
+        if (preferences.containsKey("directMessages")) {
+            user.setNotifyDirectMessages(preferences.get("directMessages"));
+        }
+        
+        if (preferences.containsKey("eventReminders")) {
+            user.setNotifyEventReminders(preferences.get("eventReminders"));
+        }
+        
+        return userRepository.save(user);
+    }
+
+    public Map<String, Boolean> getNotificationPreferences(String userEmail) {
+        User user = getUserByEmail(userEmail);
+        Map<String, Boolean> preferences = new HashMap<>();
+        
+        preferences.put("forumReplies", user.getNotifyForumReplies() != null ? user.getNotifyForumReplies() : true);
+        preferences.put("directMessages", user.getNotifyDirectMessages() != null ? user.getNotifyDirectMessages() : true);
+        preferences.put("eventReminders", user.getNotifyEventReminders() != null ? user.getNotifyEventReminders() : true);
+        
+        return preferences;
     }
 }

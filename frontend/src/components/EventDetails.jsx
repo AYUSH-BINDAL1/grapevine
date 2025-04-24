@@ -11,9 +11,10 @@ function EventDetails() {
     const [groupName, setGroupName] = useState('');
     const [editMode, setEditMode] = useState(false);
     const [editedData, setEditedData] = useState({});
-    const [reminderTime, setReminderTime] = useState("");
     const [registrationMessage, setRegistrationMessage] = useState("");
     const [hostNames, setHostNames] = useState({});
+    const [reminders, setReminders] = useState([]);
+    const [reminderTime, setReminderTime] = useState("");
 
 
     const hardcodedLocations = [
@@ -44,6 +45,24 @@ function EventDetails() {
         { id: 25, shortName: "PMU" },
         { id: 26, shortName: "STEW" }
     ];
+
+
+    useEffect(() => {
+        const fetchReminders = async () => {
+            try {
+                const sessionId = localStorage.getItem("sessionId");
+                const res = await axios.get(`${base_url}/events/${eventId}/reminders`, {
+                    headers: { 'Session-Id': sessionId }
+                });
+                const userEmail = JSON.parse(localStorage.getItem("userData"))?.userEmail;
+                const userReminders = res.data.filter(rem => rem.userEmail === userEmail);
+                setReminders(userReminders);
+            } catch (err) {
+                console.error("Failed to fetch reminders", err);
+            }
+        };
+        fetchReminders();
+    }, [eventId]);
 
     useEffect(() => {
         const fetchEventDetails = async () => {
@@ -91,6 +110,62 @@ function EventDetails() {
         fetchEventDetails();
     }, [eventId, navigate]);
 
+    const handleSaveReminder = async () => {
+        const sessionId = localStorage.getItem("sessionId");
+
+        if (!reminderTime) {
+            console.error("No reminder time selected");
+            return;
+        }
+
+        const minutes = parseInt(reminderTime, 10);
+        const eventStart = new Date(eventData.startTime);
+
+        // ✅ Check for duplicates by comparing minute offsets
+        const duplicate = reminders.some(r => {
+            const reminderDate = new Date(r.reminderTime);
+            const diff = Math.round((eventStart - reminderDate) / 60000); // in minutes
+            return diff === minutes;
+        });
+
+        if (duplicate) {
+            console.warn("Reminder for that time already exists.");
+            return;
+        }
+
+        try {
+            await axios.post(`${base_url}/events/${eventId}/reminders`, {
+                minutesBefore: minutes
+            }, {
+                headers: { "Session-Id": sessionId }
+            });
+
+            console.log("Reminder saved successfully");
+
+            // ✅ Refresh reminders
+            const res = await axios.get(`${base_url}/events/${eventId}/reminders`, {
+                headers: { "Session-Id": sessionId }
+            });
+            setReminders(res.data);
+
+        } catch (error) {
+            console.error("Failed to save reminder:", error.response?.data || error.message);
+        }
+    };
+
+    const handleDeleteReminder = async (reminderId) => {
+        try {
+            const sessionId = localStorage.getItem("sessionId");
+            await axios.delete(`${base_url}/events/reminders/${reminderId}`, {
+                headers: { 'Session-Id': sessionId }
+            });
+            setReminders(reminders.filter(rem => rem.reminderId !== reminderId));
+        } catch (err) {
+            console.error("Failed to delete reminder", err);
+            alert("Failed to delete reminder");
+        }
+    };
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         const newValue = type === 'checkbox' ? checked : value;
@@ -126,15 +201,6 @@ function EventDetails() {
         }
     };
 
-    const handleReminderChange = (e) => {
-        const value = e.target.value;
-        setReminderTime(value);
-
-        const message = value
-            ? `⏰ You’ll be reminded ${value} minute(s) before the event.`
-            : 'No reminder set.';
-        setRegistrationMessage(message);
-    };
 
     const handleRegistration = async () => {
         const sessionId = localStorage.getItem("sessionId");
@@ -142,8 +208,8 @@ function EventDetails() {
         if (!sessionId || !currentUserEmail) return;
 
         try {
-            const response = await axios.post(
-                `${base_url}/events/${eventId}/register`,
+            await axios.post(
+                `${base_url}/events/${eventId}/join`,
                 { userEmail: currentUserEmail },
                 { headers: { "Session-Id": sessionId } }
             );
@@ -162,9 +228,11 @@ function EventDetails() {
     };
 
     const currentUserEmail = JSON.parse(localStorage.getItem('userData'))?.userEmail;
-    const isHost = eventData?.hosts?.includes(currentUserEmail);
-    const isParticipant = eventData?.participants?.includes(currentUserEmail);
-    const eventIsFull = eventData?.participants?.length >= eventData?.maxUsers;
+
+    // Define these variables to check if the user is a host or participant
+    const isHost = eventData?.hosts?.includes(currentUserEmail) || false;
+    const isParticipant = eventData?.participants?.includes(currentUserEmail) || false;
+
     if (!eventData) {
         return <div className="event-details-loading">Loading...</div>;
     }
@@ -259,20 +327,39 @@ function EventDetails() {
             <div className="event-details-actions">
 
                 {/* Reminder UI (only for host or participant) */}
-                {(eventData.hosts?.includes(currentUserEmail) || eventData.participants?.includes(currentUserEmail)) && (
-                    <div className="reminder-container">
-                        <label htmlFor="reminder-time">⏰ Set Reminder:</label>
-                        <select
-                            id="reminder-time"
-                            name="reminderTime"
-                            value={reminderTime}
-                            onChange={handleReminderChange}
-                        >
-                            <option value="">None</option>
-                            <option value="15">15 minutes before</option>
-                            <option value="30">30 minutes before</option>
-                            <option value="60">1 hour before</option>
-                        </select>
+                {(isHost || isParticipant) && (
+                    <div className="reminder-section">
+                        <h3>Reminders</h3>
+                        <div className="reminder-container">
+                            <label htmlFor="reminder-time">⏰ Set Reminder:</label>
+                            <select
+                                id="reminder-time"
+                                value={reminderTime}
+                                onChange={(e) => setReminderTime(e.target.value)}
+                            >
+                                <option value="">Select time</option>
+                                <option value="15">15 minutes before</option>
+                                <option value="30">30 minutes before</option>
+                                <option value="60">1 hour before</option>
+                            </select>
+                            <button className="save-button" onClick={handleSaveReminder}>Save Reminder</button>
+                        </div>
+                        {reminders.length > 0 && (
+                            <div className="reminder-list">
+                                <h4>Current Reminders</h4>
+                                {reminders.map((reminder) => (
+                                    <div key={reminder.reminderId} className="reminder-item">
+                                        <span>⏰ {new Date(reminder.reminderTime).toLocaleString()}</span>
+                                        <button
+                                            className="reminder-delete-button"
+                                            onClick={() => handleDeleteReminder(reminder.reminderId)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 

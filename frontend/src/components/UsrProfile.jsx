@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo, useMemo } from 'react';
+import { useState, useEffect, useCallback, memo, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -45,6 +45,53 @@ AvailabilityLegend.displayName = 'AvailabilityLegend';
 AvailabilityLegend.propTypes = {
   showComparison: PropTypes.bool,
   userName: PropTypes.string.isRequired
+};
+
+// Modified InfoTooltip component with touch support
+const InfoTooltip = memo(({ content }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const tooltipRef = useRef(null);
+  
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    if (!isVisible) return;
+    
+    const handleClickOutside = (event) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
+        setIsVisible(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isVisible]);
+  
+  return (
+    <div 
+      className="info-tooltip-container"
+      ref={tooltipRef}
+      onMouseEnter={() => setIsVisible(true)}
+      onMouseLeave={() => setIsVisible(false)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setIsVisible(!isVisible);
+      }}
+    >
+      <span className="info-icon" role="button" aria-label="Show information">ⓘ</span>
+      {isVisible && (
+        <div className="tooltip-content" role="tooltip">
+          {content}
+        </div>
+      )}
+    </div>
+  );
+});
+
+InfoTooltip.displayName = 'InfoTooltip';
+InfoTooltip.propTypes = {
+  content: PropTypes.node.isRequired
 };
 
 function UsrProfile() {
@@ -419,6 +466,22 @@ function UsrProfile() {
       console.error('Unexpected error in handleAddFriend:', error);
       toast.error('Something went wrong. Please try again later.');
       setFriendRequestStatus('none');
+    }
+  };
+
+  const handleMessageUser = async () => {
+    const sessionId = localStorage.getItem("sessionId");
+
+    try {
+      await axios.post(
+          `${base_url}/conversations/create/${userData.userEmail}`,
+          {},
+          { headers: { "Session-Id": sessionId } }
+      );
+      navigate(`/messaging?user=${userData.userEmail}`);
+    } catch (err) {
+      console.error("Failed to start conversation", err);
+      alert("Could not start conversation.");
     }
   };
 
@@ -807,7 +870,7 @@ function UsrProfile() {
           <div className="user-actions">
             {isFriend ? (
               <div className="friend-actions-container">
-                <button className="message-button">
+                <button className="message-button" onClick={handleMessageUser}>
                   <i className="fa fa-envelope"></i> Message
                 </button>
                 <button className="remove-friend-button" onClick={handleRemoveFriend}>
@@ -837,10 +900,26 @@ function UsrProfile() {
 
       {compatibilityScore ? (
         <div className="compatibility-section">
-          <h3>Study Compatibility</h3>
+          <h3>
+            Study Compatibility
+            <InfoTooltip 
+              content={
+                <div>
+                  <p><strong>How is compatibility calculated?</strong></p>
+                  <ul>
+                    <li><strong>Courses (40%):</strong> Matching courses you&apos;re both taking</li>
+                    <li><strong>Locations (25%):</strong> Shared preferred study locations</li>
+                    <li><strong>Availability (35%):</strong> Overlapping free time slots</li>
+                  </ul>
+                  <p>Higher scores mean better potential study partners!</p>
+                </div>
+              }
+            />
+          </h3>
           <div className="compatibility-score">
             <div 
-              className="score-circle" 
+              className="score-circle"
+              title={`${compatibilityScore.percentage}% compatibility score`} 
               style={{ 
                 '--final-gradient': `conic-gradient(
                   #8ebd89 ${compatibilityScore.percentage || 0}%, 
@@ -856,7 +935,14 @@ function UsrProfile() {
             <div className="compatibility-factors">
               {compatibilityScore.factors && compatibilityScore.factors.length > 0 ? (
                 <>
-                  <p>You and {userData.name} are compatible because:</p>
+                  <p>
+                    You and {userData.name} are compatible because:
+                    <InfoTooltip 
+                      content={
+                        <p>These factors contribute to your overall compatibility score with this user.</p>
+                      }
+                    />
+                  </p>
                   <ul>
                     {compatibilityScore.factors.map((factor, index) => (
                       <li key={index}>{factor}</li>
@@ -864,7 +950,14 @@ function UsrProfile() {
                   </ul>
                 </>
               ) : (
-                <p className="no-factors">You don&apos;t have any matching study preferences yet.</p>
+                <p className="no-factors">
+                  You don&apos;t have any matching study preferences yet.
+                  <InfoTooltip 
+                    content={
+                      <p>Add similar courses, study locations, or availability times to improve compatibility.</p>
+                    }
+                  />
+                </p>
               )}
             </div>
           </div>
