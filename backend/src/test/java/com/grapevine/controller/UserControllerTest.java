@@ -728,4 +728,21 @@ class UserControllerTest {
         verify(userService).validateSession(testSessionId);
         verify(userService).searchUsersByNameWithFilters(query, majors, role, locationIds);
     }
+    @Test
+    void searchUsers_Invalid() {
+        // Arrange
+        String query = "test";
+        List<String> majors = Arrays.asList("Computer Science");
+        User.Role role = User.Role.STUDENT;
+        List<Long> locationIds = Arrays.asList(1L);
+
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class, () ->
+                userController.searchUsers(query, majors, role, locationIds, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verifyNoMoreInteractions(userService);
+    }
 }
