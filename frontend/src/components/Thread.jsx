@@ -478,7 +478,7 @@ function Thread() {
     return [...commentsArray].sort((a, b) => {
       const dateA = new Date(a.createdAt || 0);
       const dateB = new Date(b.createdAt || 0);
-      return dateB - dateA;
+      return dateA - dateB;
     });
   }, []);
   
@@ -660,8 +660,8 @@ function Thread() {
       // This prevents the need for the Comment component to fetch it
       newCommentData._authorData = currentUser || userData;
 
-      // Add to state with new comment at the top
-      setComments(prevComments => [newCommentData, ...prevComments]);
+      // Add to state with new comment at the BOTTOM (not top)
+      setComments(prevComments => [...prevComments, newCommentData]);
       
       setNewComment('');
       localStorage.removeItem(`commentDraft-${threadId}`);
@@ -792,7 +792,6 @@ function Thread() {
 
   return (
     <div className="thread-view-container">
-      <ToastContainer position="bottom-left" autoClose={2500} />
       
       <div className="thread-view-header">
         <button className="back-button" onClick={handleBackToForum}>
@@ -808,7 +807,7 @@ function Thread() {
           {(thread.major || thread.authorMajor || thread.subject) && (
             <span className="thread-indicator thread-major" title={thread.major || thread.authorMajor || thread.subject}>
               <svg className="indicator-icon" viewBox="0 0 24 24" width="14" height="14">
-                <path fill="currentColor" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+                <path fill="currentColor" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72z"/>
               </svg>
               {(thread.major || thread.authorMajor || thread.subject)}
             </span>
@@ -1036,6 +1035,7 @@ function Thread() {
           </div>
         )}
       </div>
+      {/*<ToastContainer position="bottom-left" autoClose={2500} />*/}
     </div>
   );
 }

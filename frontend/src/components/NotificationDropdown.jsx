@@ -84,11 +84,30 @@ const NotificationDropdown = () => {
                     "Session-Id": sessionId
                 }
             });
-            setNotifications(response.data);
+            
+            // Filter notifications based on user preferences
+            const filteredNotifications = response.data.filter(notification => {
+                // Default to showing if type is unknown
+                if (!notification.type) return true;
+                
+                switch (notification.type) {
+                    case "COMMENT":
+                        return preferences.forumReplies;
+                    case "MESSAGE":
+                        return preferences.directMessages;
+                    case "EVENT_REMINDER":
+                        return preferences.eventReminders;
+                    default:
+                        // For unknown types, default to showing them
+                        return true;
+                }
+            });
+            
+            setNotifications(filteredNotifications);
         } catch (error) {
             console.error("Failed to fetch notifications", error);
         }
-    }, [sessionId]);
+    }, [sessionId, preferences]); // Add preferences to dependency array
 
     // Update fetchNotificationPreferences to use the latest user data
     const fetchNotificationPreferences = useCallback(async () => {
@@ -126,6 +145,13 @@ const NotificationDropdown = () => {
             fetchNotifications();
         }
     }, [fetchNotifications, open]);
+
+    // Add this effect to refresh notifications when preferences change
+    useEffect(() => {
+        if (open) {
+            fetchNotifications();
+        }
+    }, [preferences, open, fetchNotifications]);
     
     // Handle notification click based on type
     const handleNotificationClick = async (notification) => {

@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './EventDetails.css';
 import { base_url } from '../config';
-import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function EventDetails() {
@@ -390,7 +389,6 @@ function EventDetails() {
                 )}
             </div>
             {registrationMessage && <p className="registration-message">{registrationMessage}</p>}
-            <ToastContainer position="bottom-right" autoClose={5000} />
         </div>
     );
 }
