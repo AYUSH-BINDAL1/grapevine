@@ -28,6 +28,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import SockJS from 'sockjs-client';
 import { over } from 'stompjs';
 
+// The rest of your imports remain the same
+
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
   searchEnabled = value;
@@ -581,6 +583,7 @@ function App() {
           shownToasts.add(toastKey);
 
           toast.info(notif.content, {
+            toastId: toastKey,
             onClick: () => {
               switch (notif.type) {
                 case 'MESSAGE':
@@ -605,15 +608,7 @@ function App() {
         }
       });
     });
-
-    return () => {
-      if (isConnected) {
-        client.disconnect(() => {
-          console.log("WebSocket disconnected");
-        });
-      }
-    };
-  }, []);
+  });
 
   return (
     <Router>
