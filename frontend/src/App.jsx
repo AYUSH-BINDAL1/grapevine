@@ -28,16 +28,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import SockJS from 'sockjs-client';
 import { over } from 'stompjs';
 
-// The rest of your imports remain the same
-
 export let searchEnabled = true;
 /*export const setSearchEnabled = (value) => {
   searchEnabled = value;
 };
 */
 const Login = lazy(() => import('./components/Login'));
-
-// Replace the current Taskbar component with this improved version
 
 const Taskbar = memo(function Taskbar() {
   const navigate = useNavigate();
@@ -93,7 +89,6 @@ const Taskbar = memo(function Taskbar() {
     img.src = userImageUrl;
   }, []);
 
-  // Use the useEffect hook more efficiently
   useEffect(() => {
     // Debounce storage event handler to prevent excessive updates
     let timeoutId = null;
@@ -106,7 +101,7 @@ const Taskbar = memo(function Taskbar() {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Initial load - use try/catch for better error handling
+    // Initial load
     try {
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
       
@@ -142,7 +137,6 @@ const Taskbar = memo(function Taskbar() {
     };
   }, [userDataVersion, tryLoadIdBasedImage]);
 
-  // Replace the current handleLogout implementation with this optimized version
   const handleLogout = useCallback(async (e) => {
     // Prevent event propagation first (very fast operation)
     e?.stopPropagation();
@@ -530,12 +524,12 @@ function App() {
     client.debug = null;
 
     const userNameCache = {};
-    const shownToasts = new Set(); // 🧠 In-memory deduplication cache
+    const shownToasts = new Set(); // In-memory deduplication cache
 
     client.connect({}, () => {
       console.log("WebSocket connected as:", userEmail);
  
-      // ✅ Subscribe to direct messages
+      // Subscribe to direct messages
       client.subscribe('/user/queue/messages', async (msg) => {
         console.log("Message received:", msg.body);
         const message = JSON.parse(msg.body);
@@ -557,7 +551,7 @@ function App() {
             }
           }
 
-          // ✅ Deduplication key
+          // Deduplication key
 
           const toastId = `msg:${message.messageId || senderEmail + message.content}`;
 
@@ -570,12 +564,12 @@ function App() {
         }
       });
 
-      // ✅ Subscribe to general notifications
+      // Subscribe to general notifications
       client.subscribe('/user/queue/notifications', (msg) => {
         console.log("Notification received:", msg.body);
         const notif = JSON.parse(msg.body);
 
-        // ✅ Deduplication key
+        // Deduplication key
         const toastKey = `notif:${notif.type}:${notif.referenceId}:${notif.content}`;
         if (!shownToasts.has(toastKey)) {
           shownToasts.add(toastKey);

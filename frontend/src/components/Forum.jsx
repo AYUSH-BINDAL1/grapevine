@@ -1984,7 +1984,6 @@ function Forum() {
         <span className="fab-icon">+</span>
         <span className="fab-text">Post Thread</span>
       </button>
-      <ToastContainer position="bottom-right" autoClose={5000} />
     </div>
   );
 }

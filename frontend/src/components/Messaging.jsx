@@ -8,8 +8,6 @@ import './Messaging.css';
 import { base_url } from '../config';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
-import { over } from 'stompjs';
-import { ToastContainer } from 'react-toastify';
 
 const MESSAGE_MAX_LENGTH = 500;
 
@@ -554,7 +552,6 @@ function Messaging() {
           </div>
         )}
       </div>
-      <ToastContainer position="bottom-right" autoClose={5000} />
     </div>
   );
 }
