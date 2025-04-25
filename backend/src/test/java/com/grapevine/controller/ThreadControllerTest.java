@@ -146,6 +146,19 @@ class ThreadControllerTest {
         verify(threadService).createThread(any(Thread.class));
     }
 
+    @Test
+    void createThread_Invalid() {
+        // Arrange
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class, () ->
+                threadController.createThread(testThread, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verifyNoInteractions(threadService);
+    }
+
     // STORY 11 (sprint 3)  (zhao)
     @Test
     void addComment_Success_WithNotifications() {
@@ -232,4 +245,19 @@ class ThreadControllerTest {
         verify(userService).validateSession(testSessionId);
         verify(threadService).searchThreads("CS", "101", User.Role.INSTRUCTOR);
     }
+
+    @Test
+    void searchThreads_Invalid() {
+        // Arrange
+        when(userService.validateSession(testSessionId))
+                .thenThrow(new InvalidSessionException("Invalid session"));
+
+        // Act & Assert
+        assertThrows(InvalidSessionException.class, () ->
+                threadController.searchThreads("CS", "101", User.Role.INSTRUCTOR, testSessionId));
+        verify(userService).validateSession(testSessionId);
+        verifyNoInteractions(threadService);
+    }
+
+
 }
