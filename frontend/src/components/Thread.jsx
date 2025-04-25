@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import { base_url } from '../config';
