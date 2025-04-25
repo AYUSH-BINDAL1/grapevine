@@ -527,7 +527,8 @@ function App() {
     client.debug = null;
 
     let isConnected = false;
-    const userNameCache = {}; // 🧠 Cache sender names
+    const userNameCache = {};
+    const shownToasts = new Set(); // 🧠 In-memory deduplication cache
 
     client.connect({}, () => {
       isConnected = true;
@@ -554,7 +555,12 @@ function App() {
             }
           }
 
+          // ✅ Deduplication key
+
+          const toastId = `msg:${message.messageId || senderEmail + message.content}`;
+
           toast.info(`💬 ${senderName}: ${message.content}`, {
+            toastId,
             onClick: () => window.location.href = `/messaging?user=${senderEmail}`,
             position: "bottom-right",
             autoClose: 5000,
@@ -566,25 +572,34 @@ function App() {
       client.subscribe('/user/queue/notifications', (msg) => {
         const notif = JSON.parse(msg.body);
 
-        toast.info(notif.content, {
-          onClick: () => {
-            switch (notif.type) {
-              case 'MESSAGE':
-                window.location.href = `/messaging?user=${notif.senderEmail}`;
-                break;
-              case 'EVENT_REMINDER':
-                window.location.href = `/events/${notif.referenceId}`;
-                break;
-              case 'COMMENT':
-                window.location.href = `/forum/thread/${notif.referenceId}`;
-                break;
-              default:
-                break;
-            }
-          },
-          position: 'bottom-right',
-          autoClose: 5000,
-        });
+        // ✅ Deduplication key
+        const toastKey = `notif:${notif.type}:${notif.referenceId}:${notif.content}`;
+        if (!shownToasts.has(toastKey)) {
+          shownToasts.add(toastKey);
+
+          toast.info(notif.content, {
+            onClick: () => {
+              switch (notif.type) {
+                case 'MESSAGE':
+                  window.location.href = `/messaging?user=${notif.senderEmail}`;
+                  break;
+                case 'EVENT_REMINDER':
+                  window.location.href = `/events/${notif.referenceId}`;
+                  break;
+                case 'COMMENT':
+                  window.location.href = `/forum/thread/${notif.referenceId}`;
+                  break;
+                default:
+                  break;
+              }
+            },
+            position: 'bottom-right',
+            autoClose: 5000,
+          });
+
+          // Cleanup after 10s
+          setTimeout(() => shownToasts.delete(toastKey), 10000);
+        }
       });
     });
 

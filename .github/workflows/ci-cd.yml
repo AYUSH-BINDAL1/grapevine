@@ -130,13 +130,13 @@ jobs:
           echo "Starting deployment process"
           
           # SSH into EC2 and run deployment steps
-          ssh -i ~/.ssh/id_rsa ubuntu@c2-3-140-184-86.us-east-2.compute.amazonaws.com << EOF
+          ssh -i ~/.ssh/id_rsa ubuntu@ec2-3-140-184-86.us-east-2.compute.amazonaws.com << EOF
             # Fetch the latest deploy branch and pull the latest changes
             cd /home/ubuntu/grapevine
             git checkout dev 
             git fetch origin dev
             git pull
-
+ 
             git checkout deploy
             git fetch origin deploy
             git pull origin deploy
@@ -146,7 +146,6 @@ jobs:
             git push
 
             cd backend
-            
             # Stop and remove old containers
             docker-compose down --volumes --remove-orphans
             # Run setup.sh to start containers
