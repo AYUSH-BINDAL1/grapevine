@@ -18,7 +18,45 @@ const NotificationDropdown = () => {
     const navigate = useNavigate();
     const dropdownRef = useRef(null);
 
+    // Add state for user data rather than reading directly from localStorage
+    const [userData, setUserData] = useState(null);
+    
     const sessionId = localStorage.getItem("sessionId");
+    
+    // Add a function to fetch fresh user data from the server
+    const fetchUserData = useCallback(async () => {
+        try {
+            const response = await axios.get(`${base_url}/users/me`, {
+                headers: {
+                    "Session-Id": sessionId
+                }
+            });
+            
+            // Update both local state and localStorage
+            setUserData(response.data);
+            localStorage.setItem('userData', JSON.stringify(response.data));
+            return response.data;
+        } catch (error) {
+            console.error("Failed to fetch user data", error);
+            return null;
+        }
+    }, [sessionId]);
+    
+    // Load initial user data on component mount
+    useEffect(() => {
+        // First load from localStorage for quick initial render
+        const storedUserData = localStorage.getItem('userData');
+        if (storedUserData) {
+            try {
+                setUserData(JSON.parse(storedUserData));
+            } catch (e) {
+                console.error("Failed to parse stored user data", e);
+            }
+        }
+        
+        // Then fetch fresh data from server
+        fetchUserData();
+    }, [fetchUserData]);
 
     // Set up click outside detection
     useEffect(() => {
@@ -52,24 +90,36 @@ const NotificationDropdown = () => {
         }
     }, [sessionId]);
 
+    // Update fetchNotificationPreferences to use the latest user data
     const fetchNotificationPreferences = useCallback(async () => {
         try {
             setLoadingPreferences(true);
-            const response = await axios.get(`${base_url}/user/notification-preferences`, {
-                headers: { "Session-Id": sessionId }
-            });
             
-            setPreferences({
-                forumReplies: response.data.forumReplies !== false,
-                directMessages: response.data.directMessages !== false,
-                eventReminders: response.data.eventReminders !== false
-            });
+            // Fetch fresh data to ensure we have the latest preferences
+            const freshUserData = await fetchUserData();
+            
+            if (freshUserData) {
+                setPreferences({
+                    forumReplies: freshUserData.notifyForumReplies,
+                    directMessages: freshUserData.notifyDirectMessages,
+                    eventReminders: freshUserData.notifyEventReminders
+                });
+                console.log("Fresh preferences loaded from server");
+            } else {
+                // Fallback to current state if fetch fails
+                console.log("Using current user data for preferences");
+                setPreferences({
+                    forumReplies: userData?.notifyForumReplies ?? true,
+                    directMessages: userData?.notifyDirectMessages ?? true,
+                    eventReminders: userData?.notifyEventReminders ?? true
+                });
+            }
         } catch (error) {
             console.error("Failed to fetch notification preferences", error);
         } finally {
             setLoadingPreferences(false);
         }
-    }, [sessionId]);
+    }, [fetchUserData, userData]);
 
     useEffect(() => {
         if (open) {
@@ -81,7 +131,6 @@ const NotificationDropdown = () => {
     const handleNotificationClick = async (notification) => {
         // Close the dropdown
         setOpen(false);
-        
         // Mark notification as read
         try {
             await axios.post(
@@ -123,28 +172,37 @@ const NotificationDropdown = () => {
         }
     };
 
+    // Update the handleTogglePreference function to refresh user data after update
     const handleTogglePreference = async (key) => {
         const updatedPreferences = {
             ...preferences,
             [key]: !preferences[key]
         };
         
+        // Update UI immediately for better user experience
         setPreferences(updatedPreferences);
         
         try {
-            // Get the current user's email
-            const userEmail = localStorage.getItem("userEmail");
+            // Make sure we have user data
+            if (!userData || !userData.userEmail) {
+                throw new Error("User data not available");
+            }
             
-            // Use the correct endpoint format to match your backend structure
+            // Update server with preference changes
             await axios.post(
-                `${base_url}/users/${userEmail}/notification-preferences`,
+                `${base_url}/users/${userData.userEmail}/notification-preferences`,
                 updatedPreferences,
                 {
                     headers: { "Session-Id": sessionId }
                 }
             );
+            
+            // Fetch fresh user data to ensure our state is consistent with server
+            await fetchUserData();
+            
         } catch (error) {
             console.error("Failed to update notification preferences", error);
+            
             // Revert change on failure
             setPreferences(preferences);
         }
