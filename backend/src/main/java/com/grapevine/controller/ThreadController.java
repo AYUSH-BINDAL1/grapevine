@@ -162,7 +162,7 @@ public class ThreadController {
     public ResponseEntity<List<Thread>> searchThreads(
             @RequestParam(required = false) String major,
             @RequestParam(required = false) String course,
-            @RequestParam(required = false) User.Role authorRole,
+            @RequestParam(name = "role", required = false) User.Role authorRole,
             @RequestHeader(name = "Session-Id", required = true) String sessionId) {
 
         // Validate session

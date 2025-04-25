@@ -493,4 +493,37 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
+
+    @PostMapping("/{userEmail}/notification-preferences")
+    public ResponseEntity<User> updateNotificationPreferences(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId,
+            @RequestBody Map<String, Boolean> preferences) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own preferences");
+        }
+
+        // Update preferences
+        User updatedUser = userService.updateNotificationPreferences(userEmail, preferences);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @GetMapping("/{userEmail}/notification-preferences")
+    public ResponseEntity<Map<String, Boolean>> getNotificationPreferences(
+            @PathVariable String userEmail,
+            @RequestHeader(name = "Session-Id", required = true) String sessionId) {
+
+        // Validate session
+        User currentUser = userService.validateSession(sessionId);
+        if (!currentUser.getUserEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own preferences");
+        }
+
+        // Get preferences
+        Map<String, Boolean> preferences = userService.getNotificationPreferences(userEmail);
+        return ResponseEntity.ok(preferences);
+    }
 }

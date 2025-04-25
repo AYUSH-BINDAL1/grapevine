@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 import { base_url } from '../config';
 import './Thread.css';
@@ -85,7 +84,13 @@ const Comment = memo(({ comment, formatDate, onUserClick, className = '' }) => {
                     <button 
                       onClick={() => {
                         navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
-                        toast.info('Code copied to clipboard!', {autoClose: 1000})
+                          .then(() => {
+                            toast.info('Code copied to clipboard!', {autoClose: 1000});
+                          })
+                          .catch(err => {
+                            console.error('Failed to copy text: ', err);
+                            toast.error('Failed to copy to clipboard', {autoClose: 1500});
+                          });
                       }}
                       className="copy-code-button"
                       aria-label="Copy code"
@@ -195,7 +200,13 @@ const MarkdownPreview = memo(({ content }) => {
                 <button 
                   onClick={() => {
                     navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
-                    toast.info('Code copied to clipboard!', {autoClose: 1000})
+                      .then(() => {
+                        toast.info('Code copied to clipboard!', {autoClose: 1000});
+                      })
+                      .catch(err => {
+                        console.error('Failed to copy text: ', err);
+                        toast.error('Failed to copy to clipboard', {autoClose: 1500});
+                      });
                   }}
                   className="copy-code-button"
                   aria-label="Copy code"
@@ -289,7 +300,13 @@ const ThreadContent = memo(({ content }) => {
                   <button 
                     onClick={() => {
                       navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
-                      toast.info('Code copied to clipboard!', {autoClose: 1000})
+                        .then(() => {
+                          toast.info('Code copied to clipboard!', {autoClose: 1000});
+                        })
+                        .catch(err => {
+                          console.error('Failed to copy text: ', err);
+                          toast.error('Failed to copy to clipboard', {autoClose: 1500});
+                        });
                     }}
                     className="copy-code-button"
                     aria-label="Copy code"
@@ -437,6 +454,7 @@ function Thread() {
   const [showPreview, setShowPreview] = useState(false);
   const [authorData, setAuthorData] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const textareaRef = useRef(null);
   
   const [threadVotes, setThreadVotes] = useState({
     score: thread?.likes || 0,
@@ -459,7 +477,7 @@ function Thread() {
     return [...commentsArray].sort((a, b) => {
       const dateA = new Date(a.createdAt || 0);
       const dateB = new Date(b.createdAt || 0);
-      return dateB - dateA;
+      return dateA - dateB;
     });
   }, []);
   
@@ -641,8 +659,8 @@ function Thread() {
       // This prevents the need for the Comment component to fetch it
       newCommentData._authorData = currentUser || userData;
 
-      // Add to state with new comment at the top
-      setComments(prevComments => [newCommentData, ...prevComments]);
+      // Add to state with new comment at the BOTTOM (not top)
+      setComments(prevComments => [...prevComments, newCommentData]);
       
       setNewComment('');
       localStorage.removeItem(`commentDraft-${threadId}`);
@@ -657,7 +675,11 @@ function Thread() {
   }, [newComment, navigate, threadId, currentUser]);
   
   const handleBackToForum = useCallback(() => {
-    navigate('/forum');
+    // Use replace instead of push to avoid adding to history stack
+    navigate('/forum', { 
+      state: { preserveState: true },
+      replace: true 
+    });
   }, [navigate]);
 
   const handleThreadVote = useCallback(async (vote) => {
@@ -725,7 +747,7 @@ function Thread() {
   }, [thread, threadId, threadVotes.userVote]);
 
   const insertMarkdown = useCallback((prefix, suffix = '', placeholder = '') => {
-    const textarea = document.querySelector('.comment-form textarea');
+    const textarea = textareaRef.current;
     if (!textarea) return;
     
     const start = textarea.selectionStart;
@@ -769,7 +791,6 @@ function Thread() {
 
   return (
     <div className="thread-view-container">
-      <ToastContainer position="top-right" autoClose={3000} />
       
       <div className="thread-view-header">
         <button className="back-button" onClick={handleBackToForum}>
@@ -785,7 +806,7 @@ function Thread() {
           {(thread.major || thread.authorMajor || thread.subject) && (
             <span className="thread-indicator thread-major" title={thread.major || thread.authorMajor || thread.subject}>
               <svg className="indicator-icon" viewBox="0 0 24 24" width="14" height="14">
-                <path fill="currentColor" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+                <path fill="currentColor" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72z"/>
               </svg>
               {(thread.major || thread.authorMajor || thread.subject)}
             </span>
@@ -923,7 +944,7 @@ function Thread() {
             </div>
 
             {!showPreview && (
-              <MarkdownToolbar onInsert={insertMarkdown} />
+              <MarkdownToolbar onInsert={insertMarkdown} textareaRef={textareaRef} />
             )}
             
             {showPreview ? (
@@ -932,12 +953,15 @@ function Thread() {
               </div>
             ) : (
               <textarea
+                id='comment-input'
+                className="comment-input"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment... Supports markdown formatting!"
                 rows={4}
                 disabled={submitting}
                 required
+                ref={textareaRef}
               ></textarea>
             )}
             
@@ -1010,6 +1034,7 @@ function Thread() {
           </div>
         )}
       </div>
+      {/*<ToastContainer position="bottom-left" autoClose={2500} />*/}
     </div>
   );
 }
