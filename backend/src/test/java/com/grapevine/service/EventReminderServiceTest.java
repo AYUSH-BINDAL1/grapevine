@@ -84,10 +84,11 @@ public class EventReminderServiceTest {
 
     // STORY3.16 As a user I would like to be able to set reminders about my upcoming events (Ayush)
     @Test
-    void processDueReminders_ProcessesReminders_AndSendsNotifications() {
+    void processDueReminders_ProcessesReminders_Notifications() {
         // Arrange
         List<EventReminder> dueReminders = Arrays.asList(testReminder);
-        when(eventReminderRepository.findDueReminders(any(LocalDateTime.class))).thenReturn(dueReminders);
+        when(eventReminderRepository.findExactDueReminders(any(LocalDateTime.class)))
+                .thenReturn(dueReminders);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
         when(userService.isUserOnline("user@example.com")).thenReturn(true);
         when(notificationService.createNotification(
@@ -101,7 +102,7 @@ public class EventReminderServiceTest {
         eventReminderService.processDueReminders();
 
         // Assert
-        verify(eventReminderRepository).findDueReminders(any(LocalDateTime.class));
+        verify(eventReminderRepository).findExactDueReminders(any(LocalDateTime.class));
         verify(eventRepository).findById(1L);
         verify(notificationService).createNotification(
                 eq("user@example.com"),
