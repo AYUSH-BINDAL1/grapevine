@@ -87,9 +87,28 @@ public class EventReminderService {
 
     @Transactional
     public void processDueReminders() {
-        List<EventReminder> dueReminders = eventReminderRepository.findDueReminders(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+        System.out.println("Processing reminders at exact time: " + now);
+
+        List<EventReminder> dueReminders = eventReminderRepository.findExactDueReminders(now);
+        System.out.println("Found " + dueReminders.size() + " due reminders");
 
         for (EventReminder reminder : dueReminders) {
+            System.out.println("Processing reminder: " + reminder.getReminderId() +
+                    " with time: " + reminder.getReminderTime());
+            processReminder(reminder);
+        }
+    }
+
+    @Transactional
+    public void processDueRemindersForTime(LocalDateTime targetTime) {
+        System.out.println("Processing reminders for time: " + targetTime);
+        List<EventReminder> dueReminders = eventReminderRepository.findExactDueReminders(targetTime);
+        System.out.println("Found " + dueReminders.size() + " due reminders");
+
+        for (EventReminder reminder : dueReminders) {
+            System.out.println("Processing reminder: " + reminder.getReminderId() +
+                    " with time: " + reminder.getReminderTime());
             processReminder(reminder);
         }
     }
