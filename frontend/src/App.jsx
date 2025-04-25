@@ -23,7 +23,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import './components/Groups.css';
 import {base_url, image_url} from './config.js';
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import SockJS from 'sockjs-client';
 import { over } from 'stompjs';
@@ -506,6 +506,7 @@ function Home() {
             )}
           </div>
         </div>
+        <ToastContainer />
       </div>
   );
 }
@@ -533,9 +534,10 @@ function App() {
     client.connect({}, () => {
       isConnected = true;
       console.log("WebSocket connected as:", userEmail);
-
+ 
       // ✅ Subscribe to direct messages
       client.subscribe('/user/queue/messages', async (msg) => {
+        console.log("Message received:", msg.body);
         const message = JSON.parse(msg.body);
         const senderEmail = message.senderEmail;
 
@@ -570,6 +572,7 @@ function App() {
 
       // ✅ Subscribe to general notifications
       client.subscribe('/user/queue/notifications', (msg) => {
+        console.log("Notification received:", msg.body);
         const notif = JSON.parse(msg.body);
 
         // ✅ Deduplication key
