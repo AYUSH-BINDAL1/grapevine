@@ -522,11 +522,13 @@ function App() {
     const socket = new SockJS(`${base_url}/ws?email=${encodeURIComponent(userEmail)}`);
     const client = over(socket);
     client.debug = null;
+    let isConnected = false;
 
     const userNameCache = {};
     const shownToasts = new Set(); // In-memory deduplication cache
 
     client.connect({}, () => {
+      isConnected = true;
       console.log("WebSocket connected as:", userEmail);
  
       // Subscribe to direct messages
