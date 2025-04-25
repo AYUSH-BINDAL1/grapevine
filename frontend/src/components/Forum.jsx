@@ -7,6 +7,7 @@ import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FixedSizeList as List } from 'react-window';
 import PropTypes from 'prop-types';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import debounce from 'lodash.debounce';
 import 'react-toastify/dist/ReactToastify.css';
 import './Forum.css';
 import { base_url } from '../config';
@@ -50,22 +51,8 @@ const setCachedData = (key, data) => {
   }
 };
 
-// Add this debounce hook near your imports
-const useDebounce = (value, delay) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
+// Add this to the top of your file
+const userFetchQueue = {};
 
 // Add this custom hook for reusable memoized data fetching
 const useMemoizedApiData = (fetchFunction, cacheKey, processFunction) => {
@@ -258,11 +245,30 @@ const SearchableDropdown = memo(({
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
   
+  const debouncedSetSearchTerm = useCallback((value) => {
+    const debouncedFunc = debounce((val) => {
+      setSearchTerm(val);
+    }, 150);
+    debouncedFunc(value);
+  }, []);
+
+  const handleDropdownToggle = useCallback(() => {
+    if (isOpen) {
+      setIsOpen(false);
+    } else {
+      requestAnimationFrame(() => {
+        setIsOpen(true);
+      });
+    }
+  }, [isOpen]);
+
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return options;
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    // Use Set for faster lookups if many items match
     return options.filter(option => 
-      option.toLowerCase().includes(searchTerm.toLowerCase())
+      option.toLowerCase().includes(lowerSearchTerm)
     );
   }, [options, searchTerm]);
   
@@ -296,11 +302,25 @@ const SearchableDropdown = memo(({
   
   return (
     <div className="filter-group searchable-dropdown-container" ref={dropdownRef}>
-      <label className="filter-label">{label}</label>
-      <div className="searchable-dropdown">
+      {/* Add a visually hidden but accessible select element that matches the label's htmlFor attribute */}
+      <select 
+        id={`dropdown-${label.replace(/\s+/g, '-').toLowerCase()}`}
+        tabIndex="-1"
+        className="sr-only"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={`${label} selection`}
+      >
+        <option value="">{placeholder || "Select..."}</option>
+        {options.map((option, index) => (
+          <option key={index} value={option}>{option}</option>
+        ))}
+      </select>
+      <label htmlFor={`dropdown-${label.replace(/\s+/g, '-').toLowerCase()}`} className="filter-label">{label}</label>
+      <div className="searchable-dropdown" id=''>
         <div 
           className={`dropdown-header ${isOpen ? 'open' : ''}`}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleDropdownToggle}
         >
           <span className="selected-value">{displayValue}</span>
           <span className="dropdown-arrow">▼</span>
@@ -309,12 +329,20 @@ const SearchableDropdown = memo(({
         {isOpen && (
           <div className="dropdown-content">
             <div className="search-wrapper">
+            <label htmlFor={`dropdown-search-${label.replace(/\s+/g, '-').toLowerCase()}`} className="sr-only">
+              Search {label}
+            </label>
               <input
+                id={`dropdown-search-${label.replace(/\s+/g, '-').toLowerCase()}`}
+                name={`dropdown-search-${label.replace(/\s+/g, '-').toLowerCase()}`}
                 type="text"
                 className="dropdown-search"
                 placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                defaultValue={searchTerm}
+                onChange={(e) => {
+                  e.persist();
+                  debouncedSetSearchTerm(e.target.value);
+                }}
                 onClick={(e) => e.stopPropagation()}
                 autoFocus
               />
@@ -329,15 +357,35 @@ const SearchableDropdown = memo(({
               </div>
               
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option, index) => (
-                  <div
-                    key={index}
-                    className={`dropdown-option ${option === value ? 'selected' : ''}`}
-                    onClick={() => handleSelectOption(option)}
+                filteredOptions.length > 50 ? (
+                  <List
+                    height={Math.min(300, filteredOptions.length * 35)}
+                    itemCount={filteredOptions.length}
+                    itemSize={35}
+                    width="100%"
+                    overscanCount={5}
                   >
-                    {option}
-                  </div>
-                ))
+                    {({ index, style }) => (
+                      <div
+                        style={style}
+                        className={`dropdown-option ${filteredOptions[index] === value ? 'selected' : ''}`}
+                        onClick={() => handleSelectOption(filteredOptions[index])}
+                      >
+                        {filteredOptions[index]}
+                      </div>
+                    )}
+                  </List>
+                ) : (
+                  filteredOptions.map((option, index) => (
+                    <div
+                      key={index}
+                      className={`dropdown-option ${option === value ? 'selected' : ''}`}
+                      onClick={() => handleSelectOption(option)}
+                    >
+                      {option}
+                    </div>
+                  ))
+                )
               ) : (
                 <div className="no-options">No matches found</div>
               )}
@@ -368,21 +416,30 @@ const ThreadRowWithAuthor = memo(({ thread, index, style, data }) => {
   
   // Load author data
   useEffect(() => {
-    if (thread?.authorEmail) {
-      const fetchAuthor = async () => {
-        // Use request pooling for user data
-        const userData = await requestPool.execute(
-          `user-${thread.authorEmail}`, 
-          () => getCachedUserByEmail(thread.authorEmail)
-        );
-        
-        if (userData) {
-          setAuthor(userData);
-        }
-      };
-      
-      fetchAuthor();
+    if (!thread?.authorEmail) return;
+    
+    const authorEmail = thread.authorEmail;
+    
+    // Check if this request is already in progress
+    if (userFetchQueue[authorEmail]) {
+      userFetchQueue[authorEmail].then(userData => {
+        if (userData) setAuthor(userData);
+      });
+      return;
     }
+    
+    // Start a new request
+    userFetchQueue[authorEmail] = getCachedUserByEmail(authorEmail)
+      .then(userData => {
+        if (userData) setAuthor(userData);
+        return userData;
+      })
+      .finally(() => {
+        // Clean up after a delay to allow batching of requests
+        setTimeout(() => {
+          delete userFetchQueue[authorEmail];
+        }, 1000);
+      });
   }, [thread?.authorEmail]);
   
   // Load markdown modules only if needed
@@ -665,6 +722,34 @@ const loadMarkdownComponents = async () => {
   };
 };
 
+// Add batch updates using a reducer instead of multiple useState
+function forumReducer(state, action) {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'SET_THREADS':
+      return { 
+        ...state, 
+        unsortedThreads: action.payload,
+        normalizedThreads: normalizeThreads(action.payload),
+        loading: false
+      };
+    case 'SET_FILTERS':
+      return { ...state, ...action.payload };
+    case 'RESET_FILTERS':
+      return { 
+        ...state, 
+        filterMajor: '', 
+        filterCourse: '', 
+        filterRole: '', 
+        searchInputValue: '',
+        dateFilter: 'all' 
+      };
+    default:
+      return state;
+  }
+}
+
 // Add this above your main Forum component
 const ThreadForm = memo(({ 
   threadForm,
@@ -725,7 +810,7 @@ const ThreadForm = memo(({
     
     dispatchThreadForm({ 
       type: 'SET_CONTENT', 
-      payload: newContent
+      payload: newContent 
     });
     
     // After state updates, set selection
@@ -973,6 +1058,8 @@ ThreadForm.displayName = 'ThreadForm';
 const ForumSidebar = memo(({
   searchInputValue,
   setSearchInputValue,
+  dateFilter,
+  setDateFilter,
   forumStats,
   bookmarks,
   formatNumber,
@@ -991,8 +1078,11 @@ const ForumSidebar = memo(({
       <div className="sidebar-search">
         <h3>Filter Threads</h3>
         <div className="search-form">
+          <label htmlFor="forum-search" className="sr-only">Search in threads</label>
           <input
             type="text"
+            id='forum-search'
+            name='forum-search'
             placeholder="Search in threads..."
             value={searchInputValue}
             onChange={(e) => setSearchInputValue(e.target.value)}
@@ -1038,8 +1128,14 @@ const ForumSidebar = memo(({
           </button>
           
           <div className="filter-group">
-            <label>Time period:</label>
-            <select className="filter-select">
+            <label htmlFor='time-period-filter' className="filter-label">Time period:</label>
+            <select
+              className="filter-select"
+              id='time-period-filter'
+              name='time-period-filter'
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            >
               <option value="all">All time</option>
               <option value="today">Today</option>
               <option value="week">This week</option>
@@ -1077,6 +1173,8 @@ ForumSidebar.propTypes = {
   searchInputValue: PropTypes.string.isRequired,
   setSearchInputValue: PropTypes.func.isRequired,
   forumStats: PropTypes.object.isRequired,
+  dateFilter: PropTypes.string.isRequired,
+  setDateFilter: PropTypes.func.isRequired,
   bookmarks: PropTypes.array.isRequired,
   formatNumber: PropTypes.func.isRequired,
   filterMajor: PropTypes.string.isRequired,
@@ -1136,10 +1234,11 @@ const ThreadListWithInfiniteScroll = memo(({ displayThreads, listData, itemsPerP
           {({ width }) => (
             <List
               className="virtualized-threads-list"
-              height={Math.min(600, visibleThreads.length * 170)}
+              height={Math.min(600, Math.min(10, visibleThreads.length) * 170)}
               width={width}
               itemCount={visibleThreads.length}
               itemSize={170}
+              overscanCount={3}
               itemData={{...listData, threads: visibleThreads}}
             >
               {({ index, style }) => (
@@ -1188,8 +1287,11 @@ const ThreadListing = memo(({
       <div className="threads-header">
         <h2>All Threads</h2>
         <div className="thread-filters">
+          <label htmlFor="thread-sort-order" className="sort-label">Sort by:</label>
           <select 
             className="sort-select"
+            id='thread-sort-order'
+            name='thread-sort-order'
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           >
@@ -1201,6 +1303,8 @@ const ThreadListing = memo(({
           <label className="bookmark-filter">
             <input 
               type="checkbox" 
+              id='show-bookmarks-only'
+              name='show-bookmarks-only'
               checked={showBookmarksOnly} 
               onChange={(e) => setShowBookmarksOnly(e.target.checked)} 
             />
@@ -1297,12 +1401,16 @@ const normalizeThreads = (threads) => {
 
 function Forum() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [unsortedThreads, setUnsortedThreads] = useState([]);
-  const [searchInputValue, setSearchInputValue] = useState('');
-  const searchQuery = useDebounce(searchInputValue, 300);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [state, dispatch] = useReducer(forumReducer, {
+    loading: true,
+    unsortedThreads: [],
+    normalizedThreads: { byId: {}, allIds: [] },
+    filterMajor: '',
+    filterCourse: '',
+    filterRole: '',
+    searchInputValue: '',
+    dateFilter: 'all',
+  });
   const [showNewThreadForm, setShowNewThreadForm] = useState(false);
   const [forumData, setForumData] = useState([]);
   const [sortOrder, setSortOrder] = useState('recent');
@@ -1312,9 +1420,7 @@ function Forum() {
   });
   const [bookmarks, setBookmarks] = useState([]);
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
-  const [filterMajor, setFilterMajor] = useState('');
-  const [filterCourse, setFilterCourse] = useState('');
-  const [filterRole, setFilterRole] = useState('');
+  
 
   const [threadForm, dispatchThreadForm] = useReducer(threadFormReducer, {
     title: '',
@@ -1324,8 +1430,6 @@ function Forum() {
     showPreview: false,
     notificationsEnabled: true  // Default to enabled
   });
-
-  const [normalizedThreads, setNormalizedThreads] = useState({ byId: {}, allIds: [] });
 
   // Process functions
   const processMajors = useCallback((data) => {
@@ -1456,7 +1560,7 @@ function Forum() {
   };
 
   const fetchForumData = useCallback(async () => {
-    setLoading(true);
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const sessionId = localStorage.getItem('sessionId');
       if (!sessionId) {
@@ -1466,69 +1570,114 @@ function Forum() {
       }
 
       try {
-        console.log('Fetching threads from API...');
+        console.log('Fetching threads with server-side filters...');
         
-        // Get threads from API
-        const response = await axios.get(`${base_url}/threads`, {
-          headers: { 'Session-Id': sessionId }
+        // Build server-side filter parameters
+        const searchParams = new URLSearchParams();
+        
+        // Only these filters are handled on server side
+        if (state.filterRole) searchParams.append('role', state.filterRole);
+        if (state.filterCourse) searchParams.append('course', state.filterCourse);
+        if (state.filterMajor) searchParams.append('major', state.filterMajor);
+        
+        // Construct URL with search parameters
+        const url = searchParams.toString() 
+          ? `${base_url}/threads/search?${searchParams.toString()}`
+          : `${base_url}/threads`;
+          
+        console.log('API URL:', url);
+        
+        const response = await axios.get(url, {
+          headers: { 'Session-Id': sessionId, 'Content-Type': 'application/json' }
         });
         
-        // Log the raw API response
-        console.log('Raw API response:', response);
-        console.log('Thread data received:', response.data);
+        console.log(`Received ${response.data?.length || 0} threads from API`);
         
         // Store complete forum data
         setForumData(response.data);
         
         // Process the response data
         if (Array.isArray(response.data)) {
-          console.log(`Processing ${response.data.length} threads from array response`);
-          setUnsortedThreads(response.data);
-          setNormalizedThreads(normalizeThreads(response.data));
-          setTotalPages(Math.ceil(response.data.length / 10));
-          
-          // Calculate and set forum stats
-          const stats = calculateForumStats(response.data);
-          setForumStats(stats);
-          console.log('Forum statistics calculated:', stats);
-          
-          // Log thread IDs with the correct property name
-          console.log('Thread IDs:', response.data.map(thread => thread.threadId));
+          dispatch({ type: 'SET_THREADS', payload: response.data });
+          setForumStats(calculateForumStats(response.data));
         } else if (response.data.threads && Array.isArray(response.data.threads)) {
-          console.log(`Processing ${response.data.threads.length} threads from nested response`);
-          setUnsortedThreads(response.data.threads);
-          setNormalizedThreads(normalizeThreads(response.data.threads));
-          setTotalPages(response.data.totalPages || Math.ceil(response.data.threads.length / 10));
-          
-          // Calculate and set forum stats
-          const stats = calculateForumStats(response.data.threads);
-          setForumStats(stats);
-          console.log('Forum statistics calculated:', stats);
-          
-          // Log thread IDs to help identify any missing or duplicate IDs
-          console.log('Thread IDs:', response.data.threads.map(thread => thread.id));
+          dispatch({ type: 'SET_THREADS', payload: response.data.threads });
+          setForumStats(calculateForumStats(response.data.threads));
         } else {
-          console.warn('Unexpected response format:', response.data);
-          setUnsortedThreads([]);
-          setNormalizedThreads({ byId: {}, allIds: [] });
-          setTotalPages(1);
+          dispatch({ type: 'SET_THREADS', payload: [] });
         }
       } catch (error) {
-        console.warn("Error fetching forum data from API:", error);
-        console.log("Error details:", error.response || error.message);
+        console.error("Error fetching forum data:", error);
+        toast.error("Failed to load forum data. Please try again later.");
       }
     } catch (error) {
-      console.error("Unexpected error in fetchForumData:", error);
-      toast.error("Failed to load forum data. Please try again later.");
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
-      setLoading(false);
-      console.log('Thread fetching complete.');
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [navigate, calculateForumStats]);
+  }, [navigate, calculateForumStats, state.filterMajor, state.filterCourse, state.filterRole]);
 
   useEffect(() => {
     fetchForumData();
-  }, [fetchForumData]);
+  }, [state.filterMajor, state.filterCourse, state.filterRole, fetchForumData]);
+
+  const getClientSideFilteredThreads = useCallback((threads, filters) => {
+    const { searchQuery, bookmarksOnly, bookmarks, dateFilter } = filters;
+    
+    return threads.filter(thread => {
+      // Check bookmarks filter (client-side only)
+      if (bookmarksOnly && !bookmarks.includes(thread.threadId)) {
+        return false;
+      }
+      
+      // Check search query (client-side)
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const titleMatch = thread.title?.toLowerCase().includes(query) || false;
+        const contentMatch = thread.content?.toLowerCase().includes(query) || 
+                            thread.description?.toLowerCase().includes(query) || false;
+        const authorMatch = thread.authorName?.toLowerCase().includes(query) || false;
+        
+        if (!titleMatch && !contentMatch && !authorMatch) {
+          return false;
+        }
+      }
+      
+      // Check date filter (client-side)
+      if (dateFilter && dateFilter !== 'all') {
+        const threadDate = new Date(thread.createdAt);
+        const now = new Date();
+        
+        switch(dateFilter) {
+          case 'today':
+            // Check if thread is from today
+            if (threadDate.toDateString() !== now.toDateString()) {
+              return false;
+            }
+            break;
+          case 'week':
+            // Check if thread is from this week
+            { const weekAgo = new Date();
+            weekAgo.setDate(now.getDate() - 7);
+            if (threadDate < weekAgo) {
+              return false;
+            }
+            break; }
+          case 'month':
+            // Check if thread is from this month
+            { const monthAgo = new Date();
+            monthAgo.setMonth(now.getMonth() - 1);
+            if (threadDate < monthAgo) {
+              return false;
+            }
+            break; }
+        }
+      }
+      
+      return true;
+    });
+  }, []);
 
   useEffect(() => {
     // Load saved draft when component mounts
@@ -1585,12 +1734,6 @@ function Forum() {
         
       // Update localStorage inside the state updater
       localStorage.setItem('threadBookmarks', JSON.stringify(updatedBookmarks));
-      
-      // Show toast notification
-      /*toast.info(
-        isCurrentlyBookmarked ? 'Thread removed from bookmarks' : 'Thread bookmarked!', 
-        { autoClose: 1500 }
-      );*/
       
       return updatedBookmarks;
     });
@@ -1680,78 +1823,55 @@ function Forum() {
   }, [navigate]);
 
   const resetFilters = useCallback(() => {
-    setFilterMajor('');
-    setFilterCourse('');
-    setFilterRole('');
-    setSearchInputValue('');
+    dispatch({ type: 'RESET_FILTERS' });
+  }, []);
+
+  const applySortOrder = useCallback((threads, sortOrder) => {
+    switch(sortOrder) {
+      case 'recent':
+        return threads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case 'oldest':
+        return threads.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case 'comments':
+        return threads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+      case 'score':
+        return threads.sort((a, b) => 
+          ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0))
+        );
+      default:
+        return threads;
+    }
   }, []);
 
   const filteredThreadIds = useMemo(() => {
-    if (!unsortedThreads.length) return [];
+    if (!state.unsortedThreads.length) return [];
     
-    let filteredThreads = [...unsortedThreads];
+    const clientFilters = {
+      searchQuery: state.searchInputValue.toLowerCase().trim(),
+      bookmarksOnly: showBookmarksOnly,
+      bookmarks,
+      dateFilter: state.dateFilter || 'all'
+    };
     
-    // Apply bookmark filter if enabled
-    if (showBookmarksOnly) {
-      filteredThreads = filteredThreads.filter(thread => 
-        bookmarks.includes(thread.threadId)
-      );
-    }
+    // Client-side filtering only for search, bookmarks and date
+    const filteredThreads = getClientSideFilteredThreads(state.unsortedThreads, clientFilters);
     
-    // Apply search filter if there's a query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filteredThreads = filteredThreads.filter(thread => 
-        (thread.title && thread.title.toLowerCase().includes(query)) ||
-        (thread.content && thread.content.toLowerCase().includes(query)) ||
-        (thread.description && thread.description.toLowerCase().includes(query))
-      );
-    }
-    
-    // Apply major filter
-    if (filterMajor) {
-      filteredThreads = filteredThreads.filter(thread => 
-        thread.authorMajor === filterMajor || 
-        (thread.subject && thread.subject === filterMajor) ||
-        (thread.major && thread.major === filterMajor)
-      );
-    }
-    
-    // Apply course filter
-    if (filterCourse) {
-      filteredThreads = filteredThreads.filter(thread => 
-        thread.courseKey === filterCourse || 
-        (thread.course && thread.course === filterCourse)
-      );
-    }
-    
-    // Apply role filter
-    if (filterRole) {
-      filteredThreads = filteredThreads.filter(thread => 
-        thread.authorRole && thread.authorRole === filterRole
-      );
-    }
-    
-    // Apply existing sort order
-    switch(sortOrder) {
-      case 'recent':
-        return filteredThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(thread => thread.threadId);
-      case 'oldest':
-        return filteredThreads.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map(thread => thread.threadId);
-      case 'comments':
-        return filteredThreads.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0)).map(thread => thread.threadId);
-      case 'score':
-        return filteredThreads.sort((a, b) => 
-          ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0))
-        ).map(thread => thread.threadId);
-      default:
-        return filteredThreads.map(thread => thread.threadId);
-    }
-  }, [unsortedThreads, bookmarks, showBookmarksOnly, sortOrder, searchQuery, filterMajor, filterCourse, filterRole]);
+    // Apply sort after filtering
+    return applySortOrder(filteredThreads, sortOrder).map(thread => thread.threadId);
+  }, [
+    state.unsortedThreads, 
+    state.searchInputValue,
+    state.dateFilter,
+    showBookmarksOnly,
+    bookmarks,
+    getClientSideFilteredThreads,
+    applySortOrder,
+    sortOrder
+  ]);
 
   const displayThreads = useMemo(() => {
-    return filteredThreadIds.map(id => normalizedThreads.byId[id]);
-  }, [filteredThreadIds, normalizedThreads.byId]);
+    return filteredThreadIds.map(id => state.normalizedThreads.byId[id]);
+  }, [filteredThreadIds, state.normalizedThreads.byId]);
 
   const listData = useMemo(() => ({
     threads: displayThreads,
@@ -1798,7 +1918,7 @@ function Forum() {
 
   return (
     <div className="forum-container">
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="bottom-left" autoClose={2500} />
       
       <div className="forum-header">
         <h1>Student Forums</h1>
@@ -1819,24 +1939,26 @@ function Forum() {
       
       <div className="forum-content">
         <ForumSidebar
-          searchInputValue={searchInputValue}
-          setSearchInputValue={setSearchInputValue}
+          searchInputValue={state.searchInputValue}
+          setSearchInputValue={(value) => dispatch({ type: 'SET_FILTERS', payload: { searchInputValue: value } })}
+          dateFilter={state.dateFilter}
+          setDateFilter={(value) => dispatch({ type: 'SET_FILTERS', payload: { dateFilter: value } })}
           forumStats={forumStats}
           bookmarks={bookmarks}
           formatNumber={formatNumber}
-          filterMajor={filterMajor}
-          setFilterMajor={setFilterMajor}
-          filterCourse={filterCourse}
-          setFilterCourse={setFilterCourse}
-          filterRole={filterRole}
-          setFilterRole={setFilterRole}
+          filterMajor={state.filterMajor}
+          setFilterMajor={(value) => dispatch({ type: 'SET_FILTERS', payload: { filterMajor: value } })}
+          filterCourse={state.filterCourse}
+          setFilterCourse={(value) => dispatch({ type: 'SET_FILTERS', payload: { filterCourse: value } })}
+          filterRole={state.filterRole}
+          setFilterRole={(value) => dispatch({ type: 'SET_FILTERS', payload: { filterRole: value } })}
           availableMajors={availableMajors}
           availableCourses={availableCourses}
           resetFilters={resetFilters}
         />
         
         <ThreadListing
-          loading={loading}
+          loading={state.loading}
           displayThreads={displayThreads}
           showBookmarksOnly={showBookmarksOnly}
           setShowBookmarksOnly={setShowBookmarksOnly}
@@ -1844,15 +1966,19 @@ function Forum() {
           sortOrder={sortOrder}
           setSortOrder={setSortOrder}
           listData={listData}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-          totalPages={totalPages}
+          currentPage={1}
+          setCurrentPage={() => {}}
+          totalPages={1}
         />
       </div>
 
       <button 
         className="post-thread-fab"
-        onClick={() => setShowNewThreadForm(true)}
+        onClick={() => {
+          setShowNewThreadForm(true);
+          // Scroll to top with smooth animation
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         aria-label="Create a new thread"
       >
         <span className="fab-icon">+</span>

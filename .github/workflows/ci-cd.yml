@@ -136,7 +136,7 @@ jobs:
             git checkout dev 
             git fetch origin dev
             git pull
-
+ 
             git checkout deploy
             git fetch origin deploy
             git pull origin deploy
@@ -146,11 +146,7 @@ jobs:
             git push
 
             cd backend
-
-            # Stop and remove old containers
-            docker-compose down --volumes --remove-orphans
-            # Run setup.sh to start containers
-            ./setup.sh
+            docker-compose up -d --build app
 
             echo "Deployment successful!"
           EOF

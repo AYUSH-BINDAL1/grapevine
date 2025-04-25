@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { base_url } from '../config';
+import { ToastContainer, toast } from 'react-toastify';
 
 function CreateGroup() {
     const [formData, setFormData] = useState({
@@ -150,6 +151,7 @@ function CreateGroup() {
                     </button>
                 </div>
             </form>
+            <ToastContainer position="bottom-right" autoClose={5000} />
         </div>
     );
 }

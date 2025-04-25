@@ -39,200 +39,6 @@ const locationNames = {
   26: "STEW"
 };
 
-// Comprehensive list of available majors
-const availableMajors = [
-  "Accounting",
-  "Actuarial Science",
-  "Aeronautical and Astronautical Engineering",
-  "Aeronautical Engineering Technology",
-  "African American Studies",
-  "Agribusiness",
-  "Agricultural Communication",
-  "Agricultural Economics",
-  "Agricultural Education",
-  "Agricultural Engineering",
-  "Agricultural Systems Management",
-  "Agronomy",
-  "American Studies",
-  "Animal Sciences",
-  "Animation and Visual Effects",
-  "Anthropology",
-  "Applied Meteorology and Climatology",
-  "Aquatic Sciences",
-  "Art History",
-  "Artificial Intelligence",
-  "Asian Studies",
-  "Atmospheric Science/Meteorology",
-  "Audio Engineering Technology",
-  "Automation and Systems Integration Engineering Technology",
-  "Aviation Management",
-  "Biochemistry",
-  "Biological Engineering",
-  "Biology",
-  "Biomedical Engineering",
-  "Biomedical Health Sciences",
-  "Brain and Behavioral Sciences",
-  "Building Information Modeling",
-  "Business Analytics and Information Management",
-  "Cell, Molecular, and Developmental Biology",
-  "Chemical Biology and Biochemistry",
-  "Chemical Engineering",
-  "Chemistry",
-  "Chinese Studies",
-  "Civil Engineering",
-  "Classical Studies",
-  "Communication",
-  "Comparative Literature",
-  "Computer and Information Technology",
-  "Computer Engineering",
-  "Computer Engineering Technology",
-  "Computer Infrastructure & Network Engineering Technology",
-  "Computer Science",
-  "Computing Systems Analysis and Design",
-  "Construction Engineering",
-  "Construction Management Technology",
-  "Creative Writing",
-  "Crop Science",
-  "Cybersecurity",
-  "Data Analytics, Technologies and Applications",
-  "Data Science",
-  "Data Visualization",
-  "Design and Construction Integration",
-  "Design Studies",
-  "Developmental and Family Science",
-  "Digital Agronomy",
-  "Digital Criminology",
-  "Digital Enterprise Systems",
-  "Early Childhood Education and Exceptional Needs",
-  "Ecology, Evolution, and Environmental Sciences",
-  "Economics",
-  "Electrical Engineering",
-  "Electrical Engineering Technology",
-  "Elementary Education",
-  "Energy Engineering Technology",
-  "Engineering-First Year",
-  "Engineering Technology Education", 
-  "English",
-  "English Education",
-  "Environmental and Ecological Engineering",
-  "Environmental & Natural Resources Engineering",
-  "Environmental Geosciences",
-  "Exploratory Studies",
-  "Family and Consumer Sciences Education",
-  "Farm Management",
-  "Fermentation Science",
-  "Film and Video",
-  "Finance",
-  "Financial Counseling and Planning",
-  "Flight",
-  "Food Science",
-  "Forestry",
-  "French",
-  "Game Development and Design",
-  "General Education",
-  "Genetics",
-  "Geology and Geophysics",
-  "German",
-  "Global Studies",
-  "Health and Disease",
-  "History",
-  "Horticulture",
-  "Hospitality and Tourism Management",
-  "Human Resource Development",
-  "Human Services",
-  "Industrial Design",
-  "Industrial Engineering",
-  "Industrial Engineering Technology",
-  "Insect Biology",
-  "Integrated Business and Engineering",
-  "Integrated Studio Arts",
-  "Interdisciplinary Performance",
-  "Interdisciplinary Engineering Studies",
-  "Interior Architecture",
-  "Interior Design",
-  "Italian Studies",
-  "Japanese",
-  "Jewish Studies",
-  "Kinesiology",
-  "Landscape Architecture",
-  "Law and Society",
-  "Linguistics",
-  "Management",
-  "Marketing",
-  "Materials Engineering",
-  "Mathematics",
-  "Mechanical Engineering",
-  "Mechanical Engineering Technology",
-  "Mechatronics Engineering Technology",
-  "Medical Laboratory Sciences",
-  "Microbiology",
-  "Motorsports Engineering",
-  "Multidisciplinary Engineering",
-  "Music",
-  "Natural Resources and Environmental Science",
-  "Neurobiology and Physiology",
-  "Nuclear Engineering",
-  "Nursing",
-  "Nutrition and Dietetics",
-  "Nutrition, Fitness, and Health",
-  "Nutrition Science",
-  "Occupational and Environmental Health Sciences",
-  "Organizational Leadership",
-  "Pharmaceutical Sciences",
-  "Philosophy",
-  "Physics",
-  "Physics, Applied",
-  "Planetary Sciences",
-  "Plant Genetics, Breeding, and Biotechnology",
-  "Plant Science",
-  "Plant Studies - Exploratory",
-  "Political Science",
-  "Pre-dentistry",
-  "Pre-law",
-  "Pre-medicine",
-  "Pre-occupational Therapy",
-  "Pre-physical Therapy",
-  "Pre-physician Assistant",
-  "Pre-veterinary Medicine",
-  "Professional Writing",
-  "Psychological Sciences",
-  "Public Health",
-  "Quantitative Business Economics",
-  "Radiological Health Sciences",
-  "Religious Studies",
-  "Retail Management",
-  "Robotics Engineering Technology",
-  "Russian",
-  "Sales and Marketing",
-  "Science Education",
-  "Selling and Sales Management",
-  "Smart Manufacturing Industrial Informatics",
-  "Social Studies Education",
-  "Sociology",
-  "Soil and Water Sciences",
-  "Sound for the Performing Arts",
-  "Spanish",
-  "Special Education",
-  "Speech, Language, and Hearing Sciences",
-  "Statistics, Applied",
-  "Studio Arts and Technology",
-  "Supply Chain and Operations Management",
-  "Supply Chain & Sales Engineering Technology",
-  "Sustainable Food and Farming Systems",
-  "Theatre",
-  "Themed Entertainment Design",
-  "Turf Management and Science",
-  "Unmanned Aerial Systems",
-  "UX Design",
-  "Veterinary Nursing",
-  "Visual Arts Design Education",
-  "Visual Arts Education",
-  "Visual Communication Design",
-  "Web Programming and Design",
-  "Wildlife",
-  "Women's, Gender and Sexuality Studies"
-];
-
 // Friend skeleton component
 const FriendSkeleton = () => (
     <div className="fr_friend-card skeleton">
@@ -284,7 +90,9 @@ const FilterPanel = ({
   setFilterLocations,
   sortOrder, 
   setSortOrder,
-  handleResetFilters
+  handleResetFilters,
+  availableMajors,
+  loadingMajors
 }) => {
   return (
     <div className="fr_filter-panel">
@@ -301,23 +109,35 @@ const FilterPanel = ({
       
       <div className="fr_filter-content">
         <div className="fr_filter-group">
-          <label className="fr_filter-label">Major/Minor:</label>
+          <label htmlFor='filterMajor' className="fr_filter-label">Major/Minor:</label>
           <select 
             className="fr_filter-select"
+            id='filterMajor'
+            name='filterMajor'
             value={filterMajor}
             onChange={(e) => setFilterMajor(e.target.value)}
+            disabled={loadingMajors}
           >
             <option value="">All Majors</option>
-            {availableMajors.map((major, index) => (
-              <option key={index} value={major}>{major}</option>
-            ))}
+            {loadingMajors ? (
+              <option value="" disabled>Loading majors...</option>
+            ) : (
+              availableMajors.map((major, index) => (
+                <option key={index} value={major}>{major}</option>
+              ))
+            )}
           </select>
+          {loadingMajors && (
+            <span className="fr_loading-indicator">Loading...</span>
+          )}
         </div>
         
         <div className="fr_filter-group">
-          <label className="fr_filter-label">Role:</label>
+          <label htmlFor='filterRole' className="fr_filter-label">Role:</label>
           <select 
             className="fr_filter-select"
+            id='filterRole'
+            name='filterRole'
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
           >
@@ -330,9 +150,11 @@ const FilterPanel = ({
         </div>
         
         <div className="fr_filter-group">
-          <label className="fr_filter-label">Study Location:</label>
+          <label htmlFor='filterLocations' className="fr_filter-label">Study Location:</label>
           <select 
             className="fr_filter-select"
+            id='filterLocations'
+            name='filterLocations'
             value={filterLocations.join(',')}
             onChange={(e) => {
               const value = e.target.value;
@@ -351,9 +173,11 @@ const FilterPanel = ({
         </div>
         
         <div className="fr_filter-group">
-          <label className="fr_filter-label">Sort By:</label>
+          <label htmlFor='sortOrder' className="fr_filter-label">Sort By:</label>
           <select 
             className="fr_filter-select"
+            id='sortOrder'
+            name='sortOrder'
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           >
@@ -376,8 +200,10 @@ FilterPanel.propTypes = {
     setFilterLocations: PropTypes.func.isRequired,
     sortOrder: PropTypes.string.isRequired,
     setSortOrder: PropTypes.func.isRequired,
-    handleResetFilters: PropTypes.func.isRequired
-  };
+    handleResetFilters: PropTypes.func.isRequired,
+    availableMajors: PropTypes.array.isRequired,
+    loadingMajors: PropTypes.bool.isRequired
+};
 
 // ProfileImage component to handle profile image display
 const ProfileImage = ({ user, altText }) => {
@@ -499,6 +325,10 @@ function Friends() {
     const [loadingFriends, setLoadingFriends] = useState(true);
     const [loadingRequests, setLoadingRequests] = useState(true);
 
+    // Add these state variables for majors
+    const [availableMajors, setAvailableMajors] = useState([]);
+    const [loadingMajors, setLoadingMajors] = useState(true);
+
     // Add these variables to your Friends component's state
     const [filterRole, setFilterRole] = useState('');
     const [filterMajor, setFilterMajor] = useState('');
@@ -519,6 +349,44 @@ function Friends() {
       
       toast.info('Filters have been reset');
     };
+
+    // Add this useEffect to fetch majors from API
+    useEffect(() => {
+        const fetchMajors = async () => {
+            setLoadingMajors(true);
+            try {
+                const sessionId = localStorage.getItem('sessionId');
+                if (!sessionId) {
+                    console.error('Session ID not found');
+                    setLoadingMajors(false);
+                    return;
+                }
+                
+                const response = await axios.get(`${base_url}/courses/subjects`, {
+                    headers: {
+                        'Session-Id': sessionId
+                    }
+                });
+                
+                if (response.data && Array.isArray(response.data)) {
+                    // Sort majors alphabetically
+                    const sortedMajors = response.data.sort();
+                    setAvailableMajors(sortedMajors);
+                } else {
+                    console.error('Invalid major data format:', response.data);
+                    setAvailableMajors([]);
+                }
+            } catch (error) {
+                console.error('Error fetching majors:', error);
+                toast.error('Failed to load majors list');
+                setAvailableMajors([]);
+            } finally {
+                setLoadingMajors(false);
+            }
+        };
+        
+        fetchMajors();
+    }, []);
 
     // Update the performSearch function to handle sorting locally
     const performSearch = useCallback(async (query) => {
@@ -1163,8 +1031,11 @@ function Friends() {
                 <div className="fr_search-filter-container">
                     <form className="fr_search-container" onSubmit={handleSearch}>
                         <div className="fr_search-input-container">
+                            <label htmlFor="freindSearch" className='sr-only'>Search for friends</label>
                             <input
                                 type="text"
+                                id='freindSearch'
+                                name='freindSearch'
                                 className="fr_search-bar"
                                 placeholder="Search to add friends..."
                                 value={searchQuery}
@@ -1235,6 +1106,8 @@ function Friends() {
                         sortOrder={sortOrder}
                         setSortOrder={setSortOrder}
                         handleResetFilters={handleResetFilters}
+                        availableMajors={availableMajors}
+                        loadingMajors={loadingMajors}
                     />
                 </div>
 
