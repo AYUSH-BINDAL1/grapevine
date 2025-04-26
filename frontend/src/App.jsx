@@ -584,7 +584,7 @@ function App() {
                   window.location.href = `/messaging?user=${notif.senderEmail}`;
                   break;
                 case 'EVENT_REMINDER':
-                  window.location.href = `/events/${notif.referenceId}`;
+                  window.location.href = `/event/${notif.referenceId}`;
                   break;
                 case 'COMMENT':
                   window.location.href = `/forum/thread/${notif.referenceId}`;
