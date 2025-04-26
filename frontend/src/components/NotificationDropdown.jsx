@@ -188,7 +188,7 @@ const NotificationDropdown = () => {
                 navigate(`/forum/thread/${notification.referenceId}`);
                 break;
             case "EVENT_REMINDER":
-                navigate(`/events/${notification.referenceId}`);
+                navigate(`/event/${notification.referenceId}`);
                 break;
             default:
                 // If type is unknown, try to navigate based on referenceId
