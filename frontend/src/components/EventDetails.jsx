@@ -13,10 +13,9 @@ function EventDetails() {
     const [editMode, setEditMode] = useState(false);
     const [editedData, setEditedData] = useState({});
     const [registrationMessage, setRegistrationMessage] = useState("");
-    const [hostNames, setHostNames] = useState({});
     const [reminders, setReminders] = useState([]);
     const [reminderTime, setReminderTime] = useState("");
-
+    const [userDetails, setUserDetails] = useState({});
 
     const hardcodedLocations = [
         { id: 1, shortName: "WALC" },
@@ -46,7 +45,6 @@ function EventDetails() {
         { id: 25, shortName: "PMU" },
         { id: 26, shortName: "STEW" }
     ];
-
 
     useEffect(() => {
         const fetchReminders = async () => {
@@ -87,21 +85,27 @@ function EventDetails() {
                     setGroupName(groupResponse.data.name);
                 }
 
+                // Get all unique emails from hosts and participants
                 const hosts = response.data.hosts || [];
-                const names = {};
+                const participants = response.data.participants || [];
+                const allMembers = [...new Set([...hosts, ...participants])];
+                
+                // Fetch user details for all members
+                const details = {};
                 await Promise.all(
-                    hosts.map(async (email) => {
+                    allMembers.map(async (email) => {
                         try {
                             const userRes = await axios.get(`${base_url}/users/${email}`, {
                                 headers: { "Session-Id": sessionId }
                             });
-                            names[email] = userRes.data.name || email;
-                        } catch {
-                            names[email] = email;
+                            details[email] = userRes.data;
+                        } catch (err) {
+                            console.error(`Failed to fetch details for ${email}:`, err);
+                            details[email] = { name: email, email: email };
                         }
                     })
                 );
-                setHostNames(names);
+                setUserDetails(details);
             } catch (error) {
                 console.error("Error fetching event details:", error);
                 navigate("/events");
@@ -212,8 +216,8 @@ function EventDetails() {
             await axios.post(
                 `${base_url}/events/${eventId}/join`,
                 { userEmail: currentUserEmail },
-                { headers: { "Session-Id": sessionId } }
-            );
+                { headers: { "Session-Id": sessionId }
+            });
 
             setRegistrationMessage("✅ You have successfully registered for this event.");
 
@@ -306,21 +310,27 @@ function EventDetails() {
                 <div className="event-details-section">
                     <h2>Members</h2>
                     <div className="members-list">
-                        {eventData.hosts?.map((host, index) => (
+                        {eventData.hosts?.map((hostEmail, index) => (
                             <div key={`host-${index}`} className="member-card host-member">
-                                <span className="member-name">{hostNames[host] || host}</span>
+                                <span className="member-name">{userDetails[hostEmail]?.name || hostEmail}</span>
                                 <span className="member-role">Host</span>
                             </div>
                         ))}
-                        {eventData.participants?.map((participant, index) => {
-                            const name = hostNames[participant] || participant;
-                            if (eventData.hosts?.includes(participant)) return null;
+                        {eventData.participants?.map((participantEmail, index) => {
+                            // Skip if they're already shown as a host
+                            if (eventData.hosts?.includes(participantEmail)) return null;
                             return (
                                 <div key={`participant-${index}`} className="member-card">
-                                    <span className="member-name">{name}</span>
+                                    <span className="member-name">{userDetails[participantEmail]?.name || participantEmail}</span>
+                                    <span className="member-role">Participant</span>
                                 </div>
                             );
                         })}
+                        
+                        {/* Show message if no participants yet */}
+                        {(!eventData.participants || eventData.participants.length === 0) && (
+                            <div className="no-participants">No participants have joined yet</div>
+                        )}
                     </div>
                 </div>
             </div>
