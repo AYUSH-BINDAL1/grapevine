@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { base_url } from '../config';
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 
 function CreateGroup() {
     const [formData, setFormData] = useState({
@@ -41,10 +41,12 @@ function CreateGroup() {
             description: formData.description,
             maxUsers: parseInt(formData.maxUsers, 10),
             public: formData.public,
-            hosts: [userData.userEmail],
+            hosts: [],
             participants: [],
             events: null
         };
+
+        console.log('Creating group with payload:', payload);
 
         try {
             const response = await axios.post(
