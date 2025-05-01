@@ -610,7 +610,7 @@ echo "curl -X POST $BACKEND_URL/users/login -H 'Content-Type: application/json' 
 
 
 # Setup friends and conversation
-setup_friends_and_conversation
+# setup_friends_and_conversation
 
 setup_bucket
 
