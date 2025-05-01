@@ -522,6 +522,8 @@ function Messaging() {
               <div className="message-input-wrapper">
                 <input
                   type="text"
+                  id='message-input'
+                  name='message-input'
                   value={newMessage}
                   onChange={(e) => {
                     // Limit input to max length
