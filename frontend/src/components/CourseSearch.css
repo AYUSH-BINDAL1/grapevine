@@ -10,7 +10,7 @@
     margin-bottom: 30px;
   }
   
-  .search-form {
+  .course-search-container.search-form {
     display: flex;
     gap: 10px;
     margin-bottom: 30px;
@@ -23,7 +23,7 @@
     width: 100%;
   }
   
-  .search-input {
+  .search-input-container .search-input {
     width: 100%;
     padding: 12px;
     border: 2px solid #ae92c6;
