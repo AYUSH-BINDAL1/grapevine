@@ -1,113 +1,106 @@
-# Quick Links
-[Grapevine Trello Board](https://trello.com/invite/b/67c09fe22a9fcbcd79f4ac85/ATTI5ec93fa29290a911eaf90b591e3ed0ec09999CE5/grapevine)
+# Grapevine - Study Group Finder
 
-# Git Workflow Guide
+A full-stack social platform connecting college students through study groups, events, and real-time messaging. Built with React, Spring Boot, and PostgreSQL, featuring WebSocket-based notifications and a complete CI/CD pipeline deployed on AWS.
 
-This document outlines the standard workflow for making changes, updating your branch with the latest changes from `dev`, and creating pull requests.
+## Overview
 
-## Step-by-Step Workflow
+Grapevine solves the challenge of finding study partners by creating a centralized platform where students can discover groups, schedule study sessions, and communicate in real-time. The platform handles user authentication, complex search filtering, role-based access control, and live messaging.
 
-### 1. Verify Your Working Branch
+**Key Achievement:** Successfully deployed a production-grade application with containerized services, automated CI/CD, and real-time communication supporting concurrent users across multiple study groups.
 
-First, ensure you're on your feature branch before making changes:
+## Architecture
 
-```bash
-git branch
+```
+React Frontend ↔ Spring Boot REST API ↔ PostgreSQL Database
+                      ↕
+                 WebSocket Server (Real-time messaging & notifications)
+                      ↓
+              AWS Infrastructure (EC2, S3, SES)
 ```
 
-You should see something like:
-```
-  main
-  dev
-* your-branch
-```
+### Core Components
 
-The asterisk (*) indicates your current branch. Make sure it's pointing to your feature branch.
+- **React Frontend** - Single-page application with component-based architecture and state management
+- **Spring Boot Backend** - RESTful API handling authentication, CRUD operations, and business logic
+- **PostgreSQL Database** - Relational database with optimized schema for users, groups, events, and relationships
+- **WebSocket Server** - Bidirectional communication layer for instant messaging and live notifications
+- **Docker Environment** - Containerized services orchestrated with Docker Compose for consistent deployment
+- **CI/CD Pipeline** - GitHub Actions automating testing and deployment to AWS EC2
 
-### 2. Make Your Changes and Commit
+## Core Features
 
-After making your changes, commit them to your branch:
+### User Management
+- School email authentication with verification via AWS SES
+- Profile management with course enrollment tracking
+- Profile picture uploads stored in AWS S3
+- Role-based permissions (Student, Instructor, GTA, UTA)
+- Personal availability scheduling
 
-```bash
-git add .
-git commit -m "Your descriptive commit message"
-```
+### Study Groups & Discovery
+- Create and join study groups organized by course or topic
+- Advanced search and filtering (by course, location, time, availability)
+- Location-based matching for preferred study spots
+- Group member management and permissions
 
-### 3. Update Your Branch with Latest Changes from dev
+### Events & Scheduling
+- Schedule study sessions tied to specific groups
+- Calendar integration with time conflict detection
+- Event notifications via WebSocket
+- Search and filter upcoming events by course or group
 
-To prevent merge conflicts in your PR, first update your branch with the latest changes from `dev`:
+### Social Features
+- Friend system with connection requests
+- Real-time messaging between friends and group members
+- Reddit-style Q&A forums for course discussions
+- Notification system for friend requests, event reminders, and group updates
 
-```bash
-# Switch to dev
-git checkout dev
+## Technical Challenges Solved
 
-# Get the latest changes
-git fetch origin dev && git pull
+1. **Database Design** - Engineered normalized schema handling complex many-to-many relationships between users, groups, courses, and events while maintaining referential integrity and query performance
 
-# Switch back to your branch
-git checkout your-branch
+2. **WebSocket Architecture** - Implemented bidirectional WebSocket communication for real-time messaging and notifications, managing connection lifecycles and ensuring message delivery across concurrent sessions
 
-# Merge dev into your branch
-git merge dev
-```
+3. **Authentication & Authorization** - Built secure JWT-based authentication with role-based access control, protecting endpoints and managing session state across frontend and backend
 
-### 4. Resolve Any Merge Conflicts
+4. **Containerization & Deployment** - Dockerized multi-service application with Docker Compose, configuring network bridges and persistent volumes for database state management
 
-If there are merge conflicts, they will be shown in your terminal. Open the conflicted files in your editor and resolve the conflicts. 
+5. **CI/CD Pipeline** - Automated testing and deployment workflow with GitHub Actions, including build verification, Docker image creation, and zero-downtime deployment to AWS EC2
 
-Conflicts appear like this:
-```
-<<<<<<< HEAD
-Your changes
-=======
-Changes from dev
->>>>>>> dev
-```
+## Tech Stack
 
-Edit the files to keep the code you want, then save.
+**Frontend:** React.js for component-based UI development with responsive design
 
-### 5. Push Your Changes
+**Backend:** Spring Boot (Java) providing RESTful APIs with built-in dependency injection and transaction management
 
-After resolving conflicts, push your changes to the remote repository:
+**Database:** PostgreSQL with complex relational schema and indexed queries for performance
 
-```bash
-git push
-```
+**Real-time Communication:** WebSocket protocol for low-latency bidirectional messaging
 
-If this is the first time pushing your branch, you may need to set the upstream branch:
-```bash
-git push -u origin your-branch
-```
+**Infrastructure:** 
+- Docker & Docker Compose for containerization
+- AWS EC2 for application hosting
+- AWS S3 for image storage
+- AWS SES for email verification
+- GitHub Actions for automated CI/CD
 
-### 6. Create a Pull Request
+**Deployment:** Netlify for frontend hosting, AWS EC2 for backend services
 
-Go to GitHub and create a pull request from your branch to `dev`.
+## Example Use Cases
 
-## Example Workflow
+Students use Grapevine to:
+- Find CS majors forming a group for Data Structures exam prep at the library
+- Schedule weekly calculus study sessions with automatic reminders
+- Join a machine learning reading group meeting Tuesdays at the student union
+- Message classmates about homework questions in real-time
+- Discover events for courses they're enrolled in across campus
 
-```bash
-# Check current branch (should show you're on your branch)
-git branch
-  dev
-* ayush
+## What I Learned
 
-# Stage and commit your changes
-git add .
-git commit -m "Add new feature"
+- **Full-Stack Development** - Experience building and integrating React frontend with Spring Boot backend through RESTful APIs
+- **Database Architecture** - Deep understanding of relational database design, normalization, and query optimization for complex social features
+- **Real-time Systems** - Implementation of WebSocket protocol for bidirectional communication and event-driven notifications
+- **DevOps Practices** - Hands-on experience with Docker containerization, CI/CD pipelines, and cloud deployment on AWS
+- **Authentication & Security** - JWT implementation, password hashing, email verification, and role-based access control
+- **System Design** - Architecting scalable multi-service applications with proper separation of concerns
 
-# Update with the latest from dev
-git checkout dev
-git fetch origin dev
-git pull
-
-# Return to your branch and merge
-git checkout ayush
-git merge dev
-
-# Resolve any merge conflicts in your editor
-
-# Push your changes
-git push
-
-# Open a PR from your branch on GitHub
-```
+This project demonstrated how to build production-ready web applications from scratch, covering every layer from database design to cloud deployment, while solving real-world problems in the education technology space.
