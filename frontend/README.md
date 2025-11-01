@@ -1,4 +1,4 @@
-# GrapeVine - University Study Partner Platform
+# Grapevine - University Study Partner Platform
 
 GrapeVine is a comprehensive web application that connects university students with study partners, groups, and events based on courses, schedules, and preferred locations.
 
@@ -107,3 +107,4 @@ VITE_IMAGE_URL=http://localhost:9000
 - If you see CORS errors, ensure the backend has proper CORS configuration
 - If images don't load, verify the image server is running correctly
 - Login issues may require clearing localStorage and cookies
+
